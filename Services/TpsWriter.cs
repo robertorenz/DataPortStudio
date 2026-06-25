@@ -1,4 +1,5 @@
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using TpsParser;
 
@@ -7,26 +8,26 @@ namespace DataPortStudio.Services;
 /// <summary>
 /// Writes modified records back to a Clarion TPS file.
 ///
-/// TpsParser is a read-only library, so this class patches raw bytes in place:
+/// Strategy:
 ///   1. Read the whole file into a byte array.
-///   2. Use TpsParser to enumerate DataRecordPayloads and locate each record's
-///      PayloadData bytes inside the file array (byte-pattern search).
-///   3. Serialize each changed field value at its FieldDefinition.Offset within
-///      the Content region and copy the patch into the file array.
+///   2. Build a map of RecordNumber → (TpsPage, contentOffset) by walking all
+///      blocks/pages; MemoryMarshal correlates Content slices with PageData buffers.
+///   3. For each changed record:
+///        a. Uncompressed pages: find PayloadData verbatim in fileBytes (fast path).
+///        b. Compressed pages: copy PageData, patch the Content region, re-encode
+///           with TPS RLE, verify the encoded length is unchanged, then write back
+///           at AbsoluteAddress + headerSize.
 ///   4. Write the modified array back to disk.
-///
-/// Only UPDATE is supported. INSERT requires appending records / updating page
-/// headers; DELETE requires index-file maintenance — neither is implemented.
-///
-/// Compressed pages: if TpsParser returns a PayloadData sequence that cannot be
-/// located in the raw file bytes (because the page is RLE-compressed), the record
-/// is skipped and a warning is added to the result.
 /// </summary>
 public static class TpsWriter
 {
     public record TpsFieldChange(string FieldName, object? NewValue);
     public record TpsRowEdit(int RecordNumber, IReadOnlyList<TpsFieldChange> Changes);
     public record SaveResult(int Patched, IReadOnlyList<string> Warnings);
+
+    private record PageRecordInfo(TpsPage Page, int ContentOffset, int ContentLength);
+
+    // ---- public entry point -----------------------------------------------
 
     public static SaveResult SaveChanges(
         string filePath,
@@ -40,13 +41,16 @@ public static class TpsWriter
         var fileBytes = File.ReadAllBytes(filePath);
         var warnings  = new List<string>();
 
-        // Parse the file to get all data record payloads for our table.
         using var ms = new MemoryStream(fileBytes);
         var tpsFile  = new TpsFile(ms);
+
         var payloads = tpsFile.GetDataRecordPayloads(tableNumber)
             .ToDictionary(p => p.RecordNumber);
 
-        var patched = 0;
+        // Build page-location map for the compressed-page slow path.
+        var pageMap = BuildPageRecordMap(tpsFile, tableNumber, payloads);
+
+        int patched = 0;
         foreach (var edit in editList)
         {
             if (!payloads.TryGetValue(edit.RecordNumber, out var payload))
@@ -57,13 +61,10 @@ public static class TpsWriter
 
             var payloadBytes = payload.PayloadData.ToArray();
             var contentBytes = payload.Content.ToArray();
-
-            // Determine the offset of Content within PayloadData.
-            // Content is the trailing field-data portion of PayloadData.
             int contentStart = payloadBytes.Length - contentBytes.Length;
             if (contentStart < 0) contentStart = 0;
 
-            // Build the updated content by patching each changed field.
+            // Build updated content by patching each changed field.
             var updated = (byte[])contentBytes.Clone();
             foreach (var change in edit.Changes)
             {
@@ -76,21 +77,57 @@ public static class TpsWriter
 
                 int copyLen = Math.Min(serialized.Length, field.Length);
                 Array.Copy(serialized, 0, updated, field.Offset, copyLen);
-                // Zero-pad the remainder when serialized is shorter than the field slot.
                 if (serialized.Length < field.Length)
                     Array.Clear(updated, field.Offset + serialized.Length, field.Length - serialized.Length);
             }
 
-            // Locate PayloadData in the raw file bytes, then patch only the Content region.
+            // Fast path: uncompressed page — PayloadData appears verbatim in the file.
             int pos = FindPattern(fileBytes, payloadBytes);
-            if (pos < 0)
+            if (pos >= 0)
             {
-                warnings.Add($"Record {edit.RecordNumber}: could not locate in file " +
-                             "(the page may be RLE-compressed — save is not supported for compressed pages).");
+                Array.Copy(updated, 0, fileBytes, pos + contentStart, updated.Length);
+                patched++;
                 continue;
             }
 
-            Array.Copy(updated, 0, fileBytes, pos + contentStart, updated.Length);
+            // Slow path: RLE-compressed page.
+            if (!pageMap.TryGetValue(edit.RecordNumber, out var info))
+            {
+                warnings.Add($"Record {edit.RecordNumber}: could not locate in file.");
+                continue;
+            }
+
+            var page          = info.Page;
+            int contentOffset = info.ContentOffset;
+
+            // Patch the decompressed page data in memory.
+            var modifiedPageData = page.PageData.ToArray();
+            Array.Copy(updated, 0, modifiedPageData, contentOffset, updated.Length);
+
+            // Re-encode with TPS RLE and verify the length is unchanged.
+            var origCompressed = page.CompressedData.ToArray();
+            var newCompressed  = TpsRleEncode(modifiedPageData);
+
+            if (newCompressed.Length != origCompressed.Length)
+            {
+                warnings.Add(
+                    $"Record {edit.RecordNumber}: re-compressed size changed " +
+                    $"({origCompressed.Length} → {newCompressed.Length} bytes). " +
+                    "Record not saved — try a value of similar magnitude.");
+                continue;
+            }
+
+            // headerSize = total page size − compressed-data portion.
+            int headerSize  = (int)page.Size - origCompressed.Length;
+            int dataFileOfs = page.AbsoluteAddress + headerSize;
+
+            if (dataFileOfs < 0 || dataFileOfs + newCompressed.Length > fileBytes.Length)
+            {
+                warnings.Add($"Record {edit.RecordNumber}: file offset out of range.");
+                continue;
+            }
+
+            Array.Copy(newCompressed, 0, fileBytes, dataFileOfs, newCompressed.Length);
             patched++;
         }
 
@@ -100,12 +137,120 @@ public static class TpsWriter
         return new SaveResult(patched, warnings);
     }
 
+    // ---- page / record map -------------------------------------------------
+
+    private static Dictionary<int, PageRecordInfo> BuildPageRecordMap(
+        TpsFile tpsFile,
+        int tableNumber,
+        Dictionary<int, DataRecordPayload> payloads)
+    {
+        var map       = new Dictionary<int, PageRecordInfo>();
+        var remaining = new HashSet<int>(payloads.Keys);
+
+        foreach (var block in tpsFile.GetBlocks())
+        {
+            if (remaining.Count == 0) break;
+
+            foreach (var page in block.GetPages())
+            {
+                if (remaining.Count == 0) break;
+
+                MemoryMarshal.TryGetArray(page.PageData, out var pageArr);
+
+                foreach (var record in page.GetRecords(ErrorHandlingOptions.Default))
+                {
+                    if (record.PayloadType != RecordPayloadType.Data) continue;
+                    if (record.GetPayload() is not DataRecordPayload drp) continue;
+                    if (drp.TableNumber != tableNumber) continue;
+                    if (!remaining.Contains(drp.RecordNumber)) continue;
+
+                    int offset = -1;
+
+                    // Try MemoryMarshal: O(1) if Content is a slice of PageData's buffer.
+                    MemoryMarshal.TryGetArray(drp.Content, out var contentArr);
+                    if (pageArr.Array is not null && contentArr.Array is not null &&
+                        pageArr.Array == contentArr.Array &&
+                        contentArr.Offset >= pageArr.Offset &&
+                        contentArr.Offset + contentArr.Count <= pageArr.Offset + pageArr.Count)
+                    {
+                        offset = contentArr.Offset - pageArr.Offset;
+                    }
+                    else
+                    {
+                        // Fallback: linear byte search of Content within PageData.
+                        offset = IndexOf(page.PageData.ToArray(), drp.Content.ToArray());
+                    }
+
+                    if (offset >= 0)
+                    {
+                        map[drp.RecordNumber] = new PageRecordInfo(page, offset, drp.Content.Length);
+                        remaining.Remove(drp.RecordNumber);
+                    }
+                }
+            }
+        }
+
+        return map;
+    }
+
+    // ---- TPS RLE encoder ---------------------------------------------------
+
+    /// <summary>
+    /// Encodes bytes using the Clarion TPS RLE scheme:
+    ///   0x80..0xFF — run: repeat next byte (control − 0x80 + 2) times.
+    ///   0x01..0x7F — literals: next (control) bytes copied verbatim.
+    /// </summary>
+    private static byte[] TpsRleEncode(byte[] data)
+    {
+        var result = new MemoryStream(data.Length + data.Length / 4 + 16);
+        int i = 0;
+
+        while (i < data.Length)
+        {
+            byte val = data[i];
+
+            int runLen = 1;
+            while (i + runLen < data.Length && data[i + runLen] == val && runLen < 129)
+                runLen++;
+
+            if (runLen >= 2)
+            {
+                result.WriteByte((byte)(0x80 + runLen - 2));
+                result.WriteByte(val);
+                i += runLen;
+            }
+            else
+            {
+                int litStart = i;
+                int litLen   = 0;
+
+                while (litLen < 0x7F && i + litLen < data.Length)
+                {
+                    int fwd = 1;
+                    while (i + litLen + fwd < data.Length &&
+                           data[i + litLen + fwd] == data[i + litLen] &&
+                           fwd < 129)
+                        fwd++;
+                    if (fwd >= 2) break;
+                    litLen++;
+                }
+
+                if (litLen == 0) litLen = 1;
+                result.WriteByte((byte)litLen);
+                result.Write(data, litStart, litLen);
+                i += litLen;
+            }
+        }
+
+        return result.ToArray();
+    }
+
     // ---- field serialization -----------------------------------------------
 
     private static byte[]? SerializeField(FieldDefinition field, object? value)
     {
         if (value is null || value is DBNull)
-            return new byte[field.Length]; // null → zeros
+            return new byte[field.Length];
 
         try
         {
@@ -129,7 +274,7 @@ public static class TpsWriter
         }
         catch
         {
-            return null; // skip unconvertible value rather than corrupting the record
+            return null;
         }
     }
 
@@ -142,7 +287,6 @@ public static class TpsWriter
             string s    => DateOnly.Parse(s),
             _           => DateOnly.FromDateTime(Convert.ToDateTime(value))
         };
-        // Clarion date = days since 28 Dec 1800 (so 1 Jan 1801 = day 4).
         var epoch = new DateOnly(1800, 12, 28);
         return dt.DayNumber - epoch.DayNumber;
     }
@@ -155,7 +299,6 @@ public static class TpsWriter
             string s   => TimeSpan.Parse(s),
             _          => TimeSpan.FromTicks(Convert.ToInt64(value))
         };
-        // Clarion time = centiseconds since midnight + 1 (0 means no time).
         return (int)(ts.TotalMilliseconds / 10.0) + 1;
     }
 
@@ -164,7 +307,7 @@ public static class TpsWriter
         var s   = value.ToString() ?? "";
         var raw = Encoding.Latin1.GetBytes(s);
         var buf = new byte[fieldLength];
-        if (pad != '\0') Array.Fill(buf, (byte)pad); // space-fill for FString
+        if (pad != '\0') Array.Fill(buf, (byte)pad);
         int len = Math.Min(raw.Length, fieldLength);
         Array.Copy(raw, 0, buf, 0, len);
         return buf;
@@ -175,61 +318,63 @@ public static class TpsWriter
         var s   = value.ToString() ?? "";
         var raw = Encoding.Latin1.GetBytes(s);
         int len = Math.Min(raw.Length, maxLength);
-        var buf = new byte[maxLength + 1]; // leading length byte
+        var buf = new byte[maxLength + 1];
         buf[0]  = (byte)len;
         Array.Copy(raw, 0, buf, 1, len);
         return buf;
     }
 
-    /// <summary>
-    /// Packs a decimal value into Clarion BCD format.
-    /// Each byte holds two decimal digits (high nibble first); the final nibble
-    /// is the sign: 0x0F = positive / zero, 0x0D = negative.
-    /// </summary>
     private static byte[] SerializeBcd(FieldDefinition field, object value)
     {
-        var dec   = Math.Abs(Convert.ToDecimal(value));
-        bool neg  = Convert.ToDecimal(value) < 0;
+        var dec  = Math.Abs(Convert.ToDecimal(value));
+        bool neg = Convert.ToDecimal(value) < 0;
         int bytes = (int)field.BcdElementLength;
         int scale = (int)field.BcdDigitsAfterDecimalPoint;
 
-        // Shift the decimal value to an integer of all significant digits.
         var shifted = decimal.Round(dec * (decimal)Math.Pow(10, scale), 0);
         var digits  = shifted.ToString("0");
 
-        var buf = new byte[bytes];
-        // Total nibbles = bytes * 2; last nibble is sign, rest are BCD digits right-aligned.
+        var buf          = new byte[bytes];
         int totalNibbles = bytes * 2;
         int signNibble   = totalNibbles - 1;
         int digitNibbles = signNibble;
 
-        // Fill digits from right to left (right before sign nibble).
         for (int i = 0; i < digitNibbles; i++)
         {
             int digitIndex = digits.Length - 1 - i;
             byte d = digitIndex >= 0 ? (byte)(digits[digitIndex] - '0') : (byte)0;
             int nibblePos = signNibble - 1 - i;
             int byteIndex = nibblePos / 2;
-            if (nibblePos % 2 == 0) // high nibble
+            if (nibblePos % 2 == 0)
                 buf[byteIndex] = (byte)((buf[byteIndex] & 0x0F) | (d << 4));
-            else                    // low nibble
+            else
                 buf[byteIndex] = (byte)((buf[byteIndex] & 0xF0) | d);
         }
 
-        // Sign nibble (last nibble of last byte).
         byte sign = neg ? (byte)0x0D : (byte)0x0F;
         buf[bytes - 1] = (byte)((buf[bytes - 1] & 0xF0) | sign);
         return buf;
     }
 
-    // ---- byte-pattern search -----------------------------------------------
+    // ---- search helpers ----------------------------------------------------
 
-    /// <summary>Finds the first occurrence of <paramref name="needle"/> in <paramref name="haystack"/>.</summary>
     private static int FindPattern(byte[] haystack, byte[] needle)
     {
         if (needle.Length == 0) return 0;
-        var span = haystack.AsSpan();
-        var pat  = needle.AsSpan();
+        var span  = haystack.AsSpan();
+        var pat   = needle.AsSpan();
+        int limit = haystack.Length - needle.Length;
+        for (int i = 0; i <= limit; i++)
+            if (span.Slice(i, needle.Length).SequenceEqual(pat))
+                return i;
+        return -1;
+    }
+
+    private static int IndexOf(byte[] haystack, byte[] needle)
+    {
+        if (needle.Length == 0) return 0;
+        var span  = haystack.AsSpan();
+        var pat   = needle.AsSpan();
         int limit = haystack.Length - needle.Length;
         for (int i = 0; i <= limit; i++)
             if (span.Slice(i, needle.Length).SequenceEqual(pat))
