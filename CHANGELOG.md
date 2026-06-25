@@ -4,6 +4,16 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.4 — 2026-06-25
+
+### Fixed
+- **TPS editing — null FString fields not persisting** — CLASSNAME, FIELDNAME, and similar FString fields whose bytes all fall inside RLE run blocks now save correctly and survive a close/reopen cycle. Three bugs were fixed together:
+  1. **Direct-patch / re-encode conflict**: when a record had one field that could be direct-patched and another that required re-encoding, the re-encoding phase silently overwrote the direct-patched bytes. All field changes for RLE pages are now routed through the decoded working copy so re-encoding picks them all up.
+  2. **Premature patched counter**: `patched` was incremented when a re-encoding was *staged*, before the encoding phase ran. If encoding later failed (new size too large), the counter was still > 0 and the unchanged file was written. `patched` is now counted only when re-encoding actually succeeds.
+  3. **AcceptChanges on failure**: `DataTable.AcceptChanges()` was called unconditionally, causing the grid to display the user's new values even when the file was not updated. The grid now always reloads from disk after a save, showing the true file contents.
+
+---
+
 ## v1.0.3 — 2026-06-25
 
 ### Fixed

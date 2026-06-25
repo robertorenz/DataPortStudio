@@ -877,6 +877,24 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
         }
     }
 
+    // Reloads TPS data from disk without resetting columns/settings — used after a write
+    // so the grid always reflects the actual file contents rather than in-memory edits.
+    private async Task ReloadTpsSourceDataAsync()
+    {
+        if (_tpsPath is null || _tpsDef is null) return;
+        var folder = Node.Connection.FilePath ?? "";
+        if (_sourceData is not null)
+        {
+            _sourceData.RowChanged -= OnDataChanged;
+            _sourceData.RowDeleted -= OnDataChanged;
+        }
+        _sourceData = await Task.Run(() => TpsService.ReadTable(folder, Node.Name, RowLimit));
+        _sourceData.RowChanged += OnDataChanged;
+        _sourceData.RowDeleted += OnDataChanged;
+        ProjectView();
+        HasUnsavedChanges = false;
+    }
+
     private async Task SaveTpsChangesAsync()
     {
         if (_sourceData is null || _tpsDef is null || _tpsPath is null) return;
@@ -919,8 +937,9 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
             var result = await Task.Run(() =>
                 TpsWriter.SaveChanges(_tpsPath, _tpsDef, _tpsTableNumber, edits));
 
-            _sourceData.AcceptChanges();
-            HasUnsavedChanges = false;
+            // Reload from disk so the grid always reflects the true file contents.
+            // This also correctly handles partial saves (some records failed re-encoding).
+            await ReloadTpsSourceDataAsync();
 
             var msgs = new List<string> { $"Saved {result.Patched} record(s) to {Identifier}." };
             msgs.AddRange(result.Warnings);

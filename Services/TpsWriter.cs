@@ -43,8 +43,11 @@ public static class TpsWriter
 
         // Pages that need full RLE re-encoding: page → working copy of decoded bytes
         var pageReencodes = new Dictionary<PageRleInfo, byte[]>();
+        // Records staged for re-encoding per page; only counted as patched if re-encoding succeeds
+        var reencodePendingPerPage = new Dictionary<PageRleInfo, HashSet<int>>();
+        // Records whose changes have been committed (direct or successful re-encode)
+        var changedRecordNumbers = new HashSet<int>();
 
-        int patched = 0;
         foreach (var edit in editList)
         {
             if (!locations.TryGetValue(edit.RecordNumber, out var loc))
@@ -53,7 +56,7 @@ public static class TpsWriter
                 continue;
             }
 
-            bool anyChange = false;
+            bool directPatched = false;
             foreach (var change in edit.Changes)
             {
                 var field = def.Fields.FirstOrDefault(f =>
@@ -72,62 +75,45 @@ public static class TpsWriter
                     Array.Copy(serialized, 0, fileBytes, filePos, copyLen);
                     if (serialized.Length < field.Length)
                         Array.Clear(fileBytes, filePos + serialized.Length, field.Length - serialized.Length);
-                    anyChange = true;
+                    directPatched = true;
                 }
                 else if (loc is RleLoc rl)
                 {
-                    // Check whether any of this field's bytes land in an RLE run
-                    bool needsReencode = false;
-                    for (int i = 0; i < copyLen && !needsReencode; i++)
+                    // Always route ALL changes through workDec for RLE pages.
+                    // Direct-patching the compressed stream and then re-encoding the decoded copy
+                    // would undo those patches; using workDec exclusively avoids the conflict.
+                    if (!pageReencodes.TryGetValue(rl.Page, out var workDec))
+                    {
+                        workDec = rl.Page.Decoded.ToArray();
+                        pageReencodes[rl.Page] = workDec;
+                    }
+                    for (int i = 0; i < copyLen; i++)
                     {
                         int decIdx = rl.ContentDecStart + field.Offset + i;
-                        if (decIdx >= 0 && decIdx < rl.Page.DecToEnc.Length &&
-                            rl.Page.DecToEnc[decIdx] < 0)
-                            needsReencode = true;
+                        if (decIdx >= 0 && decIdx < workDec.Length)
+                            workDec[decIdx] = serialized[i];
                     }
-
-                    if (needsReencode)
-                    {
-                        // Stage for full page re-encode: get or create working decoded copy
-                        if (!pageReencodes.TryGetValue(rl.Page, out var workDec))
-                        {
-                            workDec = rl.Page.Decoded.ToArray();
-                            pageReencodes[rl.Page] = workDec;
-                        }
-                        for (int i = 0; i < copyLen; i++)
-                        {
-                            int decIdx = rl.ContentDecStart + field.Offset + i;
-                            if (decIdx >= 0 && decIdx < workDec.Length)
-                                workDec[decIdx] = serialized[i];
-                        }
-                        anyChange = true;
-                    }
-                    else
-                    {
-                        // All bytes are in literal blocks — direct patch
-                        bool fieldPatched = false;
-                        for (int i = 0; i < copyLen; i++)
-                        {
-                            int decIdx = rl.ContentDecStart + field.Offset + i;
-                            if (decIdx < 0 || decIdx >= rl.Page.DecToEnc.Length) continue;
-                            int encIdx = rl.Page.DecToEnc[decIdx];
-                            if (encIdx < 0) continue;
-                            int filePos = rl.Page.PageDataStart + encIdx;
-                            if (filePos < 0 || filePos >= fileBytes.Length) continue;
-                            fileBytes[filePos] = serialized[i];
-                            fieldPatched = true;
-                        }
-                        if (fieldPatched) anyChange = true;
-                    }
+                    if (!reencodePendingPerPage.TryGetValue(rl.Page, out var recSet))
+                        reencodePendingPerPage[rl.Page] = recSet = new HashSet<int>();
+                    recSet.Add(edit.RecordNumber);
                 }
             }
 
-            if (anyChange) patched++;
+            if (directPatched)
+                changedRecordNumbers.Add(edit.RecordNumber);
         }
 
-        // Apply page re-encodings
+        // Apply page re-encodings; count records only on success
         foreach (var (pageInfo, workDec) in pageReencodes)
         {
+            // Nothing actually changed in decoded data — treat as success without writing
+            if (workDec.AsSpan().SequenceEqual(pageInfo.Decoded.AsSpan()))
+            {
+                if (reencodePendingPerPage.TryGetValue(pageInfo, out var rs))
+                    changedRecordNumbers.UnionWith(rs);
+                continue;
+            }
+
             byte[] newComp = RleEncode(workDec);
             if (newComp.Length > pageInfo.CompLen)
             {
@@ -148,8 +134,12 @@ public static class TpsWriter
                 fileBytes[pageInfo.PageAddr + 4] = (byte)(newPageSize & 0xFF);
                 fileBytes[pageInfo.PageAddr + 5] = (byte)(newPageSize >> 8);
             }
+            // Re-encoding succeeded: mark these records as patched
+            if (reencodePendingPerPage.TryGetValue(pageInfo, out var recSet))
+                changedRecordNumbers.UnionWith(recSet);
         }
 
+        int patched = changedRecordNumbers.Count;
         if (patched > 0)
             File.WriteAllBytes(filePath, fileBytes);
 
