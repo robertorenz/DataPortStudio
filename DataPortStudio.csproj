@@ -30,6 +30,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="TpsTest\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Bundle the user guide (EN/ES) inside the exe as WPF resources; loaded via HelpDocs. -->
     <None Remove="Docs\help.en.html" />
     <None Remove="Docs\help.es.html" />
