@@ -7,16 +7,20 @@ using TpsParser.TypeModel;
 namespace DataPortStudio.Services;
 
 /// <summary>
-/// Reads Clarion TopSpeed (.tps) files (read-only viewer + copy source).
+/// Reads Clarion TopSpeed (.tps) files and writes changes back using <see cref="TpsWriter"/>.
 ///
 /// A "TPS connection" is just a folder: each <c>*.tps</c> file in it is exposed as a table.
 /// Records are decoded with the TpsParser library into a plain <see cref="DataTable"/> so the
 /// rest of the app (grid, filter/sort, export, Clarion date/time detection, cross-engine copy)
-/// works unchanged. There is no SQL and no writing back.
+/// works unchanged. Cell edits can be saved back to the TPS file; INSERT and DELETE are not
+/// supported (they require index-file maintenance).
 /// </summary>
 public static class TpsService
 {
     private const string Extension = ".tps";
+
+    /// <summary>Hidden DataTable column that carries each row's TPS RecordNumber for write-back.</summary>
+    public const string RecordNumberColumn = "__tps_rno";
 
     // Clarion text is typically Windows-1252; Latin1 decodes any byte without throwing.
     private static readonly Encoding TextEncoding = Encoding.Latin1;
@@ -65,9 +69,27 @@ public static class TpsService
     private static TpsFile Open(Stream stream) => new(stream);
 
     /// <summary>
+    /// Returns the first table definition and table number in the given .tps file.
+    /// Used by the write path to resolve field offsets.
+    /// </summary>
+    public static (TableDefinition Def, int TableNumber) GetTableDef(string folder, string tableName)
+    {
+        var path = ResolvePath(folder, tableName);
+        using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        var file = Open(fs);
+        var defs = file.GetTableDefinitions();
+        if (defs.Count == 0)
+            throw new InvalidOperationException($"'{tableName}' contains no table definition.");
+        var tableNumber = defs.Keys.First();
+        return (defs[tableNumber], tableNumber);
+    }
+
+    /// <summary>
     /// Reads a .tps file into a DataTable. <paramref name="rowLimit"/> caps the rows materialized
     /// (use 0 for structure-only, int.MaxValue for everything). Columns are always built from the
     /// table definition, so empty tables still produce a typed, copyable schema.
+    /// A hidden <see cref="RecordNumberColumn"/> column carries each row's TPS record number so
+    /// the edit session can write changes back.
     /// </summary>
     public static DataTable ReadTable(string folder, string tableName, int rowLimit)
     {
@@ -84,6 +106,11 @@ public static class TpsService
         var def = defs[tableNumber];
 
         var table = new DataTable(tableName);
+
+        // Hidden column carries the TPS RecordNumber for write-back.
+        var rnoCol = table.Columns.Add(RecordNumberColumn, typeof(int));
+        rnoCol.ColumnMapping = MappingType.Hidden;
+
         var fields = BuildColumns(table, def);
 
         if (rowLimit > 0)
@@ -94,6 +121,7 @@ public static class TpsService
             {
                 if (count++ >= rowLimit) break;
                 var dr = table.NewRow();
+                dr[RecordNumberColumn] = row.RecordNumber;
                 foreach (var (column, fieldName, isMemo) in fields)
                 {
                     dr[column] = isMemo
@@ -225,7 +253,8 @@ public static class TpsService
         }
 
         var ddl = "-- Clarion TPS is a fixed binary format — it has no SQL DDL.\n" +
-                  $"-- '{tableName}' is read-only; use Copy to write it to a SQL database.";
+                  $"-- Cell edits in '{tableName}' are written back to the binary file.\n" +
+                  "-- INSERT and DELETE are not supported (they require index-file maintenance).";
 
         return Task.FromResult(new TableStructure(ddl, info.ToString().TrimEnd(),
             "TPS files have no foreign-key relationships."));

@@ -4,6 +4,13 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.1 — 2026-06-25
+
+### Added
+- **TPS editing** — Clarion TPS records now open in an editable grid. Cell changes are serialized back to the binary `.tps` file using direct byte patching (all field types supported: integer, float, string, date, time, BCD decimal). Adding and deleting rows is not supported (requires index-file maintenance). DAT files remain read-only.
+
+---
+
 ## v1.0.0 — 2026-06-25
 
 ### Changed

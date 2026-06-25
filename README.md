@@ -52,10 +52,11 @@ Grab the latest **portable `.exe`** from the
   - **Clarion TPS**: point a connection at a **folder** and every `.tps` file in it shows up as a
     table — pick one like you'd pick a table. Selecting the connection lists its files (with size and
     date) in the **Objects** tab. DataPortStudio decodes the TopSpeed binary format directly
-    (no ODBC driver, no install) into a **read-only** grid with filter, sort and export, and detects
-    Clarion `LONG` date/time fields automatically. Use **Copy** on a `.tps` table and paste it onto
-    any SQL database to migrate the data across (**TPS → SQL**); the schema and rows are created for
-    you. TPS is read-only, so it's only ever a copy *source*.
+    (no ODBC driver, no install) into an **editable** grid with filter, sort and export, and detects
+    Clarion `LONG` date/time fields automatically. **Cell edits are written back to the `.tps` binary
+    file** (UPDATE only — adding/deleting rows is not supported, as those require rebuilding the TPS
+    index files). Use **Copy** on a `.tps` table and paste it onto any SQL database to migrate the
+    data across (**TPS → SQL**); the schema and rows are created for you.
   - **Clarion DAT**: the *classic* Clarion ISAM format (pre-TopSpeed, `.dat`). Same folder model —
     point at a folder and each `.dat` file is a table. DataPortStudio decodes the format from its public
     spec (Clarion Technical Bulletin 117): header, field descriptors and fixed-length records,

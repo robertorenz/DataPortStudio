@@ -54,6 +54,11 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
     private readonly Action<string> _setStatus;
     private readonly Action<bool> _setBusy;
 
+    // TPS edit session state (no EditableTableSession — TpsWriter handles write-back directly).
+    private TpsParser.TableDefinition? _tpsDef;
+    private int _tpsTableNumber;
+    private string? _tpsPath;
+
     public DbTreeNode Node { get; }
     /// <summary>Uniquely identifies the table so duplicate tabs aren't opened.</summary>
     public string Key { get; }
@@ -64,10 +69,12 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
 
     [ObservableProperty] private DataView? gridData;
     [ObservableProperty] private bool hasUnsavedChanges;
-    /// <summary>Read-only grid (e.g. MongoDB document viewer) — disables editing/add/delete.</summary>
+    /// <summary>Read-only grid (e.g. MongoDB document viewer) — disables all editing.</summary>
     [ObservableProperty] private bool gridReadOnly;
     public bool GridEditable => !GridReadOnly;
     partial void OnGridReadOnlyChanged(bool value) => OnPropertyChanged(nameof(GridEditable));
+    /// <summary>Allows adding and deleting rows. False for edit-only engines (TPS) that support UPDATE but not INSERT/DELETE.</summary>
+    [ObservableProperty] private bool gridCanModifyRows = true;
     /// <summary>True when the toolbar is too narrow for labels — buttons collapse to icons.</summary>
     [ObservableProperty] private bool isToolbarCompact;
     [ObservableProperty] private int rowLimit;
@@ -613,8 +620,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
                 return await LoadMongoAsync();
 
             if (Node.Connection.Engine == DatabaseEngine.Tps)
-                return await LoadClarionFileAsync(
-                    () => TpsService.ReadTable(Node.Connection.FilePath ?? "", Node.Name, RowLimit), "TPS file");
+                return await LoadTpsAsync();
 
             if (Node.Connection.Engine == DatabaseEngine.ClarionDat)
                 return await LoadClarionFileAsync(
@@ -661,6 +667,61 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
         {
             Dialogs.ShowError("Could not open table", ex.Message);
             _setStatus("Failed to open table.");
+            return false;
+        }
+        finally
+        {
+            _setBusy(false);
+        }
+    }
+
+    /// <summary>Loads a TPS table into an editable grid. Cell edits can be saved back; INSERT/DELETE are unsupported.</summary>
+    private async Task<bool> LoadTpsAsync()
+    {
+        var folder = Node.Connection.FilePath ?? "";
+        try
+        {
+            _sourceData = await Task.Run(() =>
+                TpsService.ReadTable(folder, Node.Name, RowLimit));
+
+            (_tpsDef, _tpsTableNumber) = TpsService.GetTableDef(folder, Node.Name);
+            _tpsPath = System.IO.Path.Combine(folder, Node.Name + ".tps");
+            // Case-insensitive fallback: locate the actual file path.
+            if (!System.IO.File.Exists(_tpsPath))
+                _tpsPath = System.IO.Directory.EnumerateFiles(folder, "*.tps")
+                    .FirstOrDefault(f => string.Equals(
+                        System.IO.Path.GetFileNameWithoutExtension(f), Node.Name,
+                        StringComparison.OrdinalIgnoreCase));
+
+            GridReadOnly = false;
+            GridCanModifyRows = false; // no INSERT / DELETE — UPDATE only
+
+            _sourceData.RowChanged += OnDataChanged;
+            _sourceData.RowDeleted += OnDataChanged;
+
+            ClarionColumns = ClarionDetector.Detect(_sourceData);
+            OnPropertyChanged(nameof(HasClarionTypes));
+            OnPropertyChanged(nameof(ClarionToggleLabel));
+
+            ColumnNames.Clear();
+            foreach (DataColumn c in _sourceData.Columns)
+                if (c.ColumnName != TpsService.RecordNumberColumn)
+                    ColumnNames.Add(c.ColumnName);
+
+            OnPropertyChanged(nameof(CanPickRowIdentity));
+            ProjectView();
+            HasUnsavedChanges = false;
+            ApplyDefaults();
+            OnPropertyChanged(nameof(TabToolTip));
+
+            _setStatus($"Loaded {_sourceData.Rows.Count} record(s) from {Identifier} (limit {RowLimit}). " +
+                       "TPS: cell edits only — no add/delete.");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Dialogs.ShowError("Could not open TPS file", ex.Message);
+            _setStatus("Failed to open TPS file.");
             return false;
         }
         finally
@@ -791,6 +852,11 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
     [RelayCommand]
     private async Task SaveChanges()
     {
+        if (_tpsDef is not null)
+        {
+            await SaveTpsChangesAsync();
+            return;
+        }
         if (_session is null || !_session.HasChanges) return;
         _setBusy(true);
         try
@@ -811,10 +877,75 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
         }
     }
 
+    private async Task SaveTpsChangesAsync()
+    {
+        if (_sourceData is null || _tpsDef is null || _tpsPath is null) return;
+        var changes = _sourceData.GetChanges();
+        if (changes is null) return;
+
+        _setBusy(true);
+        try
+        {
+            var edits = new List<TpsWriter.TpsRowEdit>();
+            var skipped = new List<string>();
+
+            foreach (DataRow row in changes.Rows)
+            {
+                switch (row.RowState)
+                {
+                    case DataRowState.Modified:
+                        int rno = (int)row[TpsService.RecordNumberColumn, DataRowVersion.Original];
+                        var fieldChanges = new List<TpsWriter.TpsFieldChange>();
+                        foreach (DataColumn col in _sourceData.Columns)
+                        {
+                            if (col.ColumnName == TpsService.RecordNumberColumn) continue;
+                            var orig = row[col, DataRowVersion.Original];
+                            var curr = row[col, DataRowVersion.Current];
+                            if (!Equals(orig, curr))
+                                fieldChanges.Add(new TpsWriter.TpsFieldChange(col.ColumnName, curr is DBNull ? null : curr));
+                        }
+                        if (fieldChanges.Count > 0)
+                            edits.Add(new TpsWriter.TpsRowEdit(rno, fieldChanges));
+                        break;
+                    case DataRowState.Added:
+                        skipped.Add("INSERT is not supported for TPS files.");
+                        break;
+                    case DataRowState.Deleted:
+                        skipped.Add("DELETE is not supported for TPS files.");
+                        break;
+                }
+            }
+
+            var result = await Task.Run(() =>
+                TpsWriter.SaveChanges(_tpsPath, _tpsDef, _tpsTableNumber, edits));
+
+            _sourceData.AcceptChanges();
+            HasUnsavedChanges = false;
+
+            var msgs = new List<string> { $"Saved {result.Patched} record(s) to {Identifier}." };
+            msgs.AddRange(result.Warnings);
+            msgs.AddRange(skipped.Distinct());
+            _setStatus(string.Join("  ", msgs));
+
+            if (result.Warnings.Count > 0 || skipped.Count > 0)
+                Dialogs.ShowError("TPS save — partial", string.Join("\n", result.Warnings.Concat(skipped.Distinct())));
+        }
+        catch (Exception ex)
+        {
+            Dialogs.ShowError("TPS save failed", ex.Message);
+            _setStatus("TPS save failed.");
+        }
+        finally
+        {
+            _setBusy(false);
+        }
+    }
+
     [RelayCommand]
     private void Close() => CloseRequested?.Invoke(this);
 
-    public bool HasUnsavedChangesNow => _session?.HasChanges ?? false;
+    public bool HasUnsavedChangesNow =>
+        _session?.HasChanges ?? (_sourceData?.GetChanges() is not null && _tpsDef is not null);
 
     private void OnDataChanged(object? sender, DataRowChangeEventArgs e)
     {
@@ -825,6 +956,14 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
 
     private void Detach()
     {
+        if (_tpsDef is not null && _sourceData is not null)
+        {
+            _sourceData.RowChanged -= OnDataChanged;
+            _sourceData.RowDeleted -= OnDataChanged;
+        }
+        _tpsDef = null;
+        _tpsPath = null;
+
         _sourceData = null;
         if (_session is null) return;
         _session.Data.RowChanged -= OnDataChanged;
