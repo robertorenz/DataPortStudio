@@ -896,11 +896,11 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
                     case DataRowState.Modified:
                         int rno = (int)row[TpsService.RecordNumberColumn, DataRowVersion.Original];
                         var fieldChanges = new List<TpsWriter.TpsFieldChange>();
-                        foreach (DataColumn col in _sourceData.Columns)
+                        foreach (DataColumn col in changes.Columns)
                         {
                             if (col.ColumnName == TpsService.RecordNumberColumn) continue;
-                            var orig = row[col, DataRowVersion.Original];
-                            var curr = row[col, DataRowVersion.Current];
+                            var orig = row[col.ColumnName, DataRowVersion.Original];
+                            var curr = row[col.ColumnName, DataRowVersion.Current];
                             if (!Equals(orig, curr))
                                 fieldChanges.Add(new TpsWriter.TpsFieldChange(col.ColumnName, curr is DBNull ? null : curr));
                         }
