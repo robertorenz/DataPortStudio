@@ -4,6 +4,13 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.5 — 2026-06-25
+
+### Fixed
+- **TPS editing — null fields on non-RLE pages not persisting** — when a record lived on an uncompressed (non-RLE) TPS page and its key field (e.g. `CLASSNAME`) was all-spaces / null, the previous code used `Array.IndexOf` to locate the record's bytes inside the raw page data. Because the null-field pattern (a block of spaces) can appear at multiple positions in the page, `IndexOf` matched the wrong occurrence — the write went to the wrong bytes, the file appeared to save (patched count = 1, no error dialog), but reloading from disk showed the original null value. The fix replaces `IndexOf` with the same sequential `decPos`-walk used for RLE pages, computing the exact file offset for each record regardless of its byte content.
+
+---
+
 ## v1.0.4 — 2026-06-25
 
 ### Fixed

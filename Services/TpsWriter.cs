@@ -12,16 +12,22 @@ public static class TpsWriter
 
     private sealed class PageRleInfo
     {
-        public int PageAddr;             // absolute file offset of page header
-        public int PageDataStart;        // absolute file offset of compressed data
-        public int CompLen;              // original compressed data length
-        public int[] DecToEnc = [];      // decoded index → encoded index in compData (-1 = run byte)
-        public byte[] Decoded = [];      // full decoded page data
+        public int PageAddr;                    // absolute file offset of page header
+        public int PageDataStart;               // absolute file offset of compressed data
+        public int CompLen;                     // original compressed data length
+        public int[] DecToEnc = [];             // decoded index → encoded index in compData (-1 = run byte)
+        public byte[] Decoded = [];             // full decoded page data
+        public int AnchorContentDecStart = -1;  // decoded start of the anchor record's field data
     }
 
     private abstract record LocBase;
-    private record DirectLoc(int ContentFileOffset) : LocBase;
-    private record RleLoc(PageRleInfo Page, int ContentDecStart) : LocBase;
+    // FieldDataBase: first field.Offset whose byte is stored (not inherited from anchor).
+    // For anchors and most deltas (pi ≤ ph) this is 0, meaning all field bytes are stored.
+    private record DirectLoc(int ContentFileOffset, int FieldDataBase = 0) : LocBase;
+
+    // FieldDataBase = max(0, pi − ph): the first field.Offset whose byte is actually stored
+    // in this record's decoded slice (lower offsets are inherited from the page anchor).
+    private record RleLoc(PageRleInfo Page, int ContentDecStart, int FieldDataBase) : LocBase;
 
     // ---- public entry point --------------------------------------------------
 
@@ -70,11 +76,14 @@ public static class TpsWriter
 
                 if (loc is DirectLoc dl)
                 {
-                    int filePos = dl.ContentFileOffset + field.Offset;
-                    if (filePos < 0 || filePos + copyLen > fileBytes.Length) continue;
-                    Array.Copy(serialized, 0, fileBytes, filePos, copyLen);
-                    if (serialized.Length < field.Length)
-                        Array.Clear(fileBytes, filePos + serialized.Length, field.Length - serialized.Length);
+                    for (int i = 0; i < copyLen; i++)
+                    {
+                        int relOff = field.Offset + i;
+                        if (relOff < dl.FieldDataBase) continue; // byte is inherited from anchor — skip
+                        int filePos = dl.ContentFileOffset + (relOff - dl.FieldDataBase);
+                        if (filePos < 0 || filePos >= fileBytes.Length) continue;
+                        fileBytes[filePos] = serialized[i];
+                    }
                     directPatched = true;
                 }
                 else if (loc is RleLoc rl)
@@ -89,7 +98,20 @@ public static class TpsWriter
                     }
                     for (int i = 0; i < copyLen; i++)
                     {
-                        int decIdx = rl.ContentDecStart + field.Offset + i;
+                        int relOff = field.Offset + i;
+                        int decIdx;
+                        if (relOff < rl.FieldDataBase)
+                        {
+                            // This byte is inherited from the page anchor (not stored in this delta).
+                            // Redirect the write to the anchor's decoded location so TpsParser sees
+                            // the new value when it assembles delta records from the anchor.
+                            if (rl.Page.AnchorContentDecStart < 0) continue;
+                            decIdx = rl.Page.AnchorContentDecStart + relOff;
+                        }
+                        else
+                        {
+                            decIdx = rl.ContentDecStart + (relOff - rl.FieldDataBase);
+                        }
                         if (decIdx >= 0 && decIdx < workDec.Length)
                             workDec[decIdx] = serialized[i];
                     }
@@ -106,13 +128,9 @@ public static class TpsWriter
         // Apply page re-encodings; count records only on success
         foreach (var (pageInfo, workDec) in pageReencodes)
         {
-            // Nothing actually changed in decoded data — treat as success without writing
+            // Nothing actually changed in decoded data — no need to write, don't count as patched
             if (workDec.AsSpan().SequenceEqual(pageInfo.Decoded.AsSpan()))
-            {
-                if (reencodePendingPerPage.TryGetValue(pageInfo, out var rs))
-                    changedRecordNumbers.UnionWith(rs);
                 continue;
-            }
 
             byte[] newComp = RleEncode(workDec);
             if (newComp.Length > pageInfo.CompLen)
@@ -197,32 +215,50 @@ public static class TpsWriter
                     int ph = rec.PayloadHeaderLength;
                     bool isAnchor = rec.OwnsPayloadTotalLength;
 
-                    int preamble       = isAnchor ? 5 : 1;
-                    int storedPayload  = pt - pi;
-                    int advance        = preamble + storedPayload;
+                    int preamble        = isAnchor ? 5 : 1;
+                    int storedPayload   = pt - pi;
+                    int advance         = preamble + storedPayload;
                     int contentDecStart = decPos + preamble + Math.Max(0, ph - pi);
+                    // FieldDataBase: first field.Offset whose byte is stored here (not inherited).
+                    // For anchor (pi=0): always 0. For delta: max(0, pi − ph) because the stored
+                    // field data begins at full-record byte max(pi, ph) = ph + max(0, pi − ph).
+                    int fieldDataBase   = Math.Max(0, pi - ph);
 
-                    if (drp.TableNumber == tableNumber && contentDecStart < decoded.Length)
-                        map[drp.RecordNumber] = new RleLoc(pageInfo, contentDecStart);
+                    if (drp.TableNumber == tableNumber)
+                    {
+                        if (isAnchor && pageInfo.AnchorContentDecStart < 0)
+                            pageInfo.AnchorContentDecStart = contentDecStart;
+                        if (contentDecStart < decoded.Length)
+                            map[drp.RecordNumber] = new RleLoc(pageInfo, contentDecStart, fieldDataBase);
+                    }
 
                     decPos += advance;
                 }
             }
             else
             {
+                // Non-RLE page: walk records sequentially just like the RLE path.
+                // IndexOf(content) is unreliable for null/whitespace-heavy records because
+                // the same byte pattern may appear at multiple positions in the page data.
+                int decPos = 0;
                 foreach (var rec in records)
                 {
-                    if (rec.PayloadType != RecordPayloadType.Data) continue;
-                    if (rec.GetPayload() is not DataRecordPayload drp) continue;
-                    if (drp.TableNumber != tableNumber) continue;
+                    if (rec.PayloadType != RecordPayloadType.Data) { SkipRecordDec(rec, ref decPos); continue; }
+                    if (rec.GetPayload() is not DataRecordPayload drp) { SkipRecordDec(rec, ref decPos); continue; }
 
-                    var content = drp.Content.ToArray();
-                    if (content.Length == 0) continue;
+                    int pt = rec.PayloadTotalLength;
+                    int pi = rec.PayloadInheritedBytes;
+                    int ph = rec.PayloadHeaderLength;
+                    bool isAnch = rec.OwnsPayloadTotalLength;
+                    int preamble = isAnch ? 5 : 1;
+                    int contentDecStart = decPos + preamble + Math.Max(0, ph - pi);
+                    int fieldDataBase   = Math.Max(0, pi - ph);
+                    int advance         = preamble + (pt - pi);
 
-                    int compOffset = IndexOf(compData, content);
-                    if (compOffset < 0) continue;
+                    if (drp.TableNumber == tableNumber && contentDecStart < compData.Length)
+                        map[drp.RecordNumber] = new DirectLoc(pageDataStart + contentDecStart, fieldDataBase);
 
-                    map[drp.RecordNumber] = new DirectLoc(pageDataStart + compOffset);
+                    decPos += advance;
                 }
             }
         }
