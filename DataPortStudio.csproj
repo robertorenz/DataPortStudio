@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <Version>1.59.1</Version>
+    <Version>1.0.0</Version>
     <AssemblyTitle>DataPortStudio</AssemblyTitle>
     <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
   </PropertyGroup>
@@ -39,6 +39,8 @@
     <!-- App icon -->
     <None Remove="Assets\AppIcon.ico" />
     <Resource Include="Assets\AppIcon.ico" />
+    <None Remove="Assets\dataporticon.png" />
+    <Resource Include="Assets\dataporticon.png" />
   </ItemGroup>
 
 </Project>

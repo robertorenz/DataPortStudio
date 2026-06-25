@@ -14,10 +14,10 @@ public partial class App : Application
 
         try
         {
-            var uri = new Uri("pack://application:,,,/Assets/AppIcon.ico", UriKind.Absolute);
+            var uri = new Uri("pack://application:,,,/Assets/dataporticon.png", UriKind.Absolute);
             var icon = new System.Windows.Media.Imaging.BitmapImage(uri);
             if (MainWindow != null) MainWindow.Icon = icon;
         }
-        catch { /* si el ico no está disponible, no pasa nada */ }
+        catch { }
     }
 }
