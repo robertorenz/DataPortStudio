@@ -1,5 +1,4 @@
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 using TpsParser;
 
@@ -8,16 +7,14 @@ namespace DataPortStudio.Services;
 /// <summary>
 /// Writes modified records back to a Clarion TPS file.
 ///
-/// Strategy:
-///   1. Read the whole file into a byte array.
-///   2. Build a map of RecordNumber → (TpsPage, contentOffset) by walking all
-///      blocks/pages; MemoryMarshal correlates Content slices with PageData buffers.
-///   3. For each changed record:
-///        a. Uncompressed pages: find PayloadData verbatim in fileBytes (fast path).
-///        b. Compressed pages: copy PageData, patch the Content region, re-encode
-///           with TPS RLE, verify the encoded length is unchanged, then write back
-///           at AbsoluteAddress + headerSize.
-///   4. Write the modified array back to disk.
+/// Write strategy:
+///   TPS page.CompressedData equals the raw bytes stored in the file at the page's
+///   data offset (page.AbsoluteAddress + headerSize). For every record — including
+///   delta-encoded ones (PayloadInheritedBytes > 0) where Content is synthesized by
+///   TpsParser from inherited + stored bytes — the 12 Content bytes appear verbatim
+///   within CompressedData. A simple byte search within CompressedData locates the
+///   exact file offset to patch. No RLE re-encoding is needed; the page bytes are
+///   modified in place.
 /// </summary>
 public static class TpsWriter
 {
@@ -25,7 +22,8 @@ public static class TpsWriter
     public record TpsRowEdit(int RecordNumber, IReadOnlyList<TpsFieldChange> Changes);
     public record SaveResult(int Patched, IReadOnlyList<string> Warnings);
 
-    private record PageRecordInfo(TpsPage Page, int ContentOffset, int ContentLength);
+    // ContentFileOffset = byte offset in the file where drp.Content begins
+    private record struct RecordLoc(int ContentFileOffset);
 
     // ---- public entry point -----------------------------------------------
 
@@ -41,31 +39,21 @@ public static class TpsWriter
         var fileBytes = File.ReadAllBytes(filePath);
         var warnings  = new List<string>();
 
-        using var ms = new MemoryStream(fileBytes);
-        var tpsFile  = new TpsFile(ms);
+        using var ms    = new MemoryStream(fileBytes);
+        var tpsFile     = new TpsFile(ms);
 
-        var payloads = tpsFile.GetDataRecordPayloads(tableNumber)
-            .ToDictionary(p => p.RecordNumber);
-
-        // Build page-location map for the compressed-page slow path.
-        var pageMap = BuildPageRecordMap(tpsFile, tableNumber, payloads);
+        var locations   = BuildRecordLocations(tpsFile, tableNumber);
 
         int patched = 0;
         foreach (var edit in editList)
         {
-            if (!payloads.TryGetValue(edit.RecordNumber, out var payload))
+            if (!locations.TryGetValue(edit.RecordNumber, out var loc))
             {
-                warnings.Add($"Record {edit.RecordNumber}: not found in file.");
+                warnings.Add($"Record {edit.RecordNumber}: could not locate in file.");
                 continue;
             }
 
-            var payloadBytes = payload.PayloadData.ToArray();
-            var contentBytes = payload.Content.ToArray();
-            int contentStart = payloadBytes.Length - contentBytes.Length;
-            if (contentStart < 0) contentStart = 0;
-
-            // Build updated content by patching each changed field.
-            var updated = (byte[])contentBytes.Clone();
+            bool anyChange = false;
             foreach (var change in edit.Changes)
             {
                 var field = def.Fields.FirstOrDefault(f =>
@@ -75,60 +63,19 @@ public static class TpsWriter
                 var serialized = SerializeField(field, change.NewValue);
                 if (serialized is null) continue;
 
+                // field.Offset is relative to Content (= PayloadData after the header)
                 int copyLen = Math.Min(serialized.Length, field.Length);
-                Array.Copy(serialized, 0, updated, field.Offset, copyLen);
+                int filePos = loc.ContentFileOffset + field.Offset;
+
+                if (filePos < 0 || filePos + copyLen > fileBytes.Length) continue;
+
+                Array.Copy(serialized, 0, fileBytes, filePos, copyLen);
                 if (serialized.Length < field.Length)
-                    Array.Clear(updated, field.Offset + serialized.Length, field.Length - serialized.Length);
+                    Array.Clear(fileBytes, filePos + serialized.Length, field.Length - serialized.Length);
+                anyChange = true;
             }
 
-            // Fast path: uncompressed page — PayloadData appears verbatim in the file.
-            int pos = FindPattern(fileBytes, payloadBytes);
-            if (pos >= 0)
-            {
-                Array.Copy(updated, 0, fileBytes, pos + contentStart, updated.Length);
-                patched++;
-                continue;
-            }
-
-            // Slow path: RLE-compressed page.
-            if (!pageMap.TryGetValue(edit.RecordNumber, out var info))
-            {
-                warnings.Add($"Record {edit.RecordNumber}: could not locate in file.");
-                continue;
-            }
-
-            var page          = info.Page;
-            int contentOffset = info.ContentOffset;
-
-            // Patch the decompressed page data in memory.
-            var modifiedPageData = page.PageData.ToArray();
-            Array.Copy(updated, 0, modifiedPageData, contentOffset, updated.Length);
-
-            // Re-encode with TPS RLE and verify the length is unchanged.
-            var origCompressed = page.CompressedData.ToArray();
-            var newCompressed  = TpsRleEncode(modifiedPageData);
-
-            if (newCompressed.Length != origCompressed.Length)
-            {
-                warnings.Add(
-                    $"Record {edit.RecordNumber}: re-compressed size changed " +
-                    $"({origCompressed.Length} → {newCompressed.Length} bytes). " +
-                    "Record not saved — try a value of similar magnitude.");
-                continue;
-            }
-
-            // headerSize = total page size − compressed-data portion.
-            int headerSize  = (int)page.Size - origCompressed.Length;
-            int dataFileOfs = page.AbsoluteAddress + headerSize;
-
-            if (dataFileOfs < 0 || dataFileOfs + newCompressed.Length > fileBytes.Length)
-            {
-                warnings.Add($"Record {edit.RecordNumber}: file offset out of range.");
-                continue;
-            }
-
-            Array.Copy(newCompressed, 0, fileBytes, dataFileOfs, newCompressed.Length);
-            patched++;
+            if (anyChange) patched++;
         }
 
         if (patched > 0)
@@ -137,55 +84,45 @@ public static class TpsWriter
         return new SaveResult(patched, warnings);
     }
 
-    // ---- page / record map -------------------------------------------------
+    // ---- record location builder -------------------------------------------
 
-    private static Dictionary<int, PageRecordInfo> BuildPageRecordMap(
-        TpsFile tpsFile,
-        int tableNumber,
-        Dictionary<int, DataRecordPayload> payloads)
+    /// <summary>
+    /// Searches for each record's Content bytes within page.CompressedData.
+    /// CompressedData equals the raw file bytes at the page data offset, and
+    /// Content appears verbatim there for both anchor and delta-encoded records.
+    /// </summary>
+    private static Dictionary<int, RecordLoc> BuildRecordLocations(
+        TpsFile tpsFile, int tableNumber)
     {
-        var map       = new Dictionary<int, PageRecordInfo>();
-        var remaining = new HashSet<int>(payloads.Keys);
+        var map = new Dictionary<int, RecordLoc>();
 
         foreach (var block in tpsFile.GetBlocks())
         {
-            if (remaining.Count == 0) break;
-
             foreach (var page in block.GetPages())
             {
-                if (remaining.Count == 0) break;
+                IReadOnlyList<TpsRecord> records;
+                try { records = page.GetRecords(ErrorHandlingOptions.Default); }
+                catch { continue; }
 
-                MemoryMarshal.TryGetArray(page.PageData, out var pageArr);
+                // headerSize = page header bytes before the data payload in the file
+                int headerSize    = (int)page.Size - page.CompressedData.Length;
+                int pageDataStart = (int)page.AbsoluteAddress + headerSize;
+                var compData      = page.CompressedData.ToArray();
 
-                foreach (var record in page.GetRecords(ErrorHandlingOptions.Default))
+                foreach (var rec in records)
                 {
-                    if (record.PayloadType != RecordPayloadType.Data) continue;
-                    if (record.GetPayload() is not DataRecordPayload drp) continue;
+                    if (rec.PayloadType != RecordPayloadType.Data) continue;
+                    if (rec.GetPayload() is not DataRecordPayload drp) continue;
                     if (drp.TableNumber != tableNumber) continue;
-                    if (!remaining.Contains(drp.RecordNumber)) continue;
 
-                    int offset = -1;
+                    var content = drp.Content.ToArray();
+                    if (content.Length == 0) continue;
 
-                    // Try MemoryMarshal: O(1) if Content is a slice of PageData's buffer.
-                    MemoryMarshal.TryGetArray(drp.Content, out var contentArr);
-                    if (pageArr.Array is not null && contentArr.Array is not null &&
-                        pageArr.Array == contentArr.Array &&
-                        contentArr.Offset >= pageArr.Offset &&
-                        contentArr.Offset + contentArr.Count <= pageArr.Offset + pageArr.Count)
-                    {
-                        offset = contentArr.Offset - pageArr.Offset;
-                    }
-                    else
-                    {
-                        // Fallback: linear byte search of Content within PageData.
-                        offset = IndexOf(page.PageData.ToArray(), drp.Content.ToArray());
-                    }
+                    // Search for Content bytes in CompressedData (= raw file bytes)
+                    int compOffset = IndexOf(compData, content);
+                    if (compOffset < 0) continue;
 
-                    if (offset >= 0)
-                    {
-                        map[drp.RecordNumber] = new PageRecordInfo(page, offset, drp.Content.Length);
-                        remaining.Remove(drp.RecordNumber);
-                    }
+                    map[drp.RecordNumber] = new RecordLoc(pageDataStart + compOffset);
                 }
             }
         }
@@ -193,56 +130,17 @@ public static class TpsWriter
         return map;
     }
 
-    // ---- TPS RLE encoder ---------------------------------------------------
+    // ---- search helper -----------------------------------------------------
 
-    /// <summary>
-    /// Encodes bytes using the Clarion TPS RLE scheme:
-    ///   0x80..0xFF — run: repeat next byte (control − 0x80 + 2) times.
-    ///   0x01..0x7F — literals: next (control) bytes copied verbatim.
-    /// </summary>
-    private static byte[] TpsRleEncode(byte[] data)
+    private static int IndexOf(byte[] haystack, byte[] needle)
     {
-        var result = new MemoryStream(data.Length + data.Length / 4 + 16);
-        int i = 0;
-
-        while (i < data.Length)
-        {
-            byte val = data[i];
-
-            int runLen = 1;
-            while (i + runLen < data.Length && data[i + runLen] == val && runLen < 129)
-                runLen++;
-
-            if (runLen >= 2)
-            {
-                result.WriteByte((byte)(0x80 + runLen - 2));
-                result.WriteByte(val);
-                i += runLen;
-            }
-            else
-            {
-                int litStart = i;
-                int litLen   = 0;
-
-                while (litLen < 0x7F && i + litLen < data.Length)
-                {
-                    int fwd = 1;
-                    while (i + litLen + fwd < data.Length &&
-                           data[i + litLen + fwd] == data[i + litLen] &&
-                           fwd < 129)
-                        fwd++;
-                    if (fwd >= 2) break;
-                    litLen++;
-                }
-
-                if (litLen == 0) litLen = 1;
-                result.WriteByte((byte)litLen);
-                result.Write(data, litStart, litLen);
-                i += litLen;
-            }
-        }
-
-        return result.ToArray();
+        if (needle.Length == 0) return 0;
+        var span  = haystack.AsSpan();
+        int limit = haystack.Length - needle.Length;
+        for (int i = 0; i <= limit; i++)
+            if (span.Slice(i, needle.Length).SequenceEqual(needle))
+                return i;
+        return -1;
     }
 
     // ---- field serialization -----------------------------------------------
@@ -354,31 +252,5 @@ public static class TpsWriter
         byte sign = neg ? (byte)0x0D : (byte)0x0F;
         buf[bytes - 1] = (byte)((buf[bytes - 1] & 0xF0) | sign);
         return buf;
-    }
-
-    // ---- search helpers ----------------------------------------------------
-
-    private static int FindPattern(byte[] haystack, byte[] needle)
-    {
-        if (needle.Length == 0) return 0;
-        var span  = haystack.AsSpan();
-        var pat   = needle.AsSpan();
-        int limit = haystack.Length - needle.Length;
-        for (int i = 0; i <= limit; i++)
-            if (span.Slice(i, needle.Length).SequenceEqual(pat))
-                return i;
-        return -1;
-    }
-
-    private static int IndexOf(byte[] haystack, byte[] needle)
-    {
-        if (needle.Length == 0) return 0;
-        var span  = haystack.AsSpan();
-        var pat   = needle.AsSpan();
-        int limit = haystack.Length - needle.Length;
-        for (int i = 0; i <= limit; i++)
-            if (span.Slice(i, needle.Length).SequenceEqual(pat))
-                return i;
-        return -1;
     }
 }
