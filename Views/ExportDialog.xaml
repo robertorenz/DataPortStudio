@@ -1,0 +1,134 @@
+<Window x:Class="DataPortStudio.Views.ExportDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" SizeToContent="Height"
+        ShowInTaskbar="False" Width="460">
+    <Border Background="{StaticResource B.Surface}" CornerRadius="12" Margin="16"
+            BorderBrush="{StaticResource B.Border}" BorderThickness="1">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="28" ShadowDepth="4" Opacity="0.25" Color="#FF1F2933"/>
+        </Border.Effect>
+        <StackPanel>
+            <Border Background="{StaticResource B.Sidebar}" CornerRadius="12,12,0,0" Padding="20,16"
+                    MouseLeftButtonDown="Header_MouseDown">
+                <TextBlock Text="Export data" FontSize="16" FontWeight="SemiBold" Foreground="White"/>
+            </Border>
+
+            <StackPanel Margin="22,16,22,8">
+                <TextBlock Text="Export format" FontWeight="SemiBold" FontSize="12"
+                           Foreground="{StaticResource B.TextMuted}" Margin="0,0,0,6"/>
+                <Border BorderBrush="{StaticResource B.Border}" BorderThickness="1" CornerRadius="6"
+                        Margin="0,0,0,12">
+                    <ScrollViewer MaxHeight="220" VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="FormatList" Margin="8"/>
+                    </ScrollViewer>
+                </Border>
+
+                <!-- Rows to export (shown only when a filter is active) -->
+                <StackPanel x:Name="ScopePanel" Margin="0,0,0,12" Visibility="Collapsed">
+                    <TextBlock Text="Rows to export" FontWeight="SemiBold" FontSize="12"
+                               Foreground="{StaticResource B.TextMuted}" Margin="0,0,0,6"/>
+                    <RadioButton x:Name="FilteredRadio" GroupName="Scope" IsChecked="True" Margin="2,2"/>
+                    <RadioButton x:Name="AllRadio" GroupName="Scope" Margin="2,2"/>
+                </StackPanel>
+
+                <!-- SQL options (shown only when SQL is selected) -->
+                <Border x:Name="SqlPanel" Visibility="Collapsed" Margin="0,0,0,12"
+                        Background="{StaticResource B.SurfaceAlt}" CornerRadius="6"
+                        BorderBrush="{StaticResource B.Border}" BorderThickness="1" Padding="12,10">
+                    <StackPanel>
+                        <TextBlock Text="SQL options" FontWeight="SemiBold" FontSize="12"
+                                   Foreground="{StaticResource B.TextMuted}" Margin="0,0,0,8"/>
+                        <CheckBox x:Name="SqlNoCountCheck" Content="Include SET NOCOUNT ON / OFF"
+                                  IsChecked="True" Margin="0,0,0,8"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Label Grid.Column="0" Content="GO every" VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="1" x:Name="SqlBatchBox" Text="100" Margin="4,2,0,2"/>
+                            <Label Grid.Column="2" Content="rows  (0 = no GO)" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- JSON options (shown only when JSON is selected) -->
+                <Border x:Name="JsonPanel" Visibility="Collapsed" Margin="0,0,0,12"
+                        Background="{StaticResource B.SurfaceAlt}" CornerRadius="6"
+                        BorderBrush="{StaticResource B.Border}" BorderThickness="1" Padding="12,10">
+                    <StackPanel>
+                        <TextBlock Text="JSON options" FontWeight="SemiBold" FontSize="12"
+                                   Foreground="{StaticResource B.TextMuted}" Margin="0,0,0,8"/>
+                        <CheckBox x:Name="JsonLegacyCheck" Content="Export as legacy format (with &quot;RECORDS&quot; key)"
+                                  Margin="0,0,0,8"/>
+                        <CheckBox x:Name="ZeroPadCheck" Content="Zero-pad date (dd / MM)" IsChecked="True" Margin="0,0,0,10"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="16"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Label Grid.Row="0" Grid.Column="0" Content="Date order" VerticalAlignment="Center"/>
+                            <ComboBox Grid.Row="0" Grid.Column="1" x:Name="DateOrderCombo" Margin="0,2,0,2"/>
+                            <Label Grid.Row="0" Grid.Column="3" Content="Binary" VerticalAlignment="Center"/>
+                            <ComboBox Grid.Row="0" Grid.Column="4" x:Name="BinaryCombo" Margin="0,2,0,2"/>
+
+                            <Label Grid.Row="1" Grid.Column="0" Content="Date delim." VerticalAlignment="Center"/>
+                            <TextBox Grid.Row="1" Grid.Column="1" x:Name="DateDelimBox" Text="/" Margin="0,2,0,2"/>
+                            <Label Grid.Row="1" Grid.Column="3" Content="Time delim." VerticalAlignment="Center"/>
+                            <TextBox Grid.Row="1" Grid.Column="4" x:Name="TimeDelimBox" Text=":" Margin="0,2,0,2"/>
+
+                            <Label Grid.Row="2" Grid.Column="0" Content="Decimal" VerticalAlignment="Center"/>
+                            <TextBox Grid.Row="2" Grid.Column="1" x:Name="DecimalBox" Text="." Margin="0,2,0,2"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <CheckBox x:Name="HeadersCheck" Content="Include header row (text / CSV / HTML / Excel)"
+                          IsChecked="True" Margin="0,0,0,12"/>
+
+                <Grid Margin="0,0,0,6">
+                    <TextBlock Text="Columns" FontWeight="SemiBold" FontSize="12"
+                               Foreground="{StaticResource B.TextMuted}" VerticalAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="All" Click="SelectAll_Click" Padding="10,3"/>
+                        <Button Content="None" Margin="6,0,0,0" Click="SelectNone_Click" Padding="10,3"/>
+                    </StackPanel>
+                </Grid>
+
+                <Border BorderBrush="{StaticResource B.Border}" BorderThickness="1" CornerRadius="6">
+                    <ScrollViewer MaxHeight="240" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl x:Name="ColumnList" Margin="6">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked}" Margin="4,3"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
+            </StackPanel>
+
+            <Border Background="{StaticResource B.SurfaceAlt}" CornerRadius="0,0,12,12"
+                    BorderBrush="{StaticResource B.Border}" BorderThickness="0,1,0,0" Padding="16,14">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Cancel" MinWidth="90" Margin="0,0,10,0" Click="Cancel_Click"/>
+                    <Button Content="Export…" MinWidth="100" Style="{StaticResource AccentButton}"
+                            Click="Export_Click" IsDefault="True"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </Border>
+</Window>

@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SyntaxDefinition name="SQL" extensions=".sql"
+    xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+
+  <Color name="Comment"      foreground="#608B4E" fontStyle="italic"/>
+  <Color name="String"       foreground="#CE9178"/>
+  <Color name="Number"       foreground="#B5CEA8"/>
+  <Color name="Keyword"      foreground="#569CD6" fontWeight="bold"/>
+  <Color name="Function"     foreground="#DCDCAA"/>
+  <Color name="DataType"     foreground="#4EC9B0"/>
+  <Color name="Operator"     foreground="#D4D4D4"/>
+
+  <RuleSet ignoreCase="true">
+
+    <!-- Block comment -->
+    <Span color="Comment" multiline="true">
+      <Begin>/\*</Begin>
+      <End>\*/</End>
+    </Span>
+
+    <!-- Line comment -->
+    <Span color="Comment">
+      <Begin>--</Begin>
+    </Span>
+
+    <!-- Single-quoted string -->
+    <Span color="String">
+      <Begin>'</Begin>
+      <End>'</End>
+      <RuleSet>
+        <Span begin="''" end=""/>
+      </RuleSet>
+    </Span>
+
+    <!-- Numbers -->
+    <Rule color="Number">\b\d+(\.\d+)?\b</Rule>
+
+    <!-- Keywords -->
+    <Keywords color="Keyword">
+      <Word>ADD</Word>
+      <Word>ALL</Word>
+      <Word>ALTER</Word>
+      <Word>AND</Word>
+      <Word>AS</Word>
+      <Word>ASC</Word>
+      <Word>BACKUP</Word>
+      <Word>BEGIN</Word>
+      <Word>BETWEEN</Word>
+      <Word>BREAK</Word>
+      <Word>BY</Word>
+      <Word>CASE</Word>
+      <Word>CHECK</Word>
+      <Word>CLOSE</Word>
+      <Word>CLUSTERED</Word>
+      <Word>COLUMN</Word>
+      <Word>COMMIT</Word>
+      <Word>CONSTRAINT</Word>
+      <Word>CONTINUE</Word>
+      <Word>CREATE</Word>
+      <Word>CROSS</Word>
+      <Word>CURSOR</Word>
+      <Word>DATABASE</Word>
+      <Word>DECLARE</Word>
+      <Word>DEFAULT</Word>
+      <Word>DELETE</Word>
+      <Word>DESC</Word>
+      <Word>DISTINCT</Word>
+      <Word>DROP</Word>
+      <Word>ELSE</Word>
+      <Word>END</Word>
+      <Word>EXEC</Word>
+      <Word>EXECUTE</Word>
+      <Word>EXISTS</Word>
+      <Word>FETCH</Word>
+      <Word>FOR</Word>
+      <Word>FOREIGN</Word>
+      <Word>FROM</Word>
+      <Word>FULL</Word>
+      <Word>FUNCTION</Word>
+      <Word>GOTO</Word>
+      <Word>GRANT</Word>
+      <Word>GROUP</Word>
+      <Word>HAVING</Word>
+      <Word>IF</Word>
+      <Word>IN</Word>
+      <Word>INDEX</Word>
+      <Word>INNER</Word>
+      <Word>INSERT</Word>
+      <Word>INTO</Word>
+      <Word>IS</Word>
+      <Word>JOIN</Word>
+      <Word>KEY</Word>
+      <Word>LEFT</Word>
+      <Word>LIKE</Word>
+      <Word>MERGE</Word>
+      <Word>NOCHECK</Word>
+      <Word>NOT</Word>
+      <Word>NULL</Word>
+      <Word>OF</Word>
+      <Word>ON</Word>
+      <Word>OPEN</Word>
+      <Word>OR</Word>
+      <Word>ORDER</Word>
+      <Word>OUTER</Word>
+      <Word>OVER</Word>
+      <Word>PARTITION</Word>
+      <Word>PRIMARY</Word>
+      <Word>PRINT</Word>
+      <Word>PROC</Word>
+      <Word>PROCEDURE</Word>
+      <Word>RAISERROR</Word>
+      <Word>RETURN</Word>
+      <Word>RETURNS</Word>
+      <Word>REVERT</Word>
+      <Word>RIGHT</Word>
+      <Word>ROLLBACK</Word>
+      <Word>ROWCOUNT</Word>
+      <Word>SAVE</Word>
+      <Word>SCHEMA</Word>
+      <Word>SELECT</Word>
+      <Word>SET</Word>
+      <Word>TABLE</Word>
+      <Word>THEN</Word>
+      <Word>TOP</Word>
+      <Word>TRANSACTION</Word>
+      <Word>TRIGGER</Word>
+      <Word>TRUNCATE</Word>
+      <Word>TRY</Word>
+      <Word>CATCH</Word>
+      <Word>UNION</Word>
+      <Word>UNIQUE</Word>
+      <Word>UPDATE</Word>
+      <Word>USE</Word>
+      <Word>VALUES</Word>
+      <Word>VIEW</Word>
+      <Word>WHEN</Word>
+      <Word>WHERE</Word>
+      <Word>WHILE</Word>
+      <Word>WITH</Word>
+      <Word>GO</Word>
+      <Word>OUTPUT</Word>
+      <Word>READONLY</Word>
+      <Word>IDENTITY</Word>
+      <Word>NOCOUNT</Word>
+    </Keywords>
+
+    <!-- Data types -->
+    <Keywords color="DataType">
+      <Word>BIGINT</Word>
+      <Word>BINARY</Word>
+      <Word>BIT</Word>
+      <Word>CHAR</Word>
+      <Word>DATE</Word>
+      <Word>DATETIME</Word>
+      <Word>DATETIME2</Word>
+      <Word>DATETIMEOFFSET</Word>
+      <Word>DECIMAL</Word>
+      <Word>FLOAT</Word>
+      <Word>GEOGRAPHY</Word>
+      <Word>GEOMETRY</Word>
+      <Word>IMAGE</Word>
+      <Word>INT</Word>
+      <Word>INTEGER</Word>
+      <Word>MONEY</Word>
+      <Word>NCHAR</Word>
+      <Word>NTEXT</Word>
+      <Word>NUMERIC</Word>
+      <Word>NVARCHAR</Word>
+      <Word>REAL</Word>
+      <Word>SMALLDATETIME</Word>
+      <Word>SMALLINT</Word>
+      <Word>SMALLMONEY</Word>
+      <Word>SQL_VARIANT</Word>
+      <Word>TEXT</Word>
+      <Word>TIME</Word>
+      <Word>TIMESTAMP</Word>
+      <Word>TINYINT</Word>
+      <Word>UNIQUEIDENTIFIER</Word>
+      <Word>VARBINARY</Word>
+      <Word>VARCHAR</Word>
+      <Word>XML</Word>
+      <Word>BOOLEAN</Word>
+      <Word>BOOL</Word>
+      <Word>DOUBLE</Word>
+      <Word>NUMBER</Word>
+      <Word>STRING</Word>
+    </Keywords>
+
+    <!-- Built-in functions -->
+    <Keywords color="Function">
+      <Word>ABS</Word>
+      <Word>AVG</Word>
+      <Word>CAST</Word>
+      <Word>CEILING</Word>
+      <Word>COALESCE</Word>
+      <Word>CONCAT</Word>
+      <Word>CONVERT</Word>
+      <Word>COUNT</Word>
+      <Word>DATEDIFF</Word>
+      <Word>DATEPART</Word>
+      <Word>DATEADD</Word>
+      <Word>DAY</Word>
+      <Word>FLOOR</Word>
+      <Word>FORMAT</Word>
+      <Word>GETDATE</Word>
+      <Word>GETUTCDATE</Word>
+      <Word>ISNULL</Word>
+      <Word>ISNUMERIC</Word>
+      <Word>LEN</Word>
+      <Word>LEFT</Word>
+      <Word>LOWER</Word>
+      <Word>LTRIM</Word>
+      <Word>MAX</Word>
+      <Word>MIN</Word>
+      <Word>MONTH</Word>
+      <Word>NEWID</Word>
+      <Word>NULLIF</Word>
+      <Word>OBJECT_ID</Word>
+      <Word>PATINDEX</Word>
+      <Word>REPLACE</Word>
+      <Word>RIGHT</Word>
+      <Word>ROUND</Word>
+      <Word>RTRIM</Word>
+      <Word>SCOPE_IDENTITY</Word>
+      <Word>STUFF</Word>
+      <Word>SUBSTRING</Word>
+      <Word>SUM</Word>
+      <Word>SYSDATETIME</Word>
+      <Word>TRIM</Word>
+      <Word>UPPER</Word>
+      <Word>YEAR</Word>
+      <Word>ROW_NUMBER</Word>
+      <Word>RANK</Word>
+      <Word>DENSE_RANK</Word>
+      <Word>NTILE</Word>
+      <Word>LAG</Word>
+      <Word>LEAD</Word>
+      <Word>FIRST_VALUE</Word>
+      <Word>LAST_VALUE</Word>
+      <Word>STRING_AGG</Word>
+      <Word>IIF</Word>
+      <Word>TRY_CAST</Word>
+      <Word>TRY_CONVERT</Word>
+      <Word>TRY_PARSE</Word>
+    </Keywords>
+
+  </RuleSet>
+</SyntaxDefinition>

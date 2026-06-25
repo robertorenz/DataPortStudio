@@ -1,0 +1,61 @@
+<UserControl x:Class="DataPortStudio.Views.InspectorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:DataPortStudio.ViewModels"
+             xmlns:loc="clr-namespace:DataPortStudio.Services"
+             Background="{StaticResource B.Surface}">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,8">
+            <TextBlock Text="{loc:Tr Insp_Structure}" FontWeight="SemiBold" FontSize="13"
+                       Foreground="{StaticResource B.Text}" VerticalAlignment="Center"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="⤢" Width="26" Style="{StaticResource ToolButton}"
+                        Command="{Binding PinInspectorCommand}" ToolTip="{loc:Tr Tip_Pin}"/>
+                <Button Style="{StaticResource PaneCloseButton}" Command="{Binding HideInspectorCommand}"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Object header (icon + name + type), Navicat-style -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,2,0,10" VerticalAlignment="Center">
+            <Border Width="34" Height="34" CornerRadius="6" Background="{StaticResource B.RowHover}" VerticalAlignment="Center">
+                <Path Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" HorizontalAlignment="Center"
+                      Data="M2.5,3.5 H13.5 V12.5 H2.5 Z M2.5,6.5 H13.5 M2.5,9.5 H13.5 M6.17,3.5 V12.5 M9.83,3.5 V12.5"
+                      Stroke="{StaticResource B.Accent}" StrokeThickness="1.3" Fill="Transparent"/>
+            </Border>
+            <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                <TextBlock Text="{Binding StructureName}" FontSize="15" FontWeight="SemiBold"
+                           Foreground="{StaticResource B.Text}" TextTrimming="CharacterEllipsis"/>
+                <TextBlock Text="{Binding StructureType}" FontSize="12" Foreground="{StaticResource B.TextMuted}"/>
+            </StackPanel>
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,8">
+            <ToggleButton Content="{loc:Tr Insp_Info}" Style="{StaticResource ToolToggle}" Margin="0,0,6,0"
+                          IsChecked="{Binding IsInfoSection, Mode=OneWay}"
+                          Command="{Binding SetInspectorSectionCommand}"
+                          CommandParameter="{x:Static vm:InspectorSection.Info}"/>
+            <ToggleButton Content="{loc:Tr Insp_Ddl}" Style="{StaticResource ToolToggle}" Margin="0,0,6,0"
+                          IsChecked="{Binding IsDdlSection, Mode=OneWay}"
+                          Command="{Binding SetInspectorSectionCommand}"
+                          CommandParameter="{x:Static vm:InspectorSection.Ddl}"/>
+            <ToggleButton Content="{loc:Tr Insp_Indexes}" Style="{StaticResource ToolToggle}"
+                          IsChecked="{Binding IsIndexSection, Mode=OneWay}"
+                          Command="{Binding SetInspectorSectionCommand}"
+                          CommandParameter="{x:Static vm:InspectorSection.Indexes}"/>
+        </StackPanel>
+
+        <Border Grid.Row="3" BorderBrush="{StaticResource B.Border}" BorderThickness="1" CornerRadius="6">
+            <TextBox Text="{Binding InspectorContent, Mode=OneWay}" IsReadOnly="True" TextWrapping="NoWrap"
+                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                     VerticalContentAlignment="Top"
+                     FontFamily="Consolas" FontSize="12" BorderThickness="0" Padding="8"/>
+        </Border>
+    </Grid>
+</UserControl>

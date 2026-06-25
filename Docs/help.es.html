@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DataPortStudio — Guía del usuario</title>
+<style>
+  :root { --accent:#2D7FE0; --ink:#1F2933; --muted:#5B6B7A; --line:#E2E8F0; --bg:#F4F6F8; --sidebar:#1F2933; }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { margin:0; font-family:'Segoe UI',system-ui,sans-serif; color:var(--ink); background:var(--bg); line-height:1.55; }
+  .layout { display:grid; grid-template-columns:248px 1fr; }
+  nav { background:var(--sidebar); color:#cdd7e0; padding:18px 14px; position:sticky; top:0; height:100vh; overflow:auto; }
+  nav .brand { color:#fff; font-size:15px; font-weight:600; padding:4px 8px 12px; }
+  nav .brand span { color:#8fb6e8; }
+  nav a { display:block; color:#aebccb; text-decoration:none; padding:5px 9px; border-radius:6px; font-size:13px; }
+  nav a:hover { background:#2b3a47; color:#fff; }
+  nav .group { color:#74828f; font-size:11px; text-transform:uppercase; letter-spacing:.04em; margin:14px 8px 4px; }
+  main { padding:0 0 60px; max-width:920px; }
+  header.hero { background:linear-gradient(135deg,#243240,#2D7FE0); color:#fff; padding:30px 44px; }
+  header.hero h1 { margin:0 0 6px; font-size:26px; }
+  header.hero p { margin:0; opacity:.9; }
+  .content { padding:8px 44px; }
+  h2 { color:var(--ink); border-bottom:2px solid var(--line); padding-bottom:6px; margin-top:40px; font-size:21px; }
+  h3 { color:#243240; margin-top:26px; font-size:16px; }
+  a { color:var(--accent); }
+  code { background:#EAEEF2; padding:2px 6px; border-radius:4px; font-family:Consolas,'Courier New',monospace; font-size:.88em; }
+  table { border-collapse:collapse; width:100%; margin:14px 0; }
+  th,td { border:1px solid var(--line); padding:8px 11px; text-align:left; font-size:14px; vertical-align:top; }
+  th { background:#EAEEF2; }
+  ul,ol { padding-left:22px; }
+  li { margin:4px 0; }
+  .tip { background:#EAF3FF; border-left:4px solid var(--accent); padding:10px 14px; border-radius:4px; margin:14px 0; }
+  .note { background:#FFF6E6; border-left:4px solid #E0A52D; padding:10px 14px; border-radius:4px; margin:14px 0; }
+  .ro { display:inline-block; background:#6E8B3D; color:#fff; border-radius:10px; padding:1px 8px; font-size:11px; }
+  footer { color:var(--muted); font-size:12px; padding:24px 44px; border-top:1px solid var(--line); margin-top:30px; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav>
+    <div class="brand">DataPortStudio <span>Guía</span></div>
+    <a href="#overview">Descripción general</a>
+    <a href="#start">Primeros pasos</a>
+    <div class="group">Conexión</div>
+    <a href="#connections">Conexiones</a>
+    <a href="#engines">Motores de base de datos</a>
+    <a href="#tree">Árbol y pestaña Objetos</a>
+    <div class="group">Trabajar con datos</div>
+    <a href="#view-edit">Ver y editar</a>
+    <a href="#clarion-dates">Fechas y horas Clarion</a>
+    <a href="#clarion-files">Archivos Clarion TPS y DAT</a>
+    <a href="#query">Ventana y diseñador de consultas</a>
+    <a href="#designer">Diseñador de tablas</a>
+    <div class="group">Mover datos</div>
+    <a href="#copy">Copiar y pegar tablas</a>
+    <a href="#tps-sql">Clarion → SQL: tipos</a>
+    <a href="#insert-import-export">Generar / Importar / Exportar</a>
+    <div class="group">Administración</div>
+    <a href="#users">Usuarios y roles</a>
+    <a href="#settings">Configuración</a>
+    <a href="#shortcuts">Atajos de teclado</a>
+    <a href="#faq">Preguntas frecuentes</a>
+    <a href="#credits">Créditos y licencias</a>
+    <a href="#help">Ayuda y Acerca de</a>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <h1>DataPortStudio — Guía del usuario</h1>
+      <p>Un administrador de bases de datos estilo Navicat para SQL Server, SQLite, MySQL/MariaDB, Firebird, MongoDB y archivos Clarion TPS/DAT.</p>
+    </header>
+    <div class="content">
+
+      <h2 id="overview">Descripción general</h2>
+      <p>DataPortStudio le permite conectarse a varios tipos de bases de datos, explorar su estructura en un árbol, abrir
+      tablas y ver &amp; editar registros directamente. Puede ejecutar SQL, construir consultas de forma visual, diseñar
+      tablas, copiar tablas entre bases de datos (incluso entre motores distintos), importar/exportar datos y administrar
+      usuarios y roles.</p>
+      <p>Cada conexión muestra el icono de su motor para distinguir sus bases de datos de un vistazo.</p>
+
+      <h2 id="start">Primeros pasos</h2>
+      <ol>
+        <li>DataPortStudio es un único <code>DataPortStudio.exe</code> portátil — no requiere instalación.</li>
+        <li>En el primer inicio el paquete comprimido se autoextrae (un par de segundos); los siguientes inicios son rápidos.</li>
+        <li>Agregue su primera conexión desde <strong>Conexión ▸ Agregar conexión</strong> (o la barra de herramientas).</li>
+        <li>Expándala en el árbol de la izquierda para explorar bases de datos y tablas; haga doble clic en una tabla para abrirla.</li>
+      </ol>
+      <div class="tip"><strong>Idioma:</strong> DataPortStudio está disponible en inglés y español. Cambie el idioma en
+      <strong>Archivo ▸ Configuración</strong>. Esta guía se abre en el idioma que tenga seleccionado.</div>
+
+      <h2 id="connections">Conexiones</h2>
+      <p>Use <strong>Conexión ▸ Agregar conexión</strong> para abrir el editor de conexiones. Asigne un nombre, elija el
+      <strong>tipo de base de datos</strong>, complete los campos de ese motor y haga clic en <strong>Probar</strong> para
+      verificar antes de guardar. Para cambiar o eliminar una conexión más adelante, selecciónela en el árbol y use
+      <strong>Conexión ▸ Editar / Eliminar</strong> (o el clic derecho).</p>
+      <ul>
+        <li><strong>SQL Server</strong> — Autenticación de Windows o inicio de sesión SQL; constructor por campos <em>o</em> cadena de conexión sin procesar.</li>
+        <li><strong>Probar conexión</strong> confirma que la configuración funciona antes de guardar.</li>
+        <li>Las conexiones se guardan entre sesiones; las contraseñas se protegen con la protección de datos de Windows.</li>
+      </ul>
+
+      <h2 id="engines">Motores de base de datos</h2>
+      <table>
+        <tr><th>Motor</th><th>Qué proporciona</th><th>Capacidades</th></tr>
+        <tr><td><strong>SQL Server</strong></td><td>Servidor, autenticación, base de datos opcional</td><td>Explorar, ver/editar filas, diseñar tablas, consultar, copiar, importar/exportar, usuarios y roles</td></tr>
+        <tr><td><strong>SQLite</strong></td><td>Un archivo <code>.db</code> / <code>.sqlite</code></td><td>Explorar, ver/editar filas, diseñar tablas, consultar, copiar, exportar</td></tr>
+        <tr><td><strong>MySQL / MariaDB</strong></td><td>Host, puerto, usuario, contraseña, base de datos</td><td>Explorar, ver/editar filas, consultar, copiar, exportar, usuarios y roles</td></tr>
+        <tr><td><strong>Firebird</strong></td><td>Host/puerto + ruta de la base (o <em>Embebido</em>)</td><td>Explorar, ver/editar filas, consultar, copiar, exportar</td></tr>
+        <tr><td><strong>Oracle</strong></td><td>Host, puerto, nombre de servicio, usuario, contraseña</td><td>Explorar, ver/editar filas, consultar, estructura/índices, eliminar, copiar, exportar</td></tr>
+        <tr><td><strong>MongoDB</strong> <span class="ro">solo lectura</span></td><td>Una cadena de conexión (<code>mongodb://…</code>)</td><td>Explorar bases y colecciones, ver documentos, filtrar/ordenar/exportar</td></tr>
+        <tr><td><strong>Clarion TPS</strong> <span class="ro">solo lectura</span></td><td>Una carpeta con archivos <code>.tps</code></td><td>Explorar, ver registros, filtrar/ordenar/exportar, copiar a SQL</td></tr>
+        <tr><td><strong>Clarion DAT</strong> <span class="ro">solo lectura</span></td><td>Una carpeta con archivos <code>.dat</code></td><td>Explorar, ver registros, filtrar/ordenar/exportar, copiar a SQL</td></tr>
+      </table>
+      <div class="note"><strong>Motores de solo lectura</strong> (MongoDB, Clarion TPS, Clarion DAT) se pueden explorar y
+      copiar <em>hacia afuera</em>, pero no editar ni escribir.</div>
+
+      <h2 id="tree">Árbol y pestaña Objetos</h2>
+      <p>La barra lateral izquierda muestra sus conexiones como un árbol. Expanda una conexión para llegar a sus bases de
+      datos, esquemas y carpetas de objetos (<em>Tablas</em>, <em>Vistas</em>, <em>Funciones</em>,
+      <em>Procedimientos</em>). Use el <strong>cuadro de filtro</strong> en la parte superior para localizar tablas por nombre.</p>
+      <p>Al seleccionar una carpeta <em>Tablas</em>, un esquema o una base de datos se abre la pestaña
+      <strong>Objetos</strong>: una lista estilo Navicat con el conteo de filas cuando está disponible. En las conexiones
+      Clarion (TPS/DAT), al seleccionar la conexión se listan sus archivos (con tamaño y fecha) en la pestaña Objetos.
+      Haga doble clic en cualquier elemento para abrirlo.</p>
+
+      <h2 id="view-edit">Ver y editar registros</h2>
+      <p>Haga doble clic en una tabla (o use <strong>Abrir</strong> en el menú contextual) para cargar sus filas en una cuadrícula.</p>
+      <ul>
+        <li><strong>Edite</strong> una celda escribiendo en ella; los cambios se resaltan hasta que guarde.</li>
+        <li><strong>Agregue</strong> una fila en el marcador inferior, o <strong>elimine</strong> las filas seleccionadas.</li>
+        <li><strong>Guardar</strong> escribe los cambios pendientes en la base de datos; <strong>Recargar</strong> los descarta.</li>
+        <li><strong>Filtre</strong> y <strong>ordene</strong> columnas desde la barra de herramientas; el SQL en vivo se muestra en el panel SQL.</li>
+        <li>El panel <strong>Detalle de celda</strong> muestra el contenido completo de celdas grandes; el panel
+        <strong>Estructura</strong> muestra las columnas, el DDL y los índices de la tabla.</li>
+      </ul>
+      <div class="note"><strong>Tablas sin clave primaria:</strong> DataPortStudio pregunta qué columna(s) identifican de forma
+      única una fila (se usan en la cláusula <code>WHERE</code> al editar/eliminar). Elija con cuidado, o mantenga la
+      opción predeterminada "todas las columnas".</div>
+      <p>Un límite de filas (configurable en Configuración) limita cuántas filas se cargan a la vez, para abrir tablas grandes con rapidez.</p>
+
+      <h2 id="clarion-dates">Fechas y horas Clarion</h2>
+      <p>Las aplicaciones Clarion guardan fechas y horas como números enteros (una <em>Fecha estándar</em> son los días
+      desde el 28&nbsp;dic&nbsp;1800; una <em>Hora estándar</em> son centésimas de segundo desde la medianoche). DataPortStudio
+      detecta automáticamente esas columnas y puede mostrarlas como fechas/horas legibles en lugar de números —
+      active/desactive la presentación desde la barra de la tabla cuando se detecten columnas Clarion.</p>
+
+      <h2 id="clarion-files">Archivos Clarion TPS y DAT</h2>
+      <p>DataPortStudio lee los archivos de datos Clarion directamente — sin controlador ODBC ni runtime.</p>
+      <h3>Configurar una conexión</h3>
+      <ol>
+        <li>Agregue una conexión y elija <strong>TPS</strong> (TopSpeed <code>.tps</code>) o <strong>Clarion DAT</strong>
+        (clásico <code>.dat</code>).</li>
+        <li>Elija la <strong>carpeta</strong> que contiene los archivos. Cada archivo de la carpeta aparece como una tabla.</li>
+        <li>Haga clic en <strong>Probar</strong> para confirmar que la carpeta tiene archivos legibles y guarde.</li>
+      </ol>
+      <h3>Explorar</h3>
+      <p>Seleccione la conexión para listar sus archivos en la pestaña Objetos, o expándala en el árbol. Abra un archivo
+      para ver sus registros en solo lectura, con filtro, orden y exportación. Las columnas de fecha/hora Clarion
+      (<code>LONG</code>) se detectan y se muestran igual que en las tablas SQL.</p>
+      <div class="note"><strong>TPS</strong> es el formato TopSpeed; <strong>DAT</strong> es el formato ISAM clásico de
+      Clarion (decodificado a partir del Boletín Técnico 117 de Clarion). Los archivos de clave/índice
+      (<code>.K??</code>/<code>.I??</code>) y los memos <code>.MEM</code> no se leen.</div>
+
+      <h2 id="query">Ventana y diseñador de consultas</h2>
+      <p><strong>Archivo ▸ Nueva consulta</strong> abre un editor SQL para la conexión seleccionada. Escriba SQL,
+      ejecútelo y explore la cuadrícula de resultados; los resultados se pueden exportar. (La ventana de consultas no
+      aplica a MongoDB ni a los archivos Clarion.)</p>
+      <p><strong>Archivo ▸ Diseñador de consultas</strong> abre un diseñador visual: elija tablas, columnas, agregue
+      uniones y condiciones, y DataPortStudio genera el SQL por usted. Funciona con SQL Server, SQLite, MySQL/MariaDB y Firebird.</p>
+
+      <h2 id="designer">Diseñador de tablas</h2>
+      <p>Para <strong>SQL Server</strong> y <strong>SQLite</strong>, haga clic derecho en una carpeta <em>Tablas</em> ▸
+      <strong>Nueva tabla</strong>, o en una tabla ▸ <strong>Diseñar</strong>, para definir columnas, tipos, nulabilidad y
+      la clave primaria. Editar una tabla SQLite existente usa una reconstrucción segura de la tabla de forma interna.</p>
+
+      <h2 id="copy">Copiar y pegar tablas</h2>
+      <p>Haga clic derecho en una tabla ▸ <strong>Copiar</strong> (o <strong>Ctrl+C</strong> en el árbol), luego
+      <strong>Pegar</strong> (<strong>Ctrl+V</strong>) sobre una carpeta <em>Tablas</em> o una base de datos. Se le
+      preguntará si copiar <strong>solo la estructura</strong> o <strong>estructura + datos</strong>, y la copia se nombra
+      automáticamente si el nombre ya existe.</p>
+      <p>Puede pegar en la misma conexión, en otra conexión del mismo motor, o incluso en un <strong>motor relacional
+      distinto</strong> (p. ej. SQLite → SQL Server). DataPortStudio asigna a cada columna un tipo compatible, crea la tabla y
+      copia las filas. Las copias grandes a SQL Server usan transmisión masiva de alta velocidad.</p>
+
+      <h2 id="tps-sql">Clarion → SQL: revisar y ajustar los tipos de columna</h2>
+      <p>Al copiar un archivo Clarion <strong>TPS</strong> o <strong>DAT</strong> a una base de datos SQL, DataPortStudio muestra
+      un <strong>diálogo de asignación de columnas</strong> antes de crear la tabla:</p>
+      <ul>
+        <li>Cada columna de origen aparece con su <strong>tipo Clarion</strong> y un <strong>tipo SQL</strong> propuesto.</li>
+        <li>Elija el tipo SQL en una <strong>lista desplegable</strong> (específica del motor de destino) y defina un
+        <strong>tamaño / precisión</strong> cuando corresponda (longitud para texto, <code>precisión,escala</code> para decimales).</li>
+        <li>Las columnas que parecen <strong>fechas/horas Clarion</strong> se preasignan a <code>date</code> /
+        <code>time</code> de SQL, y sus valores se <strong>convierten</strong> al copiar (no se vuelcan como números crudos).</li>
+        <li>Use <strong>Restablecer a sugerido</strong> para volver a la asignación automática, y luego <strong>Aplicar y copiar</strong>.</li>
+      </ul>
+      <div class="tip">¿No quiere convertir una fecha/hora? Solo vuelva a poner esa columna como <code>int</code> en el
+      diálogo y se copiará el número Clarion sin procesar.</div>
+
+      <h2 id="insert-import-export">Generar INSERT, Importar y Exportar</h2>
+      <ul>
+        <li><strong>Generar INSERT</strong> (clic derecho en una tabla de SQL Server) produce un script
+        <code>INSERT</code> con sus filas, que puede ver, copiar o guardar como <code>.sql</code>.</li>
+        <li><strong>Importar datos</strong> carga filas a una tabla desde un archivo.</li>
+        <li><strong>Exportar</strong> la tabla actual o los resultados de una consulta a <strong>CSV, TXT, JSON, XML,
+        HTML, Excel (XLSX / XLS heredado), DBF</strong> o un script <strong>SQL</strong>. Elija el alcance del filtro y el
+        formato en el diálogo de exportación, y abra el archivo o su carpeta al terminar.</li>
+      </ul>
+
+      <h2 id="users">Usuarios y roles</h2>
+      <p>El botón <strong>Usuarios</strong> de la barra de comandos abre el Administrador de usuarios para la conexión
+      seleccionada (disponible en SQL Server y MySQL/MariaDB). Puede listar usuarios y roles, crearlos/eliminarlos,
+      establecer o cambiar contraseñas y administrar privilegios — inicios de sesión/roles y permisos de servidor en SQL
+      Server; cuentas <code>user@host</code>, privilegios globales y por base de datos, y roles en MySQL&nbsp;8 / MariaDB.</p>
+
+      <h2 id="settings">Configuración</h2>
+      <p><strong>Archivo ▸ Configuración</strong> le permite elegir el <strong>idioma</strong> (inglés / español), el
+      <strong>límite de filas</strong> predeterminado al abrir tablas y opciones de apariencia. Los cambios se aplican de inmediato.</p>
+
+      <h2 id="shortcuts">Atajos de teclado</h2>
+      <table>
+        <tr><th>Atajo</th><th>Acción</th></tr>
+        <tr><td><code>F1</code></td><td>Abrir esta Guía del usuario</td></tr>
+        <tr><td><code>F5</code></td><td>Actualizar el nodo seleccionado</td></tr>
+        <tr><td><code>Ctrl + C</code> (en el árbol)</td><td>Copiar la tabla seleccionada</td></tr>
+        <tr><td><code>Ctrl + V</code> (en el árbol)</td><td>Pegar la tabla copiada en el destino</td></tr>
+        <tr><td>Doble clic</td><td>Abrir una tabla / vista, o editar una función / procedimiento</td></tr>
+        <tr><td>Clic derecho</td><td>Menú contextual del nodo seleccionado</td></tr>
+      </table>
+
+      <h2 id="faq">Preguntas frecuentes</h2>
+
+      <h3>1. ¿Necesito instalar DataPortStudio o .NET?</h3>
+      <p>No. DataPortStudio es un único <code>DataPortStudio.exe</code> portátil — solo descárguelo y ejecútelo. Es autónomo, por lo
+      que no requiere instalar .NET. El primer inicio tarda un par de segundos mientras se autoextrae.</p>
+
+      <h3>2. ¿Dónde se guardan mis conexiones y contraseñas?</h3>
+      <p>Las conexiones se guardan en su PC y se restauran cada vez que inicia DataPortStudio. Las contraseñas se cifran con la
+      protección de datos de Windows (vinculada a su cuenta de usuario de Windows), no se guardan en texto plano.</p>
+
+      <h3>3. ¿Por qué no puedo editar una tabla de MongoDB, TPS o DAT?</h3>
+      <p>MongoDB, Clarion TPS y Clarion DAT son de <strong>solo lectura</strong> en DataPortStudio — puede explorar, filtrar,
+      ordenar, exportar y copiar sus datos <em>hacia</em> una base de datos SQL, pero no puede editarlos ni escribir en ellos.</p>
+
+      <h3>4. ¿Cómo cambio entre inglés y español?</h3>
+      <p>Abra <strong>Archivo ▸ Configuración</strong> y elija el idioma. La interfaz se actualiza en vivo (sin
+      reiniciar), y esta Guía del usuario se abre en el idioma que tenga seleccionado.</p>
+
+      <h3>5. Mi tabla solo muestra parte de las filas — ¿por qué?</h3>
+      <p>Las tablas se abren con un <strong>límite de filas</strong> para que las tablas grandes carguen rápido. Aumente
+      el límite predeterminado en <strong>Archivo ▸ Configuración</strong>, o aplique un filtro para reducir a las filas que necesita.</p>
+
+      <h3>6. ¿Cómo paso un archivo Clarion TPS/DAT a SQL Server?</h3>
+      <p>Cree una conexión Clarion apuntando a la carpeta, haga clic derecho en el archivo ▸ <strong>Copiar</strong>, y
+      luego <strong>Pegar</strong> sobre la carpeta <em>Tablas</em> de la base de destino. Revise los tipos SQL propuestos
+      en el diálogo de asignación, ajústelos si lo desea y haga clic en <strong>Aplicar y copiar</strong>.</p>
+
+      <h3>7. Mis fechas/horas Clarion aparecen como números — ¿cómo lo corrijo?</h3>
+      <p>Clarion guarda fechas y horas como enteros. DataPortStudio detecta esas columnas y puede mostrarlas como fechas/horas
+      legibles — use el interruptor en la barra de la tabla. Al copiar a SQL, esas columnas se preasignan a
+      <code>date</code>/<code>time</code> y los valores se convierten automáticamente.</p>
+
+      <h3>8. ¿Puedo copiar una tabla entre dos tipos de base de datos distintos?</h3>
+      <p>Sí. Puede copiar entre motores relacionales (por ejemplo SQLite → SQL Server, o Firebird → MySQL) y desde
+      archivos Clarion a cualquier base de datos SQL. DataPortStudio asigna a cada columna un tipo compatible y copia las filas.</p>
+
+      <h3>9. Al editar una tabla advierte que "no hay clave primaria" — ¿qué elijo?</h3>
+      <p>Sin clave primaria, DataPortStudio necesita saber qué columna(s) identifican de forma única una fila para que las
+      ediciones y eliminaciones afecten la correcta. Elija una columna (o conjunto) que sea única, o mantenga la opción
+      predeterminada <strong>"todas las columnas"</strong>, que es la más segura.</p>
+
+      <h3>10. ¿Cómo actualizo DataPortStudio?</h3>
+      <p>Descargue el <code>DataPortStudio.exe</code> más reciente desde la página <strong>Ayuda ▸ Última versión</strong> y
+      reemplace su copia. Sus conexiones y configuración guardadas se conservan. Puede ver su versión actual en
+      <strong>Ayuda ▸ Acerca de</strong>.</p>
+
+      <h2 id="credits">Créditos y licencias</h2>
+      <p>DataPortStudio está construido con .NET&nbsp;9 y WPF, y se apoya en estas excelentes bibliotecas de código abierto.
+      Gracias a sus autores y colaboradores. Cada una se mantiene bajo su propia licencia.</p>
+      <table>
+        <tr><th>Componente</th><th>Se usa para</th><th>Licencia</th></tr>
+        <tr><td><a href="https://dotnet.microsoft.com/">.NET 9 y WPF</a></td><td>Tiempo de ejecución e interfaz de la aplicación</td><td>MIT — © Microsoft</td></tr>
+        <tr><td><a href="https://github.com/CommunityToolkit/dotnet">CommunityToolkit.Mvvm</a></td><td>Componentes MVVM</td><td>MIT — .NET Foundation</td></tr>
+        <tr><td><a href="https://aka.ms/sqlclientproject">Microsoft.Data.SqlClient</a></td><td>Conectividad con SQL Server</td><td>MIT — © Microsoft</td></tr>
+        <tr><td><a href="https://learn.microsoft.com/dotnet/standard/data/sqlite/">Microsoft.Data.Sqlite</a> + <a href="https://www.sqlite.org/">SQLite</a></td><td>Bases de datos SQLite</td><td>MIT (controlador) / Dominio público (motor)</td></tr>
+        <tr><td><a href="https://mysqlconnector.net/">MySqlConnector</a></td><td>Conectividad con MySQL y MariaDB</td><td>MIT</td></tr>
+        <tr><td><a href="https://www.firebirdsql.org/en/net-provider/">FirebirdSql.Data.FirebirdClient</a></td><td>Conectividad con Firebird</td><td>IDPL / IPL</td></tr>
+        <tr><td><a href="https://www.nuget.org/packages/Oracle.ManagedDataAccess.Core">Oracle.ManagedDataAccess.Core</a></td><td>Conectividad con Oracle</td><td>Oracle (OGTP)</td></tr>
+        <tr><td><a href="https://www.mongodb.com/docs/drivers/csharp/">MongoDB.Driver</a></td><td>Conectividad con MongoDB</td><td>Apache-2.0</td></tr>
+        <tr><td><a href="https://github.com/Trinitek/TpsParser">TpsParser</a></td><td>Lectura de archivos Clarion TopSpeed (.tps)</td><td>MIT</td></tr>
+        <tr><td><a href="https://github.com/ClosedXML/ClosedXML">ClosedXML</a></td><td>Exportación a Excel (.xlsx)</td><td>MIT</td></tr>
+        <tr><td><a href="https://github.com/nissl-lab/npoi">NPOI</a></td><td>Exportación a Excel/Office heredado</td><td>Apache-2.0</td></tr>
+        <tr><td><a href="https://aka.ms/webview">Microsoft Edge WebView2</a></td><td>Mostrar esta guía y el detalle de celda</td><td>Licencia de software de Microsoft</td></tr>
+        <tr><td><a href="https://dotnet.microsoft.com/">System.Security.Cryptography.ProtectedData</a></td><td>Cifrado de las contraseñas guardadas</td><td>MIT — © Microsoft</td></tr>
+        <tr><td>Boletín Técnico 117 de Clarion</td><td>Especificación pública usada para el decodificador limpio de Clarion DAT</td><td>Documentación pública</td></tr>
+      </table>
+      <div class="tip">Las páginas de las bibliotecas se abren en su navegador web. Todos los nombres de productos y
+      marcas comerciales pertenecen a sus respectivos propietarios.</div>
+
+      <h2 id="help">Ayuda y Acerca de</h2>
+      <p>El menú <strong>Ayuda</strong> abre esta guía, el repositorio de GitHub del proyecto, la última versión y el
+      cuadro <strong>Acerca de</strong> (que muestra la versión que está usando). Para actualizar, descargue el
+      <code>DataPortStudio.exe</code> más reciente desde la página de versiones.</p>
+
+    </div>
+    <footer>DataPortStudio — Guía del usuario. Administración profesional de bases de datos para Windows.</footer>
+  </main>
+</div>
+</body>
+</html>

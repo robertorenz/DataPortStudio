@@ -1,0 +1,263 @@
+<Window x:Class="DataPortStudio.Views.UserManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Users &amp; Roles" Height="620" Width="860"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource B.Bg}">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="{StaticResource B.HeaderBar}"
+                BorderBrush="{StaticResource B.Border}" BorderThickness="0,0,0,1" Padding="16,12">
+            <StackPanel>
+                <TextBlock FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource B.Text}">
+                    <Run Text="Users &amp; Roles"/><Run Text="  —  "/><Run Text="{Binding ConnectionName, Mode=OneWay}"/>
+                </TextBlock>
+                <TextBlock Text="{Binding Caps.Note}" Foreground="{StaticResource B.TextMuted}"
+                           FontSize="11" TextWrapping="Wrap" Margin="0,3,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Body -->
+        <Grid Grid.Row="1" Margin="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="260"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Principal list -->
+            <Border Grid.Column="0" Background="{StaticResource B.Surface}" CornerRadius="8"
+                    BorderBrush="{StaticResource B.Border}" BorderThickness="1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="8" >
+                        <Button Content="＋ User" Command="{Binding NewUserCommand}" Padding="8,3" Margin="0,0,6,0"/>
+                        <Button Content="＋ Role" Command="{Binding NewRoleCommand}" Padding="8,3" Margin="0,0,6,0"
+                                Visibility="{Binding Caps.SupportsRoles, Converter={StaticResource BoolToVis}}"/>
+                        <Button Content="⟳" Command="{Binding RefreshCommand}" Padding="8,3" ToolTip="Refresh"/>
+                    </StackPanel>
+                    <ListBox Grid.Row="1" Margin="6,0,6,6" BorderThickness="0" Background="Transparent"
+                             ItemsSource="{Binding Principals}" SelectedItem="{Binding SelectedPrincipal}"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Width="18" Height="18" CornerRadius="9" Margin="0,0,8,0"
+                                            VerticalAlignment="Center">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="#2D7FE0"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsRole}" Value="True">
+                                                        <Setter Property="Background" Value="#1B9E8B"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock Text="{Binding Glyph}"
+                                                   Foreground="White" FontSize="10" FontWeight="Bold"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="{Binding Display}" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"
+                                               Foreground="{StaticResource B.Text}"/>
+                                    <TextBlock Grid.Column="2" Text="🔒" VerticalAlignment="Center" FontSize="10"
+                                               Visibility="{Binding Locked, Converter={StaticResource BoolToVis}}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <!-- Detail -->
+            <Border Grid.Column="2" Background="{StaticResource B.Surface}" CornerRadius="8"
+                    BorderBrush="{StaticResource B.Border}" BorderThickness="1">
+                <Grid>
+                    <!-- Create panel -->
+                    <Border Visibility="{Binding IsCreating, Converter={StaticResource BoolToVis}}"
+                            Margin="18" VerticalAlignment="Top">
+                        <StackPanel>
+                            <TextBlock Text="{Binding CreateTitle}" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{StaticResource B.Text}" Margin="0,0,0,12"/>
+                            <Label Content="Name"/>
+                            <TextBox Text="{Binding NewName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12"/>
+
+                            <StackPanel Visibility="{Binding ShowCreateHost, Converter={StaticResource BoolToVis}}">
+                                <Label Content="Host"/>
+                                <TextBox Text="{Binding NewHost, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12"/>
+                            </StackPanel>
+
+                            <StackPanel Visibility="{Binding ShowCreatePassword, Converter={StaticResource BoolToVis}}">
+                                <Label Content="Password"/>
+                                <PasswordBox x:Name="CreatePassBox" Margin="0,0,0,12"/>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <Button Content="Create" Style="{StaticResource AccentButton}" MinWidth="90"
+                                        Click="CreateConfirm_Click"/>
+                                <Button Content="Cancel" MinWidth="90" Margin="10,0,0,0"
+                                        Command="{Binding CancelCreateCommand}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Editor (hidden while creating) -->
+                    <Grid Margin="0">
+                        <Grid.Style>
+                            <Style TargetType="Grid">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCreating}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding HasSelection}" Value="False">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
+
+                        <TabControl Margin="10" Background="Transparent" BorderThickness="0">
+                            <!-- General -->
+                            <TabItem Header="General">
+                                <StackPanel Margin="14">
+                                    <TextBlock Text="{Binding SelectionSummary}" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{StaticResource B.Text}" Margin="0,0,0,16"/>
+
+                                    <StackPanel Visibility="{Binding ShowSetPassword, Converter={StaticResource BoolToVis}}">
+                                        <Label Content="Set / change password"/>
+                                        <Grid Margin="0,0,0,14">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <PasswordBox x:Name="SetPassBox" Grid.Column="0" VerticalContentAlignment="Center"/>
+                                            <Button Grid.Column="1" Content="Apply" MinWidth="84" Margin="8,0,0,0"
+                                                    Click="SetPassword_Click"/>
+                                        </Grid>
+                                    </StackPanel>
+
+                                    <Button Content="Lock / Unlock account" HorizontalAlignment="Left" MinWidth="160"
+                                            Command="{Binding ToggleLockCommand}"
+                                            Visibility="{Binding ShowLockButton, Converter={StaticResource BoolToVis}}"/>
+
+                                    <Button Content="Drop this principal" HorizontalAlignment="Left" MinWidth="160"
+                                            Margin="0,12,0,0" Command="{Binding DeleteCommand}"
+                                            Visibility="{Binding CanEditSelection, Converter={StaticResource BoolToVis}}"/>
+                                </StackPanel>
+                            </TabItem>
+
+                            <!-- Member of -->
+                            <TabItem Header="Member of"
+                                     Visibility="{Binding MembershipVisible, Converter={StaticResource BoolToVis}}">
+                                <ScrollViewer Margin="14" VerticalScrollBarVisibility="Auto">
+                                    <ItemsControl ItemsSource="{Binding Memberships}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <CheckBox Content="{Binding Role}" IsChecked="{Binding IsMember}"
+                                                          Margin="0,4" Foreground="{StaticResource B.Text}"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </TabItem>
+
+                            <!-- Privileges -->
+                            <TabItem Header="Privileges">
+                                <Grid Margin="14">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <DockPanel Grid.Row="0" Margin="0,0,0,10"
+                                               Visibility="{Binding PrivilegesEmpty, Converter={StaticResource InvBoolToVis}}">
+                                        <TextBlock Text="Scope" VerticalAlignment="Center" Margin="0,0,8,0"
+                                                   Foreground="{StaticResource B.TextMuted}"/>
+                                        <ComboBox Width="220" DockPanel.Dock="Left"
+                                                  ItemsSource="{Binding Scopes}" SelectedItem="{Binding SelectedScope}"/>
+                                        <Button Content="Revoke all" DockPanel.Dock="Right" Margin="6,0,0,0"
+                                                Command="{Binding RevokeAllCommand}"/>
+                                        <Button Content="Grant all" DockPanel.Dock="Right"
+                                                Command="{Binding GrantAllCommand}" HorizontalAlignment="Right"/>
+                                    </DockPanel>
+
+                                    <TextBlock Grid.Row="1" VerticalAlignment="Top"
+                                               Foreground="{StaticResource B.TextMuted}" TextWrapping="Wrap"
+                                               Text="No editable privileges for this engine here — use GRANT/REVOKE in a query window."
+                                               Visibility="{Binding PrivilegesEmpty, Converter={StaticResource BoolToVis}}"/>
+
+                                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                                                  Visibility="{Binding PrivilegesEmpty, Converter={StaticResource InvBoolToVis}}">
+                                        <ItemsControl ItemsSource="{Binding Privileges}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <CheckBox Content="{Binding Name}" IsChecked="{Binding Granted}"
+                                                              Width="200" Margin="0,5" Foreground="{StaticResource B.Text}"/>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </Grid>
+                            </TabItem>
+                        </TabControl>
+                    </Grid>
+
+                    <!-- Empty state -->
+                    <TextBlock Text="Select a user or role, or create a new one."
+                               Foreground="{StaticResource B.TextMuted}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding HasSelection}" Value="False"/>
+                                            <Condition Binding="{Binding IsCreating}" Value="False"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" Background="{StaticResource B.SurfaceAlt}"
+                BorderBrush="{StaticResource B.Border}" BorderThickness="0,1,0,0" Padding="16,12">
+            <Grid>
+                <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center"
+                           Foreground="{StaticResource B.TextMuted}" FontSize="12"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Save changes" Style="{StaticResource AccentButton}" MinWidth="120"
+                            Command="{Binding SaveCommand}"
+                            IsEnabled="{Binding HasSelection}"/>
+                    <Button Content="Close" MinWidth="90" Margin="10,0,0,0" Click="Close_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,398 @@
+<Window x:Class="DataPortStudio.Views.ConnectionDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Connection"
+        xmlns:loc="clr-namespace:DataPortStudio.Services"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" SizeToContent="Height"
+        ShowInTaskbar="False" Width="480">
+    <Border Background="{StaticResource B.Surface}" CornerRadius="12" Margin="16"
+            BorderBrush="{StaticResource B.Border}" BorderThickness="1">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="28" ShadowDepth="4" Opacity="0.25" Color="#FF1F2933"/>
+        </Border.Effect>
+        <StackPanel>
+            <!-- Header -->
+            <Border Background="{StaticResource B.Sidebar}" CornerRadius="12,12,0,0"
+                    Padding="20,16" MouseLeftButtonDown="Header_MouseDown">
+                <StackPanel Orientation="Horizontal">
+                    <Path x:Name="HeaderIcon" Data="M2,3 H14 V6.5 H2 Z M2,9.5 H14 V13 H2 Z" Width="18" Height="18"
+                          Stretch="Uniform" Stroke="#FF2D7FE0" StrokeThickness="1.4"
+                          VerticalAlignment="Center"/>
+                    <TextBlock x:Name="HeaderTitle" Text="Connection" Margin="12,0,0,0"
+                               FontSize="16" FontWeight="SemiBold" Foreground="White"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Body -->
+            <StackPanel Margin="22,18,22,8">
+                <Label Content="Connection name"/>
+                <TextBox x:Name="NameBox" Margin="0,0,0,14"/>
+
+                <Label Content="Database type"/>
+                <UniformGrid Columns="4" Margin="0,2,0,14">
+                    <RadioButton x:Name="EngSqlServer" GroupName="Engine" Style="{StaticResource EngineCard}"
+                                 Tag="SqlServer" Checked="Engine_Changed">
+                        <StackPanel HorizontalAlignment="Center">
+                            <Path Width="22" Height="22" Stretch="Uniform" Fill="Transparent" StrokeThickness="1.3"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"
+                                  Data="M2,3 H14 V6.5 H2 Z M2,9.5 H14 V13 H2 Z M4,4.75 H4.01 M4,11.25 H4.01"/>
+                            <TextBlock Text="SQL Server" Margin="0,6,0,0" FontSize="11" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton x:Name="EngSqlite" GroupName="Engine" Style="{StaticResource EngineCard}"
+                                 Tag="Sqlite" Checked="Engine_Changed">
+                        <StackPanel HorizontalAlignment="Center">
+                            <Path Width="22" Height="22" Stretch="Uniform" Fill="Transparent" StrokeThickness="1.3"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"
+                                  Data="M8,2 C10.8,2 13,2.7 13,3.6 C13,4.5 10.8,5.2 8,5.2 C5.2,5.2 3,4.5 3,3.6 C3,2.7 5.2,2 8,2 Z M3,3.6 L3,12.4 C3,13.3 5.2,14 8,14 C10.8,14 13,13.3 13,12.4 L13,3.6"/>
+                            <TextBlock Text="SQLite" Margin="0,6,0,0" FontSize="11" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton x:Name="EngPostgres" GroupName="Engine" Style="{StaticResource EngineCard}"
+                                 Tag="PostgreSql" Checked="Engine_Changed">
+                        <StackPanel HorizontalAlignment="Center">
+                            <Path Width="22" Height="22" Stretch="Uniform" Fill="Transparent" StrokeThickness="1.3"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"
+                                  Data="M8,1.5 C4.4,1.5 2.5,3.5 2.5,7.5 C2.5,11 4,14.5 6,14.5 C6.9,14.5 6.8,13 7,11.5 M8,1.5 C11.6,1.5 13.5,3.5 13.5,7 C13.5,10 12,12.5 10.3,12.5 C9.2,12.5 9.3,10.8 9.5,9 M6,6.2 A0.6,0.6 0 1 0 6,6.21 M10,6 A0.6,0.6 0 1 0 10,6.01"/>
+                            <TextBlock Text="PostgreSQL" Margin="0,6,0,0" FontSize="11" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton x:Name="EngMongo" GroupName="Engine" Style="{StaticResource EngineCard}"
+                                 Tag="MongoDb" Checked="Engine_Changed">
+                        <StackPanel HorizontalAlignment="Center">
+                            <Path Width="22" Height="22" Stretch="Uniform" Fill="Transparent" StrokeThickness="1.3"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"
+                                  Data="M8,1.5 C5,5 5,11.5 8,14.5 C11,11.5 11,5 8,1.5 Z M8,1.5 V14.5"/>
+                            <TextBlock Text="MongoDB" Margin="0,6,0,0" FontSize="11" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton x:Name="EngFirebird" GroupName="Engine" Style="{StaticResource EngineCard}"
+                                 Tag="Firebird" Checked="Engine_Changed">
+                        <StackPanel HorizontalAlignment="Center">
+                            <Path Width="22" Height="22" Stretch="Uniform" Fill="Transparent" StrokeThickness="1.3"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"
+                                  Data="M8,1.5 C9,4 12,5 11.5,8.5 C11.2,11 9.5,13.5 8,13.5 C6.5,13.5 4.8,12 5,9.5 C5.1,8 6,7.7 6.6,8.6 C6.9,6 8,4.5 8,1.5 Z"/>
+                            <TextBlock Text="Firebird" Margin="0,6,0,0" FontSize="11" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton x:Name="EngMySql" GroupName="Engine" Style="{StaticResource EngineCard}"
+                                 Tag="MySql" Checked="Engine_Changed">
+                        <StackPanel HorizontalAlignment="Center">
+                            <Path Width="22" Height="22" Stretch="Uniform" Fill="Transparent" StrokeThickness="1.3"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"
+                                  Data="M2,11 C3,7 5,4.5 8,4.5 C7.4,5.6 7.6,7 8.6,7.8 C10,9 11.5,8.6 12.5,9.6 C13.3,10.4 13.4,11.6 13,12.5 M5,12.2 C6.5,12 8,12 9.2,12.6"/>
+                            <TextBlock Text="MySQL" Margin="0,6,0,0" FontSize="11" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton x:Name="EngMariaDb" GroupName="Engine" Style="{StaticResource EngineCard}"
+                                 Tag="MariaDb" Checked="Engine_Changed">
+                        <StackPanel HorizontalAlignment="Center">
+                            <Path Width="22" Height="22" Stretch="Uniform" Fill="Transparent" StrokeThickness="1.3"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"
+                                  Data="M2,11 C3,7 5,4.5 8,4.5 C7.4,5.6 7.6,7 8.6,7.8 C10,9 11.5,8.6 12.5,9.6 C13.3,10.4 13.4,11.6 13,12.5 M5,12.2 C6.5,12 8,12 9.2,12.6"/>
+                            <TextBlock Text="MariaDB" Margin="0,6,0,0" FontSize="11" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton x:Name="EngTps" GroupName="Engine" Style="{StaticResource EngineCard}"
+                                 Tag="Tps" Checked="Engine_Changed">
+                        <StackPanel HorizontalAlignment="Center">
+                            <Path Width="22" Height="22" Stretch="Uniform" Fill="Transparent" StrokeThickness="1.3"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"
+                                  Data="M5,2 H10.5 L13,4.5 V12 H5 Z M10.5,2 V4.5 H13 M3,5 V14 H10.5"/>
+                            <TextBlock Text="TPS" Margin="0,6,0,0" FontSize="11" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton x:Name="EngClarionDat" GroupName="Engine" Style="{StaticResource EngineCard}"
+                                 Tag="ClarionDat" Checked="Engine_Changed">
+                        <StackPanel HorizontalAlignment="Center">
+                            <Path Width="22" Height="22" Stretch="Uniform" Fill="Transparent" StrokeThickness="1.3"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"
+                                  Data="M4,2 H10 L13,5 V14 H4 Z M10,2 V5 H13 M6,8 H11 M6,10.5 H11 M6,5.5 H8"/>
+                            <TextBlock Text="Clarion DAT" Margin="0,6,0,0" FontSize="11" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton x:Name="EngOracle" GroupName="Engine" Style="{StaticResource EngineCard}"
+                                 Tag="Oracle" Checked="Engine_Changed">
+                        <StackPanel HorizontalAlignment="Center">
+                            <Path Width="22" Height="22" Stretch="Uniform" Fill="Transparent" StrokeThickness="1.3"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"
+                                  Data="M8,2 C10.8,2 13,2.7 13,3.6 C13,4.5 10.8,5.2 8,5.2 C5.2,5.2 3,4.5 3,3.6 C3,2.7 5.2,2 8,2 Z M3,3.6 L3,12.4 C3,13.3 5.2,14 8,14 C10.8,14 13,13.3 13,12.4 L13,3.6"/>
+                            <TextBlock Text="Oracle" Margin="0,6,0,0" FontSize="11" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+                </UniformGrid>
+
+                <!-- ===== SQL Server ===== -->
+                <StackPanel x:Name="SqlServerPanel">
+                    <CheckBox x:Name="RawModeCheck" Content="Use a raw connection string"
+                              Margin="0,0,0,12" Checked="RawMode_Changed" Unchecked="RawMode_Changed"/>
+
+                    <!-- Raw connection string -->
+                    <StackPanel x:Name="RawPanel" Visibility="Collapsed">
+                        <Label Content="Connection string"/>
+                        <TextBox x:Name="RawBox" Margin="0,0,0,8" AcceptsReturn="True"
+                                 TextWrapping="Wrap" Height="80" VerticalContentAlignment="Top"/>
+                    </StackPanel>
+
+                    <!-- Field-based builder -->
+                    <StackPanel x:Name="FieldPanel">
+                        <Label Content="Server  (e.g. localhost\SQLEXPRESS  or  tcp:host,1433)"/>
+                        <TextBox x:Name="ServerBox" Margin="0,0,0,14"/>
+
+                        <Label Content="Authentication"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,2,0,14">
+                            <RadioButton x:Name="WinAuthRadio" Content="Windows" GroupName="Auth"
+                                         IsChecked="True" Checked="Auth_Changed"/>
+                            <RadioButton x:Name="SqlAuthRadio" Content="SQL Server login" GroupName="Auth"
+                                         Checked="Auth_Changed"/>
+                        </StackPanel>
+
+                        <Grid x:Name="CredentialsGrid" Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="14"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <Label Content="Username"/>
+                                <TextBox x:Name="UserBox"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <Label Content="Password"/>
+                                <PasswordBox x:Name="PassBox"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Label Content="Default database  (optional)"/>
+                        <TextBox x:Name="DatabaseBox" Margin="0,0,0,14"/>
+
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox x:Name="EncryptCheck" Content="Encrypt" IsChecked="True" Margin="0,0,20,0"/>
+                            <CheckBox x:Name="TrustCertCheck" Content="Trust server certificate" IsChecked="True"/>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- ===== SQLite ===== -->
+                <StackPanel x:Name="SqlitePanel" Visibility="Collapsed">
+                    <Label Content="Database file  (.db / .sqlite)"/>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="FileBox" Grid.Column="0" VerticalContentAlignment="Center"/>
+                        <Button x:Name="BrowseButton" Grid.Column="1" Content="Browse…" MinWidth="90"
+                                Margin="8,0,0,0" Click="Browse_Click"/>
+                    </Grid>
+                    <TextBlock Text="Point to an existing SQLite database file." FontSize="11" FontStyle="Italic"
+                               Foreground="{StaticResource B.TextMuted}"/>
+                </StackPanel>
+
+                <!-- ===== Firebird ===== -->
+                <StackPanel x:Name="FirebirdPanel" Visibility="Collapsed">
+                    <CheckBox x:Name="FbEmbeddedCheck" Content="Embedded (no server — uses fbclient.dll next to the app)"
+                              Margin="0,0,0,12" Click="FbEmbedded_Changed"/>
+
+                    <Grid x:Name="FbServerRow" Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="100"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <Label Content="Host"/>
+                            <TextBox x:Name="FbHostBox" Text="localhost"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <Label Content="Port"/>
+                            <TextBox x:Name="FbPortBox" Text="3050"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Label x:Name="FbFileLabel" Content="Database  (server path or alias, e.g. C:\data\app.fdb)"/>
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="FbFileBox" Grid.Column="0" VerticalContentAlignment="Center"/>
+                        <Button x:Name="FbBrowseButton" Grid.Column="1" Content="Browse…" MinWidth="90"
+                                Margin="8,0,0,0" Click="FbBrowse_Click"/>
+                    </Grid>
+
+                    <Grid Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="14"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <Label Content="Username"/>
+                            <TextBox x:Name="FbUserBox" Text="SYSDBA"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <Label Content="Password"/>
+                            <PasswordBox x:Name="FbPassBox"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+
+                <!-- ===== MongoDB ===== -->
+                <StackPanel x:Name="MongoPanel" Visibility="Collapsed">
+                    <Label Content="Connection string"/>
+                    <TextBox x:Name="MongoUriBox" Margin="0,0,0,8" AcceptsReturn="True" TextWrapping="Wrap"
+                             Height="60" VerticalContentAlignment="Top"/>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" FontStyle="Italic"
+                               Foreground="{StaticResource B.TextMuted}"
+                               Text="e.g. mongodb://localhost:27017  or  mongodb+srv://user:pass@cluster.mongodb.net"/>
+                    <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" FontSize="11"
+                               Foreground="{StaticResource B.TextMuted}"
+                               Text="Read-only viewer: browse databases, collections and documents."/>
+                </StackPanel>
+
+                <!-- ===== MySQL / MariaDB ===== -->
+                <StackPanel x:Name="MySqlPanel" Visibility="Collapsed">
+                    <Grid Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="100"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <Label Content="Host"/>
+                            <TextBox x:Name="MyHostBox" Text="localhost"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <Label Content="Port"/>
+                            <TextBox x:Name="MyPortBox" Text="3306"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Label Content="Default database  (optional)"/>
+                    <TextBox x:Name="MyDatabaseBox" Margin="0,0,0,14"/>
+
+                    <Grid Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="14"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <Label Content="Username"/>
+                            <TextBox x:Name="MyUserBox" Text="root"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <Label Content="Password"/>
+                            <PasswordBox x:Name="MyPassBox"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+
+                <!-- ===== TPS (Clarion) ===== -->
+                <StackPanel x:Name="TpsPanel" Visibility="Collapsed">
+                    <Label Content="Folder containing .tps files"/>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="TpsFolderBox" Grid.Column="0" VerticalContentAlignment="Center"/>
+                        <Button x:Name="TpsBrowseButton" Grid.Column="1" Content="Browse…" MinWidth="90"
+                                Margin="8,0,0,0" Click="TpsBrowse_Click"/>
+                    </Grid>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" FontStyle="Italic"
+                               Foreground="{StaticResource B.TextMuted}"
+                               Text="Each .tps file in the folder appears as a table. Read-only viewer — use Copy to write a file to a SQL database."/>
+                </StackPanel>
+
+                <!-- ===== Oracle ===== -->
+                <StackPanel x:Name="OraclePanel" Visibility="Collapsed">
+                    <Grid Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="100"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <Label Content="Host"/>
+                            <TextBox x:Name="OraHostBox" Text="localhost"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <Label Content="Port"/>
+                            <TextBox x:Name="OraPortBox" Text="1521"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Label Content="Service name  (e.g. ORCL, XEPDB1, FREEPDB1)"/>
+                    <TextBox x:Name="OraServiceBox" Margin="0,0,0,14"/>
+
+                    <Grid Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="14"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <Label Content="Username"/>
+                            <TextBox x:Name="OraUserBox"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <Label Content="Password"/>
+                            <PasswordBox x:Name="OraPassBox"/>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" FontSize="11" FontStyle="Italic"
+                               Foreground="{StaticResource B.TextMuted}"
+                               Text="Browse your schema's tables &amp; views, view and edit rows, run SQL, and copy tables to/from any SQL database."/>
+                </StackPanel>
+
+                <!-- ===== Clarion DAT ===== -->
+                <StackPanel x:Name="DatPanel" Visibility="Collapsed">
+                    <Label Content="Folder containing .dat files"/>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="DatFolderBox" Grid.Column="0" VerticalContentAlignment="Center"/>
+                        <Button x:Name="DatBrowseButton" Grid.Column="1" Content="Browse…" MinWidth="90"
+                                Margin="8,0,0,0" Click="DatBrowse_Click"/>
+                    </Grid>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" FontStyle="Italic"
+                               Foreground="{StaticResource B.TextMuted}"
+                               Text="Classic Clarion (.dat) files, one per table. Read-only viewer — use Copy to write a file to a SQL database."/>
+                </StackPanel>
+
+                <!-- ===== Not-yet-supported engines ===== -->
+                <Border x:Name="ComingSoonPanel" Visibility="Collapsed" Margin="0,4,0,4"
+                        Background="{StaticResource B.SurfaceAlt}" CornerRadius="8"
+                        BorderBrush="{StaticResource B.Border}" BorderThickness="1" Padding="14,12">
+                    <TextBlock x:Name="ComingSoonText" TextWrapping="Wrap" Foreground="{StaticResource B.TextMuted}"
+                               Text="Support for this database is coming soon."/>
+                </Border>
+            </StackPanel>
+
+            <!-- Footer -->
+            <Border Background="{StaticResource B.SurfaceAlt}" CornerRadius="0,0,12,12"
+                    BorderBrush="{StaticResource B.Border}" BorderThickness="0,1,0,0" Padding="16,14">
+                <Grid>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                        <Button Content="Test" MinWidth="84" Click="Test_Click"/>
+                        <TextBlock x:Name="TestStatus" VerticalAlignment="Center" Margin="12,0,0,0"
+                                   FontSize="12" TextWrapping="Wrap" MaxWidth="150"
+                                   Foreground="{StaticResource B.TextMuted}"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Cancel" MinWidth="90" Margin="0,0,10,0" Click="Cancel_Click"/>
+                        <Button Content="Save" MinWidth="90" Style="{StaticResource AccentButton}"
+                                Click="Save_Click" IsDefault="True"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </Border>
+</Window>

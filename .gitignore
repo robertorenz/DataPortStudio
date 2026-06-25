@@ -1,0 +1,12 @@
+# Build output
+bin/
+obj/
+run/
+_pub/
+
+# IDE
+.vs/
+*.user
+
+# Local screenshots / scratch
+_shot*.png

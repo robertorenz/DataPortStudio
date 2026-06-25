@@ -1,0 +1,44 @@
+<UserControl x:Class="DataPortStudio.Views.SqlPreviewView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:DataPortStudio.Services"
+             Background="{StaticResource B.Surface}">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,8">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{loc:Tr Sql_PreviewTitle}" FontWeight="SemiBold" FontSize="12"
+                           Foreground="{StaticResource B.Text}" VerticalAlignment="Center"/>
+                <TextBlock Text="{loc:Tr Sql_PreviewSubtitle}" Margin="6,0,0,0"
+                           FontSize="11" Foreground="{StaticResource B.TextMuted}" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="⤢" Width="26" Style="{StaticResource ToolButton}"
+                        Command="{Binding PinSqlCommand}" ToolTip="{loc:Tr Tip_Pin}"/>
+                <Button Style="{StaticResource PaneCloseButton}" Command="{Binding HideSqlPanelCommand}"/>
+            </StackPanel>
+        </Grid>
+
+        <Border Grid.Row="1" BorderBrush="{StaticResource B.Border}" BorderThickness="1" CornerRadius="6">
+            <TextBox Text="{Binding SqlPreview, Mode=OneWay}" IsReadOnly="True" TextWrapping="NoWrap"
+                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                     VerticalContentAlignment="Top"
+                     FontFamily="Consolas" FontSize="12" BorderThickness="0" Padding="8"/>
+        </Border>
+
+        <Grid Grid.Row="2" Margin="0,10,0,0">
+            <TextBlock Text="{loc:Tr Sql_PreviewOnly}"
+                       FontSize="11" Foreground="{StaticResource B.TextMuted}" VerticalAlignment="Center"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="{loc:Tr Btn_Refresh}" Command="{Binding RefreshSqlPreviewCommand}"/>
+                <Button Content="{loc:Tr Sql_ExecuteNow}" Margin="8,0,0,0" Style="{StaticResource AccentButton}"
+                        Command="{Binding ExecuteSqlCommand}"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>
