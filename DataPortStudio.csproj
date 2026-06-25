@@ -8,6 +8,8 @@
     <UseWPF>true</UseWPF>
     <Version>1.0.0</Version>
     <AssemblyTitle>DataPortStudio</AssemblyTitle>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
   </PropertyGroup>
 
