@@ -4,10 +4,17 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.3 — 2026-06-25
+
+### Fixed
+- **TPS editing — RLE run bytes** — editing FString fields (e.g. `CLASSNAME`) on RLE-compressed pages no longer produces "stored in RLE run — cannot patch without page recompression" warnings. The writer now performs full page RLE re-encoding when any changed byte lands in a run block: it decodes the page, applies all field changes to the decoded bytes, re-encodes with the exact Clarion greedy algorithm, writes the new compressed data, and updates the 2-byte page-size field in the page header if the encoded size decreased. Changing a value to a longer string that exceeds the original page space reports a clear error instead of silently failing.
+
+---
+
 ## v1.0.2 — 2026-06-25
 
 ### Fixed
-- **TPS editing — RLE-compressed pages** — records in TPS tables with long string fields (e.g. `CLASSNAME`, `FIELDNAME`) stored in RLE-compressed pages could not be located for write-back, producing *"could not locate in file"* warnings for records like 596–602 and 175. The writer now decodes the TPS run-length encoding layer, walks records sequentially through the decoded space using the correct delta-preamble sizes, and patches each field byte at its literal-block encoded offset — no page recompression needed.
+- **TPS editing — RLE-compressed pages** — records in TPS tables with long string fields (e.g. `CLASSNAME`, `FIELDNAME`) stored in RLE-compressed pages could not be located for write-back, producing *"could not locate in file"* warnings for records like 596–602 and 175. The writer now decodes the TPS run-length encoding layer, walks records sequentially through the decoded space using the correct delta-preamble sizes, and patches each field byte at its literal-block encoded offset.
 
 ---
 

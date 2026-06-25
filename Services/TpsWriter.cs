@@ -10,12 +10,13 @@ public static class TpsWriter
     public record TpsRowEdit(int RecordNumber, IReadOnlyList<TpsFieldChange> Changes);
     public record SaveResult(int Patched, IReadOnlyList<string> Warnings);
 
-    // For non-RLE pages: ContentFileOffset = file position of content[0]
-    // For RLE pages: PageDataStart + DecToEnc offset map + ContentDecStart
     private sealed class PageRleInfo
     {
-        public int PageDataStart;
-        public int[] DecToEnc = [];   // decoded index → encoded index in compData (-1 = run byte)
+        public int PageAddr;             // absolute file offset of page header
+        public int PageDataStart;        // absolute file offset of compressed data
+        public int CompLen;              // original compressed data length
+        public int[] DecToEnc = [];      // decoded index → encoded index in compData (-1 = run byte)
+        public byte[] Decoded = [];      // full decoded page data
     }
 
     private abstract record LocBase;
@@ -36,10 +37,12 @@ public static class TpsWriter
         var fileBytes = File.ReadAllBytes(filePath);
         var warnings  = new List<string>();
 
-        // Use a clone for TpsParser so fileBytes stays pristine
         using var ms  = new MemoryStream(fileBytes.ToArray());
         var tpsFile   = new TpsFile(ms);
         var locations = BuildRecordLocations(tpsFile, tableNumber);
+
+        // Pages that need full RLE re-encoding: page → working copy of decoded bytes
+        var pageReencodes = new Dictionary<PageRleInfo, byte[]>();
 
         int patched = 0;
         foreach (var edit in editList)
@@ -73,28 +76,78 @@ public static class TpsWriter
                 }
                 else if (loc is RleLoc rl)
                 {
-                    bool fieldPatched = false;
-                    for (int i = 0; i < copyLen; i++)
+                    // Check whether any of this field's bytes land in an RLE run
+                    bool needsReencode = false;
+                    for (int i = 0; i < copyLen && !needsReencode; i++)
                     {
                         int decIdx = rl.ContentDecStart + field.Offset + i;
-                        if (decIdx < 0 || decIdx >= rl.Page.DecToEnc.Length) continue;
-                        int encIdx = rl.Page.DecToEnc[decIdx];
-                        if (encIdx < 0)
-                        {
-                            warnings.Add($"Record {edit.RecordNumber} field {change.FieldName} byte {i}: " +
-                                "stored in RLE run — cannot patch without page recompression.");
-                            continue;
-                        }
-                        int filePos = rl.Page.PageDataStart + encIdx;
-                        if (filePos < 0 || filePos >= fileBytes.Length) continue;
-                        fileBytes[filePos] = serialized[i];
-                        fieldPatched = true;
+                        if (decIdx >= 0 && decIdx < rl.Page.DecToEnc.Length &&
+                            rl.Page.DecToEnc[decIdx] < 0)
+                            needsReencode = true;
                     }
-                    if (fieldPatched) anyChange = true;
+
+                    if (needsReencode)
+                    {
+                        // Stage for full page re-encode: get or create working decoded copy
+                        if (!pageReencodes.TryGetValue(rl.Page, out var workDec))
+                        {
+                            workDec = rl.Page.Decoded.ToArray();
+                            pageReencodes[rl.Page] = workDec;
+                        }
+                        for (int i = 0; i < copyLen; i++)
+                        {
+                            int decIdx = rl.ContentDecStart + field.Offset + i;
+                            if (decIdx >= 0 && decIdx < workDec.Length)
+                                workDec[decIdx] = serialized[i];
+                        }
+                        anyChange = true;
+                    }
+                    else
+                    {
+                        // All bytes are in literal blocks — direct patch
+                        bool fieldPatched = false;
+                        for (int i = 0; i < copyLen; i++)
+                        {
+                            int decIdx = rl.ContentDecStart + field.Offset + i;
+                            if (decIdx < 0 || decIdx >= rl.Page.DecToEnc.Length) continue;
+                            int encIdx = rl.Page.DecToEnc[decIdx];
+                            if (encIdx < 0) continue;
+                            int filePos = rl.Page.PageDataStart + encIdx;
+                            if (filePos < 0 || filePos >= fileBytes.Length) continue;
+                            fileBytes[filePos] = serialized[i];
+                            fieldPatched = true;
+                        }
+                        if (fieldPatched) anyChange = true;
+                    }
                 }
             }
 
             if (anyChange) patched++;
+        }
+
+        // Apply page re-encodings
+        foreach (var (pageInfo, workDec) in pageReencodes)
+        {
+            byte[] newComp = RleEncode(workDec);
+            if (newComp.Length > pageInfo.CompLen)
+            {
+                warnings.Add(
+                    $"Cannot save: the new value is too long for the available space in this TPS page " +
+                    $"(re-encoded {newComp.Length} bytes, page holds {pageInfo.CompLen}).");
+                continue;
+            }
+            Array.Copy(newComp, 0, fileBytes, pageInfo.PageDataStart, newComp.Length);
+            if (newComp.Length < pageInfo.CompLen)
+            {
+                // Zero the unused tail of the original compressed region
+                Array.Clear(fileBytes, pageInfo.PageDataStart + newComp.Length,
+                    pageInfo.CompLen - newComp.Length);
+                // Update the 2-byte page size in the page header (LE16 at pageAddr+4)
+                int headerSize  = pageInfo.PageDataStart - pageInfo.PageAddr;
+                int newPageSize = headerSize + newComp.Length;
+                fileBytes[pageInfo.PageAddr + 4] = (byte)(newPageSize & 0xFF);
+                fileBytes[pageInfo.PageAddr + 5] = (byte)(newPageSize >> 8);
+            }
         }
 
         if (patched > 0)
@@ -120,13 +173,11 @@ public static class TpsWriter
             int pageDataStart = (int)page.AbsoluteAddress + headerSize;
             var compData      = page.CompressedData.ToArray();
 
-            // Try RLE decode; fall back to direct content search if it fails
             int[]? decToEnc = null;
             byte[]? decoded = null;
             try
             {
                 (decoded, decToEnc) = RleDecode(compData);
-                // Not RLE if decoded == compData (lengths match and data is identical)
                 if (decoded.Length == compData.Length &&
                     decoded.AsSpan().SequenceEqual(compData))
                 {
@@ -137,8 +188,14 @@ public static class TpsWriter
 
             if (decoded != null && decToEnc != null)
             {
-                // RLE page: walk records sequentially in decoded space
-                var pageInfo = new PageRleInfo { PageDataStart = pageDataStart, DecToEnc = decToEnc };
+                var pageInfo = new PageRleInfo
+                {
+                    PageAddr      = (int)page.AbsoluteAddress,
+                    PageDataStart = pageDataStart,
+                    CompLen       = compData.Length,
+                    DecToEnc      = decToEnc,
+                    Decoded       = decoded,
+                };
                 int decPos = 0;
                 foreach (var rec in records)
                 {
@@ -153,10 +210,6 @@ public static class TpsWriter
                     int preamble       = isAnchor ? 5 : 1;
                     int storedPayload  = pt - pi;
                     int advance        = preamble + storedPayload;
-
-                    // Content starts after preamble + however many header bytes are in the stored area
-                    // Stored area starts at PayloadData[pi]; header ends at PayloadData[ph]
-                    // Content offset within stored area = max(0, ph - pi)
                     int contentDecStart = decPos + preamble + Math.Max(0, ph - pi);
 
                     if (drp.TableNumber == tableNumber && contentDecStart < decoded.Length)
@@ -167,7 +220,6 @@ public static class TpsWriter
             }
             else
             {
-                // Non-RLE page: search for Content bytes directly in compData
                 foreach (var rec in records)
                 {
                     if (rec.PayloadType != RecordPayloadType.Data) continue;
@@ -197,7 +249,7 @@ public static class TpsWriter
     }
 
     // ---- TPS RLE decoder ----------------------------------------------------
-    // Format: [literal_count][literal bytes][run_count][run_count copies of last literal], repeat.
+    // Format: [litCount][literal bytes][runCount][runCount copies of last literal], repeat.
     // Counts: 1 byte if < 128; 2 bytes (lo|0x80, hi) where value = (lo & 0x7F) | (hi << 7).
 
     private static (byte[] decoded, int[] decToEnc) RleDecode(byte[] comp)
@@ -231,6 +283,63 @@ public static class TpsWriter
         }
 
         return (dec.ToArray(), offs.ToArray());
+    }
+
+    // ---- TPS RLE encoder ----------------------------------------------------
+    // Mirrors the greedy Clarion strategy: only start a run when 3+ consecutive identical
+    // bytes are found (seed byte counted as the last literal, then runCount additional copies).
+
+    private static byte[] RleEncode(byte[] dec)
+    {
+        var out2 = new List<byte>(dec.Length);
+        int pos  = 0;
+
+        void EmitCount(int n)
+        {
+            if (n < 128) { out2.Add((byte)n); }
+            else { out2.Add((byte)(0x80 | (n & 0x7F))); out2.Add((byte)(n >> 7)); }
+        }
+
+        while (pos < dec.Length)
+        {
+            int litStart = pos;
+
+            // Collect literals until a profitable run (3+ consecutive identical bytes) or end
+            while (pos < dec.Length)
+            {
+                // 3+ consecutive identical starting at pos → seed at pos, break
+                if (pos + 2 < dec.Length && dec[pos] == dec[pos + 1] && dec[pos + 1] == dec[pos + 2])
+                {
+                    pos++; // include seed in literal block
+                    break;
+                }
+                // Only 2 identical at very end — include both as literals (no run possible)
+                if (pos + 1 < dec.Length && dec[pos] == dec[pos + 1] && pos + 2 >= dec.Length)
+                {
+                    pos += 2;
+                    break;
+                }
+                pos++;
+            }
+
+            int litCount = pos - litStart;
+            EmitCount(litCount);
+            for (int i = litStart; i < pos; i++) out2.Add(dec[i]);
+
+            // Count run copies after the seed
+            int runCount = 0;
+            if (pos > 0 && pos < dec.Length)
+            {
+                byte runVal = dec[pos - 1];
+                while (pos < dec.Length && dec[pos] == runVal) { runCount++; pos++; }
+            }
+
+            // Omit trailing runCount=0 at end of data (matches original Clarion encoding)
+            if (runCount > 0 || pos < dec.Length)
+                EmitCount(runCount);
+        }
+
+        return out2.ToArray();
     }
 
     // ---- helpers ------------------------------------------------------------
