@@ -11,13 +11,19 @@ the database.
 
 ## Download
 
-Grab the latest **portable `.exe`** from the
+Grab the latest release from the
 [**Releases**](https://github.com/robertorenz/DataPortStudio/releases/latest) page.
 
-- Single self-contained file — **no .NET install required**.
-- Just download and double-click `DataPortStudio.exe`.
-- First launch is a couple of seconds slower (the compressed bundle self-extracts to a temp cache);
-  later launches are fast.
+**Option 1 — Installer** (`DataPortStudio-1.0.11-Setup.exe`, ~84 MB)
+- Installs to `Program Files`, creates a Start Menu entry, and adds an optional Desktop shortcut.
+- Includes a proper uninstaller (Add/Remove Programs).
+
+**Option 2 — Portable exe** (`DataPortStudio.exe`, ~85 MB)
+- No install needed. Download and double-click — runs from any folder.
+- Native DLLs are bundled inside the exe and extracted to a temp cache on first run; subsequent launches are fast.
+- If native DLLs are missing (e.g. after some antivirus quarantines them), use the installer instead.
+
+Both options are **self-contained** — no .NET runtime install required.
 
 ## Features
 
