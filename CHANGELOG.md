@@ -4,6 +4,13 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.7 — 2026-06-25
+
+### Fixed / Improved
+- **TPS editing — per-field verbose diagnostic in no-op warning** — when a save produces no decoded-buffer change (no-op), the error dialog now includes per-field details: field name, the value being written, `fieldOffset`, `fieldLen`, `copyLen`, `cds`, `fdb`, `firstDecIdx`, old/new byte values, and count of bytes that actually differed. This is the key diagnostic to determine whether the write target is wrong, the value matches what's stored, or copyLen is 0.
+
+---
+
 ## v1.0.6 — 2026-06-25
 
 ### Fixed / Improved

@@ -53,6 +53,8 @@ public static class TpsWriter
         var reencodePendingPerPage = new Dictionary<PageRleInfo, HashSet<int>>();
         // Records whose changes have been committed (direct or successful re-encode)
         var changedRecordNumbers = new HashSet<int>();
+        // Per-page verbose write log — only emitted if a no-op is detected
+        var rleWriteLog = new Dictionary<PageRleInfo, List<string>>();
 
         foreach (var edit in editList)
         {
@@ -106,15 +108,20 @@ public static class TpsWriter
                 else if (loc is RleLoc rl)
                 {
                     // Always route ALL changes through workDec for RLE pages.
-                    // Direct-patching the compressed stream and then re-encoding the decoded copy
-                    // would undo those patches; using workDec exclusively avoids the conflict.
                     if (!pageReencodes.TryGetValue(rl.Page, out var workDec))
                     {
                         workDec = rl.Page.Decoded.ToArray();
                         pageReencodes[rl.Page] = workDec;
                     }
+
+                    // Capture diagnostic info for this field write (used in no-op warning)
+                    if (!rleWriteLog.TryGetValue(rl.Page, out var pageLog))
+                        rleWriteLog[rl.Page] = pageLog = new List<string>();
+
+                    int diagFirstDecIdx = -1, diagOldByte = -1, diagNewByte = -1, diagChangedBytes = 0;
                     bool anyOutOfRange = false;
                     int firstOobDecIdx = -1, firstOobRelOff = -1;
+
                     for (int i = 0; i < copyLen; i++)
                     {
                         int relOff = field.Offset + i;
@@ -129,7 +136,11 @@ public static class TpsWriter
                             decIdx = rl.ContentDecStart + (relOff - rl.FieldDataBase);
                         }
                         if (decIdx >= 0 && decIdx < workDec.Length)
+                        {
+                            if (diagFirstDecIdx < 0) { diagFirstDecIdx = decIdx; diagOldByte = workDec[decIdx]; diagNewByte = serialized[i]; }
+                            if (workDec[decIdx] != serialized[i]) diagChangedBytes++;
                             workDec[decIdx] = serialized[i];
+                        }
                         else if (!anyOutOfRange)
                         {
                             anyOutOfRange = true;
@@ -137,12 +148,21 @@ public static class TpsWriter
                             firstOobRelOff = relOff;
                         }
                     }
+
+                    pageLog.Add(
+                        $"  rec{edit.RecordNumber} '{field.Name}' newVal='{change.NewValue}' " +
+                        $"offset={field.Offset} len={field.Length} copyLen={copyLen} " +
+                        $"cds={rl.ContentDecStart} fdb={rl.FieldDataBase} " +
+                        $"firstDecIdx={diagFirstDecIdx} oldByte={diagOldByte:X2} newByte={diagNewByte:X2} " +
+                        $"changedBytes={diagChangedBytes}");
+
                     if (anyOutOfRange)
                         warnings.Add(
                             $"Record {edit.RecordNumber} field '{field.Name}': some bytes fell outside " +
                             $"the decoded page buffer (first: decIdx={firstOobDecIdx} relOff={firstOobRelOff} " +
                             $"cds={rl.ContentDecStart} fdb={rl.FieldDataBase} " +
                             $"anchorCds={rl.Page.AnchorContentDecStart} decoded.Length={workDec.Length}).");
+
                     if (!reencodePendingPerPage.TryGetValue(rl.Page, out var recSet))
                         reencodePendingPerPage[rl.Page] = recSet = new HashSet<int>();
                     recSet.Add(edit.RecordNumber);
@@ -160,11 +180,19 @@ public static class TpsWriter
             if (workDec.AsSpan().SequenceEqual(pageInfo.Decoded.AsSpan()))
             {
                 if (reencodePendingPerPage.TryGetValue(pageInfo, out var noOpSet))
-                    warnings.Add(
-                        $"Page {pageInfo.PageAddr:X6} — decoded bytes UNCHANGED after applying " +
+                {
+                    var sb = new System.Text.StringBuilder();
+                    sb.Append(
+                        $"Page {pageInfo.PageAddr:X6} — decoded UNCHANGED after applying " +
                         $"{string.Join(", ", noOpSet.Select(r => $"rec {r}"))}. " +
-                        $"anchorCds={pageInfo.AnchorContentDecStart} decoded.Length={pageInfo.Decoded.Length}. " +
-                        $"The new value may already equal the stored bytes, or all field offsets fell outside the decoded buffer.");
+                        $"anchorCds={pageInfo.AnchorContentDecStart} decoded.Length={pageInfo.Decoded.Length}.");
+                    if (rleWriteLog.TryGetValue(pageInfo, out var log))
+                    {
+                        sb.Append("\nWrite details (changedBytes=0 means value already matched):");
+                        foreach (var line in log) sb.Append("\n" + line);
+                    }
+                    warnings.Add(sb.ToString());
+                }
                 continue;
             }
 
