@@ -35,10 +35,16 @@ public static class ExcelService
         if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
             return [];
 
+        // Use explicit patterns — "*.xls" on Windows (Win32 FindFirstFile) also matches *.xlsx,
+        // so enumerate each extension separately and deduplicate before sorting.
         var result = new List<ExcelSheet>();
-        foreach (var file in Directory.EnumerateFiles(folder, "*.*", SearchOption.TopDirectoryOnly)
-                     .Where(IsExcelFile)
-                     .OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
+        var files = new[] { "*.xlsx", "*.xlsm", "*.xls" }
+            .SelectMany(p => Directory.EnumerateFiles(folder, p, SearchOption.TopDirectoryOnly))
+            .Where(IsExcelFile)                              // safety guard against Win32 pattern quirks
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(f => f, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var file in files)
         {
             var fileName = Path.GetFileName(file);
             var ext = Path.GetExtension(file);
@@ -256,6 +262,82 @@ public static class ExcelService
             return dt.HasValue ? FormatDate(dt.Value) : cell.NumericCellValue.ToString();
         }
         catch { return cell.NumericCellValue.ToString(); }
+    }
+
+    /// <summary>
+    /// Writes the DataTable back to the worksheet, replacing all data rows (row 1 = headers stays untouched).
+    /// Rows with DataRowState.Deleted are omitted; all others are written with their current values.
+    /// </summary>
+    public static void SaveTable(string folder, string fileName, string sheetName, DataTable table)
+    {
+        var path = Path.Combine(folder, fileName);
+        var ext = Path.GetExtension(path);
+        if (IsXlsx(ext)) SaveXlsx(path, sheetName, table);
+        else if (IsXls(ext)) SaveXls(path, sheetName, table);
+        else throw new NotSupportedException($"Unsupported file format: {ext}");
+    }
+
+    private static string CellValue(DataRow row, int colIndex)
+    {
+        var v = row[colIndex];
+        return (v == null || v == DBNull.Value) ? "" : v.ToString()!;
+    }
+
+    private static void SaveXlsx(string path, string sheetName, DataTable table)
+    {
+        using var wb = new XLWorkbook(path);
+        var ws = wb.Worksheets.FirstOrDefault(w =>
+                     w.Name.Equals(sheetName, StringComparison.OrdinalIgnoreCase))
+                 ?? throw new InvalidOperationException(
+                     $"Sheet '{sheetName}' not found in {Path.GetFileName(path)}.");
+
+        // Delete all data rows (bottom-up so row numbers stay valid during deletion)
+        int lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+        for (int r = lastRow; r >= 2; r--)
+            ws.Row(r).Delete();
+
+        // Write all non-deleted rows
+        int rowNum = 2;
+        foreach (DataRow row in table.Rows)
+        {
+            if (row.RowState == DataRowState.Deleted) continue;
+            for (int c = 0; c < table.Columns.Count; c++)
+                ws.Cell(rowNum, c + 1).SetValue(CellValue(row, c));
+            rowNum++;
+        }
+
+        wb.Save();
+    }
+
+    private static void SaveXls(string path, string sheetName, DataTable table)
+    {
+        HSSFWorkbook wb;
+        using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+            wb = new HSSFWorkbook(fs);
+
+        var sheet = wb.GetSheet(sheetName)
+                    ?? throw new InvalidOperationException(
+                        $"Sheet '{sheetName}' not found in {Path.GetFileName(path)}.");
+
+        // Remove all data rows (keep header row at FirstRowNum)
+        for (int r = sheet.LastRowNum; r > sheet.FirstRowNum; r--)
+        {
+            var row = sheet.GetRow(r);
+            if (row != null) sheet.RemoveRow(row);
+        }
+
+        // Write all non-deleted rows
+        int rowNum = sheet.FirstRowNum + 1;
+        foreach (DataRow row in table.Rows)
+        {
+            if (row.RowState == DataRowState.Deleted) continue;
+            var excelRow = sheet.CreateRow(rowNum++);
+            for (int c = 0; c < table.Columns.Count; c++)
+                excelRow.CreateCell(c).SetCellValue(CellValue(row, c));
+        }
+
+        using var outFs = new FileStream(path, FileMode.Create, FileAccess.Write);
+        wb.Write(outFs);
     }
 
     /// <summary>Structure / info panel for an Excel sheet.</summary>

@@ -4,6 +4,16 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.12 — 2026-06-25
+
+### Added
+- **Excel editing** — Excel worksheets are now fully editable: add rows, edit cells, delete rows, and **Save changes** writes the modified data back to the `.xls`/`.xlsx` file. The sheet's header row and all other sheets in the workbook are left untouched; only the data rows in the open worksheet are rewritten.
+
+### Fixed
+- **Excel folder connections — only Excel files are listed** — the connection tree and Objects tab now only enumerate `.xls`, `.xlsx`, and `.xlsm` files. Previously, files of other types in the same folder (e.g. `.tps`, `.dat`) could appear in the list due to `"*.*"` enumeration before the per-file filter was applied. Changed to OS-level extension patterns for reliable filtering.
+
+---
+
 ## v1.0.11 — 2026-06-25
 
 ### Added

@@ -60,6 +60,8 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
     private int _tpsTableNumber;
     private string? _tpsPath;
 
+    private bool _isExcel;
+
     public DbTreeNode Node { get; }
     /// <summary>Uniquely identifies the table so duplicate tabs aren't opened.</summary>
     public string Key { get; }
@@ -629,9 +631,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
                     () => DatService.ReadTable(Node.Connection.FilePath ?? "", Node.Name, RowLimit), "Clarion DAT file");
 
             if (Node.Connection.Engine == DatabaseEngine.Excel)
-                return await LoadClarionFileAsync(
-                    () => ExcelService.ReadTable(Node.Connection.FilePath ?? "", Node.Database ?? "", Node.Schema ?? "", RowLimit),
-                    "Excel file");
+                return await LoadExcelAsync();
 
             _session = await EditableTableSession.OpenAsync(
                 Node.Connection.Engine, Node.Connection.BuildConnectionString(),
@@ -815,6 +815,79 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
         }
     }
 
+    /// <summary>Loads an Excel worksheet into an editable grid (full add/edit/delete support).</summary>
+    private async Task<bool> LoadExcelAsync()
+    {
+        var folder = Node.Connection.FilePath ?? "";
+        var fileName = Node.Database ?? "";
+        var sheetName = Node.Schema ?? "";
+        try
+        {
+            _sourceData = await Task.Run(() =>
+                ExcelService.ReadTable(folder, fileName, sheetName, RowLimit));
+
+            _isExcel = true;
+            GridReadOnly = false;
+            GridCanModifyRows = true;
+
+            ColumnNames.Clear();
+            foreach (DataColumn c in _sourceData.Columns)
+                ColumnNames.Add(c.ColumnName);
+            OnPropertyChanged(nameof(CanPickRowIdentity));
+
+            _sourceData.RowChanged += OnDataChanged;
+            _sourceData.RowDeleted += OnDataChanged;
+
+            ProjectView();
+            HasUnsavedChanges = false;
+            ApplyDefaults();
+            OnPropertyChanged(nameof(TabToolTip));
+
+            _setStatus($"Loaded {_sourceData.Rows.Count} row(s) from {Identifier} (limit {RowLimit}).");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Dialogs.ShowError("Could not open Excel file", ex.Message);
+            _setStatus("Failed to open Excel file.");
+            return false;
+        }
+        finally
+        {
+            _setBusy(false);
+        }
+    }
+
+    private async Task SaveExcelChangesAsync()
+    {
+        if (_sourceData is null) return;
+        if (_sourceData.GetChanges() is null) return;
+
+        _setBusy(true);
+        try
+        {
+            var folder = Node.Connection.FilePath ?? "";
+            var fileName = Node.Database ?? "";
+            var sheetName = Node.Schema ?? "";
+            var snapshot = _sourceData;
+
+            await Task.Run(() => ExcelService.SaveTable(folder, fileName, sheetName, snapshot));
+            _sourceData.AcceptChanges();
+            HasUnsavedChanges = false;
+            ProjectView();
+            _setStatus($"Saved changes to {Identifier}.");
+        }
+        catch (Exception ex)
+        {
+            Dialogs.ShowError("Save failed", ex.Message);
+            _setStatus("Save failed.");
+        }
+        finally
+        {
+            _setBusy(false);
+        }
+    }
+
     [RelayCommand]
     private async Task Reload() => await LoadAsync();
 
@@ -862,6 +935,11 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
         if (_tpsDef is not null)
         {
             await SaveTpsChangesAsync();
+            return;
+        }
+        if (_isExcel)
+        {
+            await SaveExcelChangesAsync();
             return;
         }
         if (_session is null || !_session.HasChanges) return;
@@ -988,13 +1066,14 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
 
     private void Detach()
     {
-        if (_tpsDef is not null && _sourceData is not null)
+        if ((_tpsDef is not null || _isExcel) && _sourceData is not null)
         {
             _sourceData.RowChanged -= OnDataChanged;
             _sourceData.RowDeleted -= OnDataChanged;
         }
         _tpsDef = null;
         _tpsPath = null;
+        _isExcel = false;
 
         _sourceData = null;
         if (_session is null) return;

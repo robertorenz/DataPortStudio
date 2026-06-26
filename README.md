@@ -7,7 +7,7 @@ Add connection strings, browse the server tree (databases → schemas → tables
 view & edit its records in place — including adding and deleting rows — with changes pushed back to
 the database.
 
-![Status](https://img.shields.io/badge/status-v1.0.11-blue) ![Platform](https://img.shields.io/badge/platform-Windows-informational) ![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
+![Status](https://img.shields.io/badge/status-v1.0.12-blue) ![Platform](https://img.shields.io/badge/platform-Windows-informational) ![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
 
 ## Download
 
@@ -65,8 +65,10 @@ Both options are **self-contained** — no .NET runtime install required.
     data across (**TPS → SQL**); the schema and rows are created for you.
   - **Excel (.xls / .xlsx)**: point a connection at a **folder** and every worksheet in every Excel
     file in it shows up as a table. First row = column headers; empty rows are skipped; all values
-    are read as text. Read-only viewer and copy source — use **Copy** to move a sheet into any SQL
-    database. `.xlsx`/`.xlsm` read via ClosedXML; `.xls` via NPOI. No extra install needed.
+    are read and written as text. **Fully editable** — add rows, edit cells, delete rows, and
+    **Save** writes the changes back to the worksheet (replaces the sheet's data rows; header row
+    and other sheets are untouched). Use **Copy** to migrate a sheet into any SQL database.
+    `.xlsx`/`.xlsm` use ClosedXML; `.xls` uses NPOI. No extra install needed.
   - **Clarion DAT**: the *classic* Clarion ISAM format (pre-TopSpeed, `.dat`). Same folder model —
     point at a folder and each `.dat` file is a table. DataPortStudio decodes the format from its public
     spec (Clarion Technical Bulletin 117): header, field descriptors and fixed-length records,
