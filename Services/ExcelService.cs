@@ -29,6 +29,44 @@ public static class ExcelService
         return IsXlsx(ext) || IsXls(ext);
     }
 
+    /// <summary>Lists Excel file names in the folder (sorted). Does not open any files.</summary>
+    public static List<string> ListFiles(string? folder)
+    {
+        if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+            return [];
+        return new[] { "*.xlsx", "*.xlsm", "*.xls" }
+            .SelectMany(p => Directory.EnumerateFiles(folder, p, SearchOption.TopDirectoryOnly))
+            .Where(IsExcelFile)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(Path.GetFileName)
+            .OfType<string>()
+            .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    /// <summary>Returns sheet names for a single Excel file (in workbook order).</summary>
+    public static List<string> ListSheetsForFile(string folder, string fileName)
+    {
+        var path = Path.Combine(folder, fileName);
+        var ext = Path.GetExtension(path);
+        try
+        {
+            if (IsXlsx(ext))
+            {
+                using var wb = new XLWorkbook(path);
+                return wb.Worksheets.Select(ws => ws.Name).ToList();
+            }
+            if (IsXls(ext))
+            {
+                using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                var wb = new HSSFWorkbook(fs);
+                return Enumerable.Range(0, wb.NumberOfSheets).Select(i => wb.GetSheetName(i)).ToList();
+            }
+        }
+        catch { /* corrupt / locked file */ }
+        return [];
+    }
+
     /// <summary>Lists all sheets across every Excel file in the folder. Sorted by file name, then sheet order.</summary>
     public static List<ExcelSheet> ListSheets(string? folder)
     {

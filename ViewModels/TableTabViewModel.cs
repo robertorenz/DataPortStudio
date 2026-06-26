@@ -819,7 +819,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
     private async Task<bool> LoadExcelAsync()
     {
         var folder = Node.Connection.FilePath ?? "";
-        var fileName = Node.Database ?? "";
+        var fileName = string.IsNullOrEmpty(Node.Database) ? Node.Name : Node.Database;
         var sheetName = Node.Schema ?? "";
         try
         {
@@ -867,7 +867,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
         try
         {
             var folder = Node.Connection.FilePath ?? "";
-            var fileName = Node.Database ?? "";
+            var fileName = string.IsNullOrEmpty(Node.Database) ? Node.Name : Node.Database;
             var sheetName = Node.Schema ?? "";
             var snapshot = _sourceData;
 

@@ -155,7 +155,7 @@ public partial class DbTreeNode : ObservableObject
                 DatabaseEngine.MongoDb => await LoadMongoChildrenAsync(connStr),
                 DatabaseEngine.Tps => LoadClarionFileChildren(TpsService.ListTables(Connection.FilePath)),
                 DatabaseEngine.ClarionDat => LoadClarionFileChildren(DatService.ListTables(Connection.FilePath)),
-                DatabaseEngine.Excel => LoadExcelFileChildren(ExcelService.ListSheets(Connection.FilePath)),
+                DatabaseEngine.Excel => LoadExcelFileChildren(ExcelService.ListFiles(Connection.FilePath)),
                 DatabaseEngine.MySql or DatabaseEngine.MariaDb => await LoadMySqlChildrenAsync(connStr),
                 DatabaseEngine.Oracle => await LoadOracleChildrenAsync(connStr),
                 _ => await LoadSqlServerChildrenAsync(connStr)
@@ -346,15 +346,19 @@ public partial class DbTreeNode : ObservableObject
         return items;
     }
 
-    /// <summary>Excel folder: each sheet across all workbooks. FileName goes in Database, SheetName in Schema.</summary>
-    private List<DbTreeNode> LoadExcelFileChildren(List<DataPortStudio.Services.ExcelSheet> sheets)
+    /// <summary>Excel folder: one node per file. Opening the file node opens all its sheets as separate tabs.</summary>
+    private List<DbTreeNode> LoadExcelFileChildren(List<string> fileNames)
     {
         var items = new List<DbTreeNode>();
         if (Type == NodeType.Server)
-            foreach (var s in sheets)
-                items.Add(ObjectNode(NodeType.Table, Connection, s.FileName, s.SheetName, s.DisplayName));
+            foreach (var fileName in fileNames)
+                items.Add(ObjectNode(NodeType.Table, Connection, fileName, "", fileName));
         return items;
     }
+
+    /// <summary>Creates a sheet tab node from an Excel file node. Schema = sheetName, Database = fileName.</summary>
+    public static DbTreeNode ExcelSheetNode(ConnectionProfile connection, string fileName, string sheetName, string displayName) =>
+        new() { Type = NodeType.Table, Name = displayName, Connection = connection, Database = fileName, Schema = sheetName };
 
     /// <summary>MongoDB: Server → databases → collections (shown as table nodes).</summary>
     private async Task<List<DbTreeNode>> LoadMongoChildrenAsync(string uri)

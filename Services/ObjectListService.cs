@@ -42,22 +42,27 @@ public static class ObjectListService
         return result;
     }
 
-    /// <summary>Excel folder: one item per sheet across all Excel files, with the file size as a comment.</summary>
+    /// <summary>Excel folder: one item per file, with sheet count and size as the comment.</summary>
     private static Task<List<ObjectListItem>> LoadExcelSheetsAsync(ConnectionProfile p)
     {
         var folder = p.FilePath;
-        var sheets = ExcelService.ListSheets(folder);
-        var result = sheets.Select(s =>
+        var files = ExcelService.ListFiles(folder);
+        var result = files.Select(f =>
         {
             DateTime? modified = null;
-            string? size = null;
+            string? comment = null;
             try
             {
-                var fi = new FileInfo(Path.Combine(folder!, s.FileName));
-                if (fi.Exists) { modified = fi.LastWriteTime; size = FormatSize(fi.Length); }
+                var fi = new FileInfo(Path.Combine(folder!, f));
+                if (fi.Exists)
+                {
+                    modified = fi.LastWriteTime;
+                    var sheetCount = ExcelService.ListSheetsForFile(folder!, f).Count;
+                    comment = $"{FormatSize(fi.Length)} — {sheetCount} sheet{(sheetCount == 1 ? "" : "s")}";
+                }
             }
             catch { /* best effort */ }
-            return new ObjectListItem(s.DisplayName, null, modified, size);
+            return new ObjectListItem(f, null, modified, comment);
         }).ToList();
         return Task.FromResult(result);
     }

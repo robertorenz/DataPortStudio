@@ -464,6 +464,26 @@ public partial class MainViewModel : ObservableObject
         node ??= SelectedNode;
         if (node is null || !node.IsOpenable) return;
 
+        // Excel file node (Schema is empty) → open each sheet as its own tab.
+        if (node.Connection.Engine == DatabaseEngine.Excel && string.IsNullOrEmpty(node.Schema))
+        {
+            var folder = node.Connection.FilePath ?? "";
+            var fileName = string.IsNullOrEmpty(node.Database) ? node.Name : node.Database;
+            var sheets = ExcelService.ListSheetsForFile(folder, fileName);
+            foreach (var sheetName in sheets)
+            {
+                var displayName = $"{fileName} — {sheetName}";
+                var sheetNode = DbTreeNode.ExcelSheetNode(node.Connection, fileName, sheetName, displayName);
+                await OpenSingleTableAsync(sheetNode);
+            }
+            return;
+        }
+
+        await OpenSingleTableAsync(node);
+    }
+
+    private async Task OpenSingleTableAsync(DbTreeNode node)
+    {
         // Already open? Just switch to it.
         var key = TableTabViewModel.MakeKey(node);
         var existing = Tabs.OfType<TableTabViewModel>().FirstOrDefault(t => t.Key == key);

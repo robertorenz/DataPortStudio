@@ -102,6 +102,11 @@ public partial class MainWindow : Window
                 AddCopyPaste(menu, node);
                 break;
 
+            // Excel file node: open all sheets as tabs.
+            case NodeType.Table when node.Connection.Engine == DatabaseEngine.Excel:
+                menu.Items.Add(Item("Ctx_Open", () => Run(Vm.OpenTableCommand, node)));
+                break;
+
             // Clarion files are read-only: open, or copy out to a SQL database. No paste into them.
             case NodeType.Table when node.Connection.Engine.IsClarionFile():
                 menu.Items.Add(Item("Ctx_Open", () => Run(Vm.OpenTableCommand, node)));
