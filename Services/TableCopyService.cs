@@ -171,11 +171,10 @@ public static class TableCopyService
 
     /// <summary>True if a table can be copied from one engine to the other.</summary>
     public static bool CanCopyBetween(DatabaseEngine a, DatabaseEngine b) =>
-        // Clarion files (TPS/DAT) are read-only: never a copy target, but a source into any relational engine.
-        !b.IsClarionFile() &&
+        !b.IsClarionFile() && b != DatabaseEngine.Excel &&
         (a == b
             || (IsRelational(a) && IsRelational(b))
-            || (a.IsClarionFile() && IsRelational(b)));
+            || ((a.IsClarionFile() || a == DatabaseEngine.Excel) && IsRelational(b)));
 
     public static Task CopyCrossAsync(
         ConnectionProfile src, string srcDb, string srcSchema, string srcName,
@@ -184,6 +183,9 @@ public static class TableCopyService
     {
         if (src.Engine.IsClarionFile())
             return CopyClarionFileCrossAsync(src, srcName, tgt, tgtDb, tgtSchema, newName, includeData, clarionMappings);
+
+        if (src.Engine == DatabaseEngine.Excel)
+            return CopyExcelCrossAsync(src, srcDb, srcSchema, tgt, tgtDb, tgtSchema, newName, includeData);
 
         if (src.Engine == DatabaseEngine.MongoDb || tgt.Engine == DatabaseEngine.MongoDb)
         {
@@ -638,6 +640,41 @@ public static class TableCopyService
             }
             return new ClarionColumnMap(c.ColumnName, source, target);
         }).ToList();
+    }
+
+    private static async Task CopyExcelCrossAsync(
+        ConnectionProfile src, string srcFileName, string srcSheetName,
+        ConnectionProfile tgt, string tgtDb, string tgtSchema, string newName, bool includeData)
+    {
+        if (!IsRelational(tgt.Engine))
+            throw new NotSupportedException($"An Excel sheet can only be copied into a SQL database, not {tgt.Engine.DisplayName()}.");
+
+        var folder = src.FilePath ?? "";
+        var table = await Task.Run(() =>
+            ExcelService.ReadTable(folder, srcFileName, srcSheetName, int.MaxValue));
+
+        var cols = table.Columns.Cast<DataColumn>().ToList();
+        if (cols.Count == 0)
+            throw new InvalidOperationException($"Sheet '{srcSheetName}' in '{srcFileName}' has no readable columns.");
+
+        var textType = tgt.Engine switch
+        {
+            DatabaseEngine.Sqlite or DatabaseEngine.MySql or DatabaseEngine.MariaDb => "TEXT",
+            DatabaseEngine.Oracle => "NVARCHAR2(255)",
+            _ => "nvarchar(255)"
+        };
+
+        var lines = cols.Select(c => $"  {Q(tgt.Engine, c.ColumnName)} {textType}").ToList();
+        var ddl = $"CREATE TABLE {Fq(tgt.Engine, tgtSchema, newName)} (\n{string.Join(",\n", lines)}\n)";
+        await ExecuteAsync(tgt, tgtDb, ddl);
+
+        if (!includeData || table.Rows.Count == 0) return;
+
+        using var reader = table.CreateDataReader();
+        if (tgt.Engine == DatabaseEngine.SqlServer)
+            await BulkCopyReaderToSqlServerAsync(reader, tgt, tgtDb, tgtSchema, newName);
+        else
+            await PumpReaderAsync(reader, tgt, tgtDb, tgtSchema, newName);
     }
 
     private static async Task CopyClarionFileCrossAsync(

@@ -102,10 +102,38 @@ public partial class MainWindow : Window
                 AddCopyPaste(menu, node);
                 break;
 
-            // Excel file node: open all sheets as tabs.
+            // Excel file node: open all sheets, or copy a specific sheet to a SQL database.
             case NodeType.Table when node.Connection.Engine == DatabaseEngine.Excel:
+            {
                 menu.Items.Add(Item("Ctx_Open", () => Run(Vm.OpenTableCommand, node)));
+                menu.Items.Add(new Separator());
+                var excelFolder = node.Connection.FilePath ?? "";
+                var excelFile = string.IsNullOrEmpty(node.Database) ? node.Name : node.Database;
+                List<string> excelSheets;
+                try { excelSheets = ExcelService.ListSheetsForFile(excelFolder, excelFile); }
+                catch { excelSheets = []; }
+                if (excelSheets.Count == 1)
+                {
+                    var s = excelSheets[0];
+                    // Name = sheetName so the SQL table name suggestion is clean (not "file — sheet")
+                    var copyNode = DbTreeNode.ExcelSheetNode(node.Connection, excelFile, s, s);
+                    menu.Items.Add(Item("Ctx_CopyTable", () => Run(Vm.CopyTableCommand, copyNode)));
+                }
+                else if (excelSheets.Count > 1)
+                {
+                    var sub = new MenuItem { Header = "Copy sheet" };
+                    foreach (var s in excelSheets)
+                    {
+                        var sheet = s;
+                        var copyNode = DbTreeNode.ExcelSheetNode(node.Connection, excelFile, sheet, sheet);
+                        var mi = new MenuItem { Header = sheet };
+                        mi.Click += (_, _) => Run(Vm.CopyTableCommand, copyNode);
+                        sub.Items.Add(mi);
+                    }
+                    menu.Items.Add(sub);
+                }
                 break;
+            }
 
             // Clarion files are read-only: open, or copy out to a SQL database. No paste into them.
             case NodeType.Table when node.Connection.Engine.IsClarionFile():
