@@ -4,6 +4,13 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.21 — 2026-06-26
+
+### Fixed
+- **Paste Excel sheet to PostgreSQL fails** — the generated `CREATE TABLE` used `nvarchar(255)`, which does not exist in PostgreSQL. The type is now correctly `varchar(255)` when the target is PostgreSQL.
+
+---
+
 ## v1.0.19 — 2026-06-26
 
 ### Added

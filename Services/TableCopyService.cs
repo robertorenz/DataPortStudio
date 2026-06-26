@@ -713,6 +713,7 @@ public static class TableCopyService
         {
             DatabaseEngine.Sqlite or DatabaseEngine.MySql or DatabaseEngine.MariaDb => "TEXT",
             DatabaseEngine.Oracle => "NVARCHAR2(255)",
+            DatabaseEngine.PostgreSql => "varchar(255)",
             _ => "nvarchar(255)"
         };
 
