@@ -4,6 +4,18 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.13 — 2026-06-25
+
+### Added / Changed
+- **Excel connections — file-level tree nodes**: the connection tree and Objects tab now show one entry per Excel file (e.g. `Sales.xlsx`) instead of one entry per worksheet. Double-clicking or pressing Open on a file opens every worksheet simultaneously, each in its own tab.
+- **Excel → SQL copy**: right-click an Excel file node → **Copy Table** (single-sheet files) or **Copy sheet ▶** submenu (multi-sheet files). Paste onto any SQL database and DataPortStudio creates the table with text columns and bulk-inserts the rows — same flow as the TPS/DAT → SQL migration.
+- **Excel editing**: worksheets are now fully editable — add rows, edit cells, delete rows, and **Save changes** writes the modified data back to the `.xls`/`.xlsx` file (header row and other sheets are untouched).
+
+### Fixed
+- **Excel folder connections — only Excel files listed**: the tree and Objects tab now use OS-level extension patterns (`*.xlsx`, `*.xlsm`, `*.xls`) so other file types (`.tps`, `.dat`, etc.) in the same folder are never included.
+
+---
+
 ## v1.0.12 — 2026-06-25
 
 ### Added
