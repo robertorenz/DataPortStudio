@@ -315,7 +315,7 @@
                     </Grid>
                     <TextBlock TextWrapping="Wrap" FontSize="11" FontStyle="Italic"
                                Foreground="{StaticResource B.TextMuted}"
-                               Text="Each .tps file in the folder appears as a table. Read-only viewer — use Copy to write a file to a SQL database."/>
+                               Text="Each .tps file in the folder appears as a table. Cell edits are written back to the binary file (add/delete rows not supported). Use Copy to migrate a table to a SQL database."/>
                 </StackPanel>
 
                 <!-- ===== Oracle ===== -->
@@ -373,7 +373,7 @@
                     </Grid>
                     <TextBlock TextWrapping="Wrap" FontSize="11" FontStyle="Italic"
                                Foreground="{StaticResource B.TextMuted}"
-                               Text="Classic Clarion (.dat) files, one per table. Read-only viewer — use Copy to write a file to a SQL database."/>
+                               Text="Classic Clarion (.dat) files, one per table. Fully editable — edit cells, add and delete rows. Use Copy to migrate a table to a SQL database."/>
                 </StackPanel>
 
                 <!-- ===== Excel ===== -->
@@ -390,7 +390,7 @@
                     </Grid>
                     <TextBlock TextWrapping="Wrap" FontSize="11" FontStyle="Italic"
                                Foreground="{StaticResource B.TextMuted}"
-                               Text="Each worksheet in every .xls/.xlsx file appears as a table. Read-only viewer — use Copy to write data to a SQL database."/>
+                               Text="Each worksheet in every .xls/.xlsx file appears as a table. Fully editable — edit cells, add and delete rows, and Save writes back to the file. Use Copy to migrate a sheet to a SQL database."/>
                 </StackPanel>
 
                 <!-- ===== Not-yet-supported engines ===== -->

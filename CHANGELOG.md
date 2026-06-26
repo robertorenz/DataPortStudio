@@ -4,6 +4,14 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.17 — 2026-06-26
+
+### Fixed
+- **Help → About version** — version number now correctly reflects the release (was stuck at 1.0.0 due to missing AssemblyVersion attributes in the build).
+- **Connection dialog descriptions** — Clarion DAT and Excel connections no longer say "Read-only viewer"; they now accurately describe full edit/save/add/delete capability. TPS description clarified (cell edits only; add/delete rows not supported).
+
+---
+
 ## v1.0.16 — 2026-06-26
 
 ### Added
