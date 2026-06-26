@@ -4,6 +4,19 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.6 — 2026-06-25
+
+### Fixed / Improved
+- **TPS editing — comprehensive diagnostics for null-field saves** — when saving a null (all-spaces) field to a non-null value, the editor now reports exactly what went wrong instead of silently reverting:
+  - If the field name is not found in the TPS definition, a warning lists all known field names.
+  - If the serialized value cannot be encoded (type mismatch), a warning is shown.
+  - If decoded byte indices for an RLE page fall outside the decoded buffer, a warning reports the exact decoded index, record content-decode-start, and buffer length.
+  - If re-encoding the page leaves the decoded working copy unchanged after all field writes, a warning identifies the page and records involved, preventing silent no-ops.
+  - On the non-RLE (direct) path, if no bytes were actually written to the file (e.g. all fell outside the file or were entirely inherited delta bytes), a warning is now shown instead of falsely reporting patched=1.
+  - If any edit attempts are made but 0 records are ultimately patched with no other warnings, a dialog explicitly flags this as unexpected.
+
+---
+
 ## v1.0.5 — 2026-06-25
 
 ### Fixed

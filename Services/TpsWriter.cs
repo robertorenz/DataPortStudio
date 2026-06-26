@@ -67,15 +67,25 @@ public static class TpsWriter
             {
                 var field = def.Fields.FirstOrDefault(f =>
                     string.Equals(f.Name, change.FieldName, StringComparison.OrdinalIgnoreCase));
-                if (field is null) continue;
+                if (field is null)
+                {
+                    warnings.Add($"Record {edit.RecordNumber}: field '{change.FieldName}' not found in definition " +
+                        $"(available: {string.Join(", ", def.Fields.Select(f => f.Name))}).");
+                    continue;
+                }
 
                 var serialized = SerializeField(field, change.NewValue);
-                if (serialized is null) continue;
+                if (serialized is null)
+                {
+                    warnings.Add($"Record {edit.RecordNumber} {field.Name}: could not serialize value '{change.NewValue}'.");
+                    continue;
+                }
 
                 int copyLen = Math.Min(serialized.Length, field.Length);
 
                 if (loc is DirectLoc dl)
                 {
+                    int directBytesWritten = 0;
                     for (int i = 0; i < copyLen; i++)
                     {
                         int relOff = field.Offset + i;
@@ -83,8 +93,15 @@ public static class TpsWriter
                         int filePos = dl.ContentFileOffset + (relOff - dl.FieldDataBase);
                         if (filePos < 0 || filePos >= fileBytes.Length) continue;
                         fileBytes[filePos] = serialized[i];
+                        directBytesWritten++;
                     }
-                    directPatched = true;
+                    if (directBytesWritten > 0)
+                        directPatched = true;
+                    else
+                        warnings.Add(
+                            $"Record {edit.RecordNumber} field '{field.Name}': 0 bytes written to file " +
+                            $"(contentFileOffset={dl.ContentFileOffset} fdb={dl.FieldDataBase} " +
+                            $"fieldOffset={field.Offset} fieldLen={field.Length} fileLen={fileBytes.Length}).");
                 }
                 else if (loc is RleLoc rl)
                 {
@@ -96,15 +113,14 @@ public static class TpsWriter
                         workDec = rl.Page.Decoded.ToArray();
                         pageReencodes[rl.Page] = workDec;
                     }
+                    bool anyOutOfRange = false;
+                    int firstOobDecIdx = -1, firstOobRelOff = -1;
                     for (int i = 0; i < copyLen; i++)
                     {
                         int relOff = field.Offset + i;
                         int decIdx;
                         if (relOff < rl.FieldDataBase)
                         {
-                            // This byte is inherited from the page anchor (not stored in this delta).
-                            // Redirect the write to the anchor's decoded location so TpsParser sees
-                            // the new value when it assembles delta records from the anchor.
                             if (rl.Page.AnchorContentDecStart < 0) continue;
                             decIdx = rl.Page.AnchorContentDecStart + relOff;
                         }
@@ -114,7 +130,19 @@ public static class TpsWriter
                         }
                         if (decIdx >= 0 && decIdx < workDec.Length)
                             workDec[decIdx] = serialized[i];
+                        else if (!anyOutOfRange)
+                        {
+                            anyOutOfRange = true;
+                            firstOobDecIdx = decIdx;
+                            firstOobRelOff = relOff;
+                        }
                     }
+                    if (anyOutOfRange)
+                        warnings.Add(
+                            $"Record {edit.RecordNumber} field '{field.Name}': some bytes fell outside " +
+                            $"the decoded page buffer (first: decIdx={firstOobDecIdx} relOff={firstOobRelOff} " +
+                            $"cds={rl.ContentDecStart} fdb={rl.FieldDataBase} " +
+                            $"anchorCds={rl.Page.AnchorContentDecStart} decoded.Length={workDec.Length}).");
                     if (!reencodePendingPerPage.TryGetValue(rl.Page, out var recSet))
                         reencodePendingPerPage[rl.Page] = recSet = new HashSet<int>();
                     recSet.Add(edit.RecordNumber);
@@ -130,7 +158,15 @@ public static class TpsWriter
         {
             // Nothing actually changed in decoded data — no need to write, don't count as patched
             if (workDec.AsSpan().SequenceEqual(pageInfo.Decoded.AsSpan()))
+            {
+                if (reencodePendingPerPage.TryGetValue(pageInfo, out var noOpSet))
+                    warnings.Add(
+                        $"Page {pageInfo.PageAddr:X6} — decoded bytes UNCHANGED after applying " +
+                        $"{string.Join(", ", noOpSet.Select(r => $"rec {r}"))}. " +
+                        $"anchorCds={pageInfo.AnchorContentDecStart} decoded.Length={pageInfo.Decoded.Length}. " +
+                        $"The new value may already equal the stored bytes, or all field offsets fell outside the decoded buffer.");
                 continue;
+            }
 
             byte[] newComp = RleEncode(workDec);
             if (newComp.Length > pageInfo.CompLen)

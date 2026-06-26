@@ -948,6 +948,10 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
 
             if (result.Warnings.Count > 0 || skipped.Count > 0)
                 Dialogs.ShowError("TPS save — partial", string.Join("\n", result.Warnings.Concat(skipped.Distinct())));
+            else if (result.Patched == 0 && edits.Count > 0)
+                Dialogs.ShowError("TPS save — no records updated",
+                    $"Attempted to save {edits.Count} change(s) but 0 records were updated and no specific error was detected.\n\n" +
+                    $"This is unexpected. Please report this issue with the name of the TPS file and which fields you edited.");
         }
         catch (Exception ex)
         {
