@@ -61,6 +61,8 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
     private string? _tpsPath;
 
     private bool _isExcel;
+    private bool _isDat;
+    private string? _datPath;
 
     public DbTreeNode Node { get; }
     /// <summary>Uniquely identifies the table so duplicate tabs aren't opened.</summary>
@@ -627,8 +629,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
                 return await LoadTpsAsync();
 
             if (Node.Connection.Engine == DatabaseEngine.ClarionDat)
-                return await LoadClarionFileAsync(
-                    () => DatService.ReadTable(Node.Connection.FilePath ?? "", Node.Name, RowLimit), "Clarion DAT file");
+                return await LoadDatAsync();
 
             if (Node.Connection.Engine == DatabaseEngine.Excel)
                 return await LoadExcelAsync();
@@ -730,6 +731,101 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
             Dialogs.ShowError("Could not open TPS file", ex.Message);
             _setStatus("Failed to open TPS file.");
             return false;
+        }
+        finally
+        {
+            _setBusy(false);
+        }
+    }
+
+    /// <summary>Loads a Clarion DAT table into a fully-editable grid (UPDATE + INSERT + DELETE).</summary>
+    private async Task<bool> LoadDatAsync()
+    {
+        var folder = Node.Connection.FilePath ?? "";
+        try
+        {
+            _sourceData = await Task.Run(() =>
+                DatService.ReadTable(folder, Node.Name, RowLimit));
+
+            _isDat = true;
+            _datPath = System.IO.Path.Combine(folder, Node.Name + ".dat");
+            if (!System.IO.File.Exists(_datPath))
+                _datPath = System.IO.Directory.EnumerateFiles(folder, "*.dat")
+                    .FirstOrDefault(f => string.Equals(
+                        System.IO.Path.GetFileNameWithoutExtension(f), Node.Name,
+                        StringComparison.OrdinalIgnoreCase));
+
+            GridReadOnly = false;
+            GridCanModifyRows = true;
+
+            _sourceData.RowChanged += OnDataChanged;
+            _sourceData.RowDeleted += OnDataChanged;
+
+            ClarionColumns = ClarionDetector.Detect(_sourceData);
+            OnPropertyChanged(nameof(HasClarionTypes));
+            OnPropertyChanged(nameof(ClarionToggleLabel));
+
+            ColumnNames.Clear();
+            foreach (DataColumn c in _sourceData.Columns)
+                if (c.ColumnName != DatService.SlotColumn)
+                    ColumnNames.Add(c.ColumnName);
+
+            OnPropertyChanged(nameof(CanPickRowIdentity));
+            ProjectView();
+            HasUnsavedChanges = false;
+            ApplyDefaults();
+            OnPropertyChanged(nameof(TabToolTip));
+
+            _setStatus($"Loaded {_sourceData.Rows.Count} record(s) from {Identifier} (limit {RowLimit}). " +
+                       "DAT: edit cells, add rows, delete rows — Save writes back to file.");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Dialogs.ShowError("Could not open DAT file", ex.Message);
+            _setStatus("Failed to open DAT file.");
+            return false;
+        }
+        finally
+        {
+            _setBusy(false);
+        }
+    }
+
+    private async Task ReloadDatSourceDataAsync()
+    {
+        if (_datPath is null) return;
+        var folder = Node.Connection.FilePath ?? "";
+        if (_sourceData is not null)
+        {
+            _sourceData.RowChanged -= OnDataChanged;
+            _sourceData.RowDeleted -= OnDataChanged;
+        }
+        _sourceData = await Task.Run(() => DatService.ReadTable(folder, Node.Name, RowLimit));
+        _sourceData.RowChanged += OnDataChanged;
+        _sourceData.RowDeleted += OnDataChanged;
+        ProjectView();
+        HasUnsavedChanges = false;
+    }
+
+    private async Task SaveDatChangesAsync()
+    {
+        if (_sourceData is null || _datPath is null) return;
+        var changes = _sourceData.GetChanges();
+        if (changes is null) return;
+
+        _setBusy(true);
+        try
+        {
+            var folder = Node.Connection.FilePath ?? "";
+            await Task.Run(() => DatService.SaveTable(folder, Node.Name, changes));
+            await ReloadDatSourceDataAsync();
+            _setStatus($"Saved changes to {Identifier}.");
+        }
+        catch (Exception ex)
+        {
+            Dialogs.ShowError("DAT save failed", ex.Message);
+            _setStatus("DAT save failed.");
         }
         finally
         {
@@ -942,6 +1038,11 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
             await SaveExcelChangesAsync();
             return;
         }
+        if (_isDat)
+        {
+            await SaveDatChangesAsync();
+            return;
+        }
         if (_session is null || !_session.HasChanges) return;
         _setBusy(true);
         try
@@ -1055,7 +1156,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
     private void Close() => CloseRequested?.Invoke(this);
 
     public bool HasUnsavedChangesNow =>
-        _session?.HasChanges ?? (_sourceData?.GetChanges() is not null && _tpsDef is not null);
+        _session?.HasChanges ?? (_sourceData?.GetChanges() is not null && (_tpsDef is not null || _isExcel || _isDat));
 
     private void OnDataChanged(object? sender, DataRowChangeEventArgs e)
     {
@@ -1066,7 +1167,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
 
     private void Detach()
     {
-        if ((_tpsDef is not null || _isExcel) && _sourceData is not null)
+        if ((_tpsDef is not null || _isExcel || _isDat) && _sourceData is not null)
         {
             _sourceData.RowChanged -= OnDataChanged;
             _sourceData.RowDeleted -= OnDataChanged;
@@ -1074,6 +1175,8 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
         _tpsDef = null;
         _tpsPath = null;
         _isExcel = false;
+        _isDat = false;
+        _datPath = null;
 
         _sourceData = null;
         if (_session is null) return;

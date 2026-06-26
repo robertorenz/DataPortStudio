@@ -7,14 +7,14 @@ Add connection strings, browse the server tree (databases → schemas → tables
 view & edit its records in place — including adding and deleting rows — with changes pushed back to
 the database.
 
-![Status](https://img.shields.io/badge/status-v1.0.15-blue) ![Platform](https://img.shields.io/badge/platform-Windows-informational) ![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
+![Status](https://img.shields.io/badge/status-v1.0.16-blue) ![Platform](https://img.shields.io/badge/platform-Windows-informational) ![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
 
 ## Download
 
 Grab the latest release from the
 [**Releases**](https://github.com/robertorenz/DataPortStudio/releases/latest) page.
 
-**Option 1 — Installer** (`DataPortStudio-1.0.15-Setup.exe`, ~84 MB)
+**Option 1 — Installer** (`DataPortStudio-1.0.16-Setup.exe`, ~84 MB)
 - Installs to `Program Files`, creates a Start Menu entry, and adds an optional Desktop shortcut.
 - Includes a proper uninstaller (Add/Remove Programs).
 
@@ -72,9 +72,12 @@ Both options are **self-contained** — no .NET runtime install required.
   - **Clarion DAT**: the *classic* Clarion ISAM format (pre-TopSpeed, `.dat`). Same folder model —
     point at a folder and each `.dat` file is a table. DataPortStudio decodes the format from its public
     spec (Clarion Technical Bulletin 117): header, field descriptors and fixed-length records,
-    including packed-BCD `DECIMAL` fields, with dates/times surfaced as Clarion `LONG`s. Read-only,
-    and a copy *source* into SQL just like TPS. (Keys/indexes in `.K??`/`.I??` files and `.MEM`
-    memos aren't read.)
+    including packed-BCD `DECIMAL` fields, with dates/times surfaced as Clarion `LONG`s.
+    **Fully editable** — edit cells, add rows, delete rows, and **Save** writes the changes directly
+    to the binary `.dat` file (the record count in the header is updated; free slots are reused for
+    inserts; deleted slots are marked with the Clarion deleted flag). Use **Copy** to migrate a table
+    into any SQL database. Note: key/index files (`.K??`/`.I??`) are not updated — rebuild indexes
+    in Clarion after edits. (`.MEM` memos are not read.)
 - **Connection manager** — add, edit, and remove connections.
   - SQL Server: Windows Authentication or SQL Server login.
   - Field-based builder *or* a raw connection string.

@@ -5,17 +5,17 @@ using System.Text;
 namespace DataPortStudio.Services;
 
 /// <summary>
-/// Reads classic Clarion (.dat) files — the original Clarion ISAM format, NOT TopSpeed (.tps).
+/// Reads and writes classic Clarion (.dat) files — the original Clarion ISAM format, NOT TopSpeed (.tps).
 ///
 /// Clean-room implementation of the file layout documented in Clarion Technical Bulletin 117
 /// (public): a fixed 85-byte header, one 27-byte descriptor per field, then fixed-length records
 /// (each prefixed by a 5-byte record header) starting at the header's <c>offset</c>. Output is a
 /// plain <see cref="DataTable"/> with the same shape as <see cref="TpsService"/>, so the tree,
-/// viewer, Objects tab, Clarion date/time detection and TPS-style copy-to-SQL all reuse unchanged.
+/// viewer, Objects tab, Clarion date/time detection and copy-to-SQL all reuse unchanged.
 ///
-/// Dates and times are NOT a field type here — Clarion stores them as <c>LONG</c> values and formats
-/// them with a picture, so they arrive as integers and the viewer's ClarionDetector renders them.
-/// Read-only; keys/indexes (.K??/.I??) and memos (.MEM) are not read.
+/// Editing: cell edits, row deletes and row inserts are all supported and written back to the binary
+/// file. Keys/indexes (.K??/.I??) and memos (.MEM) are NOT updated — index files will be stale after
+/// edits (same limitation as TPS editing). Read those files back in Clarion to rebuild indexes.
 /// </summary>
 public static class DatService
 {
@@ -24,6 +24,9 @@ public static class DatService
     private const int HeaderLength = 85;
     private const int FieldDescriptorLength = 27;
     private const int RecordHeaderLength = 5;   // rhd (1) + rptr (4)
+
+    /// <summary>Hidden column added to every DataTable storing the file-slot index for each row.</summary>
+    public const string SlotColumn = "__DAT_SLOT__";
 
     // Classic Clarion data is single-byte (typically code page 437/1252); Latin1 never throws.
     private static readonly Encoding TextEncoding = Encoding.Latin1;
@@ -101,10 +104,15 @@ public static class DatService
         var table = new DataTable(tableName);
         BuildColumns(table, fields);
 
+        // Hidden slot-index column — stores which file slot each row came from (used by SaveTable).
+        var slotCol = table.Columns.Add(SlotColumn, typeof(int));
+        slotCol.DefaultValue = -1;
+
         if (rowLimit > 0 && recLen > RecordHeaderLength && dataOffset > 0)
         {
             var count = 0;
-            for (long pos = dataOffset; pos + recLen <= bytes.Length && count < rowLimit; pos += recLen)
+            var slotIndex = 0;
+            for (long pos = dataOffset; pos + recLen <= bytes.Length && count < rowLimit; pos += recLen, slotIndex++)
             {
                 var status = bytes[pos];
                 // Skip deleted (bit 4) and empty/free (no status bits set) slots.
@@ -114,6 +122,7 @@ public static class DatService
                 var dr = table.NewRow();
                 foreach (var f in fields)
                     dr[f.Name] = ReadValue(bytes, fieldBase + f.Offset, f, table.Columns[f.Name]!.DataType);
+                dr[SlotColumn] = slotIndex;
                 table.Rows.Add(dr);
                 count++;
             }
@@ -240,6 +249,195 @@ public static class DatService
         return value;
     }
 
+    /// <summary>
+    /// Writes a set of DataTable changes (Modified / Deleted / Added rows) back to the .dat file.
+    /// <para>UPDATE: overwrites field bytes in the existing slot.</para>
+    /// <para>DELETE: sets the deleted flag (bit 4) on the slot's status byte.</para>
+    /// <para>INSERT: fills the first free slot found, or appends a new slot at end-of-file.</para>
+    /// <para>The file's numRecs header field is updated accordingly.</para>
+    /// <para>Note: key/index files (.K??/.I??) are NOT modified — rebuild them in Clarion.</para>
+    /// </summary>
+    public static void SaveTable(string folder, string tableName, DataTable changes)
+    {
+        var path = ResolvePath(folder, tableName);
+        var bytes = File.ReadAllBytes(path);
+
+        if (bytes.Length < HeaderLength)
+            throw new InvalidOperationException($"'{tableName}{Extension}' is too small to be a valid Clarion DAT file.");
+
+        int numFields = ReadU16(bytes, 13);
+        int recLen    = ReadU16(bytes, 19);
+        long dataOffset = ReadU32(bytes, 21);
+        var fields = ReadFieldDescriptors(bytes, numFields);
+
+        if (recLen <= RecordHeaderLength || dataOffset <= 0)
+            throw new InvalidOperationException($"Cannot write to '{tableName}{Extension}' — invalid record layout.");
+
+        int dataBodyLen = recLen - RecordHeaderLength; // usable field bytes per record
+        int deltaRecs = 0;
+
+        foreach (DataRow row in changes.Rows)
+        {
+            switch (row.RowState)
+            {
+                case DataRowState.Modified:
+                {
+                    var slot = (int)row[SlotColumn, DataRowVersion.Original];
+                    var bytePos = (int)(dataOffset + (long)slot * recLen);
+                    if (bytePos + recLen > bytes.Length) break;
+                    WriteFields(bytes, bytePos + RecordHeaderLength, fields, row, DataRowVersion.Current);
+                    break;
+                }
+
+                case DataRowState.Deleted:
+                {
+                    var slot = (int)row[SlotColumn, DataRowVersion.Original];
+                    var bytePos = (int)(dataOffset + (long)slot * recLen);
+                    if (bytePos >= bytes.Length) break;
+                    bytes[bytePos] |= 0x10; // set deleted bit
+                    deltaRecs--;
+                    break;
+                }
+
+                case DataRowState.Added:
+                {
+                    // Look for a free (status == 0) slot to reuse.
+                    long freeSlot = -1;
+                    long totalSlots = ((long)bytes.Length - dataOffset) / recLen;
+                    for (long s = 0; s < totalSlots; s++)
+                    {
+                        var sp = (int)(dataOffset + s * recLen);
+                        if (bytes[sp] == 0) { freeSlot = s; break; }
+                    }
+
+                    if (freeSlot >= 0)
+                    {
+                        // Reuse the free slot.
+                        var bytePos = (int)(dataOffset + freeSlot * recLen);
+                        bytes[bytePos] = 0x01;
+                        // Clear rptr (bytes 1-4 of record header).
+                        bytes[bytePos + 1] = bytes[bytePos + 2] = bytes[bytePos + 3] = bytes[bytePos + 4] = 0;
+                        // Blank field area with spaces (strings) / zeros (numeric).
+                        for (var i = 0; i < dataBodyLen; i++) bytes[bytePos + RecordHeaderLength + i] = (byte)' ';
+                        WriteFields(bytes, bytePos + RecordHeaderLength, fields, row, DataRowVersion.Current);
+                    }
+                    else
+                    {
+                        // Append a brand-new slot at the end of the file.
+                        var newBytes = new byte[bytes.Length + recLen];
+                        Array.Copy(bytes, newBytes, bytes.Length);
+                        var bytePos = bytes.Length;
+                        newBytes[bytePos] = 0x01;
+                        for (var i = 0; i < dataBodyLen; i++) newBytes[bytePos + RecordHeaderLength + i] = (byte)' ';
+                        WriteFields(newBytes, bytePos + RecordHeaderLength, fields, row, DataRowVersion.Current);
+                        bytes = newBytes;
+                    }
+                    deltaRecs++;
+                    break;
+                }
+            }
+        }
+
+        // Update the numRecs field in the header (bytes 5-8, little-endian U32).
+        long currentNum = ReadU32(bytes, 5);
+        var newNum = (uint)Math.Max(0, currentNum + deltaRecs);
+        bytes[5] = (byte) (newNum        & 0xFF);
+        bytes[6] = (byte)((newNum >>  8) & 0xFF);
+        bytes[7] = (byte)((newNum >> 16) & 0xFF);
+        bytes[8] = (byte)((newNum >> 24) & 0xFF);
+
+        File.WriteAllBytes(path, bytes);
+    }
+
+    private static void WriteFields(byte[] bytes, int fieldBase, List<Field> fields, DataRow row, DataRowVersion ver)
+    {
+        foreach (var f in fields)
+        {
+            if (!row.Table.Columns.Contains(f.Name)) continue;
+            var value = row[f.Name, ver];
+            WriteValue(bytes, fieldBase + f.Offset, f, value);
+        }
+    }
+
+    private static void WriteValue(byte[] bytes, int pos, Field f, object value)
+    {
+        if (pos < 0 || pos + f.Length > bytes.Length) return;
+
+        switch (f.Type)
+        {
+            case FieldType.Long:
+            {
+                var v = value is DBNull ? 0 : Convert.ToInt32(value);
+                var b = BitConverter.GetBytes(v);
+                Array.Copy(b, 0, bytes, pos, 4);
+                break;
+            }
+            case FieldType.Short:
+            {
+                var v = value is DBNull ? (short)0 : Convert.ToInt16(value);
+                var b = BitConverter.GetBytes(v);
+                Array.Copy(b, 0, bytes, pos, 2);
+                break;
+            }
+            case FieldType.Byte:
+                bytes[pos] = value is DBNull ? (byte)0 : Convert.ToByte(value);
+                break;
+            case FieldType.Real:
+                if (f.Length == 4)
+                {
+                    var v = value is DBNull ? 0f : Convert.ToSingle(value);
+                    Array.Copy(BitConverter.GetBytes(v), 0, bytes, pos, 4);
+                }
+                else
+                {
+                    var v = value is DBNull ? 0.0 : Convert.ToDouble(value);
+                    Array.Copy(BitConverter.GetBytes(v), 0, bytes, pos, 8);
+                }
+                break;
+            case FieldType.Decimal:
+                WritePackedDecimal(bytes, pos, f, value is DBNull ? 0m : Convert.ToDecimal(value));
+                break;
+            default: // String / StringPicture / Group
+            {
+                var s = value is DBNull ? "" : (value.ToString() ?? "");
+                var encoded = TextEncoding.GetBytes(s);
+                // Pad with spaces, then copy the encoded string (no null terminator).
+                for (var i = 0; i < f.Length; i++) bytes[pos + i] = (byte)' ';
+                Array.Copy(encoded, 0, bytes, pos, Math.Min(encoded.Length, f.Length));
+                break;
+            }
+        }
+    }
+
+    private static void WritePackedDecimal(byte[] bytes, int pos, Field f, decimal value)
+    {
+        var nibbles = new int[f.Length * 2]; // all zeros
+
+        var digits = f.Significance + f.Decimals;
+        if (digits <= 0) digits = nibbles.Length;
+        if (digits > nibbles.Length) digits = nibbles.Length;
+
+        var negative = value < 0;
+        if (negative) value = -value;
+
+        // Scale to integer representation.
+        if (f.Decimals > 0) value *= (decimal)Math.Pow(10, f.Decimals);
+        var intValue = (long)Math.Round(value, MidpointRounding.AwayFromZero);
+
+        // Write digit nibbles LSB → MSB into the last 'digits' positions.
+        var start = nibbles.Length - digits;
+        for (var i = nibbles.Length - 1; i >= start && intValue > 0; i--)
+        {
+            nibbles[i] = (int)(intValue % 10);
+            intValue /= 10;
+        }
+        if (negative && start > 0) nibbles[start - 1] = 0xD;
+
+        // Pack nibbles back into bytes.
+        for (var i = 0; i < f.Length; i++)
+            bytes[pos + i] = (byte)((nibbles[i * 2] << 4) | nibbles[i * 2 + 1]);
+    }
+
     /// <summary>Structure/info panel for a Clarion DAT table.</summary>
     public static Task<TableStructure> GetStructureAsync(string folder, string tableName, string connectionName = "")
     {
@@ -270,7 +468,8 @@ public static class DatService
         }
 
         var ddl = "-- Classic Clarion DAT is a fixed binary ISAM format — it has no SQL DDL.\n" +
-                  $"-- '{tableName}' is read-only; use Copy to write it to a SQL database.";
+                  $"-- '{tableName}' supports cell edits, row adds and row deletes.\n" +
+                  "-- Note: key/index files (.K??/.I??) are NOT updated — rebuild them in Clarion.";
 
         return Task.FromResult(new TableStructure(ddl, info.ToString().TrimEnd(),
             "Clarion DAT keys/indexes live in separate .K??/.I?? files and aren't read here."));

@@ -49,7 +49,7 @@ public static class DatabaseEngineInfo
 
     /// <summary>Read-only engines: browse and copy out, but no editing, designing or writing back.</summary>
     public static bool IsReadOnly(this DatabaseEngine e) =>
-        e is DatabaseEngine.MongoDb or DatabaseEngine.ClarionDat;
+        e is DatabaseEngine.MongoDb;
 
     /// <summary>Engines that support cell edits but not INSERT or DELETE (fixed binary format).</summary>
     public static bool IsEditOnly(this DatabaseEngine e) =>

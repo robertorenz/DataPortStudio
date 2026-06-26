@@ -4,6 +4,19 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.16 — 2026-06-26
+
+### Added
+- **Clarion DAT editing** — `.dat` files are now fully editable:
+  - **Edit cells** and press **Save changes** to write them back to the binary file in place.
+  - **Add rows** — inserts fill the first free (deleted/blank) slot in the file, or append a new slot if none are available.
+  - **Delete rows** — sets the Clarion deleted flag on the slot; the record count in the file header is updated.
+  - All numeric types (LONG, SHORT, BYTE, REAL, DECIMAL/BCD) and string types (STRING, PICTURE, GROUP) are supported for write-back.
+  - Clarion date/time display and toggle work the same as before.
+  - ⚠ Key/index files (`.K??`/`.I??`) are **not** updated — rebuild indexes in Clarion after edits (same caveat as TPS editing).
+
+---
+
 ## v1.0.15 — 2026-06-25
 
 ### Fixed
