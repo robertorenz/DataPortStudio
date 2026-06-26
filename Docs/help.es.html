@@ -68,7 +68,7 @@
   <main>
     <header class="hero">
       <h1>DataPortStudio — Guía del usuario</h1>
-      <p>Un administrador de bases de datos estilo Navicat para SQL Server, SQLite, MySQL/MariaDB, Firebird, MongoDB y archivos Clarion TPS/DAT.</p>
+      <p>Un administrador de bases de datos estilo Navicat para SQL Server, SQLite, MySQL/MariaDB, Firebird, PostgreSQL, Oracle, MongoDB y archivos Clarion TPS/DAT.</p>
     </header>
     <div class="content">
 
@@ -108,6 +108,7 @@
         <tr><td><strong>MySQL / MariaDB</strong></td><td>Host, puerto, usuario, contraseña, base de datos</td><td>Explorar, ver/editar filas, consultar, copiar, exportar, usuarios y roles</td></tr>
         <tr><td><strong>Firebird</strong></td><td>Host/puerto + ruta de la base (o <em>Embebido</em>)</td><td>Explorar, ver/editar filas, consultar, copiar, exportar</td></tr>
         <tr><td><strong>Oracle</strong></td><td>Host, puerto, nombre de servicio, usuario, contraseña</td><td>Explorar, ver/editar filas, consultar, estructura/índices, eliminar, copiar, exportar</td></tr>
+        <tr><td><strong>PostgreSQL</strong></td><td>Host, puerto, usuario, contraseña (base de datos opcional)</td><td>Explorar bases/esquemas, ver/editar filas, consultar, estructura/índices/FK, renombrar, eliminar, copiar, exportar</td></tr>
         <tr><td><strong>MongoDB</strong> <span class="ro">solo lectura</span></td><td>Una cadena de conexión (<code>mongodb://…</code>)</td><td>Explorar bases y colecciones, ver documentos, filtrar/ordenar/exportar</td></tr>
         <tr><td><strong>Clarion TPS</strong></td><td>Una carpeta con archivos <code>.tps</code></td><td>Explorar, ver/editar registros, filtrar/ordenar/exportar, copiar a SQL</td></tr>
         <tr><td><strong>Clarion DAT</strong> <span class="ro">solo lectura</span></td><td>Una carpeta con archivos <code>.dat</code></td><td>Explorar, ver registros, filtrar/ordenar/exportar, copiar a SQL</td></tr>
@@ -268,7 +269,7 @@
       <code>date</code>/<code>time</code> y los valores se convierten automáticamente.</p>
 
       <h3>8. ¿Puedo copiar una tabla entre dos tipos de base de datos distintos?</h3>
-      <p>Sí. Puede copiar entre motores relacionales (por ejemplo SQLite → SQL Server, o Firebird → MySQL) y desde
+      <p>Sí. Puede copiar entre motores relacionales (por ejemplo SQLite → SQL Server, Firebird → MySQL, o PostgreSQL → SQLite) y desde
       archivos Clarion a cualquier base de datos SQL. DataPortStudio asigna a cada columna un tipo compatible y copia las filas.</p>
 
       <h3>9. Al editar una tabla advierte que "no hay clave primaria" — ¿qué elijo?</h3>
@@ -293,6 +294,7 @@
         <tr><td><a href="https://mysqlconnector.net/">MySqlConnector</a></td><td>Conectividad con MySQL y MariaDB</td><td>MIT</td></tr>
         <tr><td><a href="https://www.firebirdsql.org/en/net-provider/">FirebirdSql.Data.FirebirdClient</a></td><td>Conectividad con Firebird</td><td>IDPL / IPL</td></tr>
         <tr><td><a href="https://www.nuget.org/packages/Oracle.ManagedDataAccess.Core">Oracle.ManagedDataAccess.Core</a></td><td>Conectividad con Oracle</td><td>Oracle (OGTP)</td></tr>
+        <tr><td><a href="https://www.npgsql.org/">Npgsql</a></td><td>Conectividad con PostgreSQL</td><td>PostgreSQL License</td></tr>
         <tr><td><a href="https://www.mongodb.com/docs/drivers/csharp/">MongoDB.Driver</a></td><td>Conectividad con MongoDB</td><td>Apache-2.0</td></tr>
         <tr><td><a href="https://github.com/Trinitek/TpsParser">TpsParser</a></td><td>Lectura de archivos Clarion TopSpeed (.tps)</td><td>MIT</td></tr>
         <tr><td><a href="https://github.com/ClosedXML/ClosedXML">ClosedXML</a></td><td>Exportación a Excel (.xlsx)</td><td>MIT</td></tr>

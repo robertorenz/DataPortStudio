@@ -1,20 +1,20 @@
 # DataPortStudio
 
 A lightweight, Navicat-style database manager for **SQL Server**, **SQLite**, **MySQL**,
-**MariaDB**, **Firebird**, **Oracle**, **MongoDB**, **Excel (.xls/.xlsx)** and **Clarion TPS / DAT** files, built with **C# / WPF (.NET 9)**.
+**MariaDB**, **Firebird**, **Oracle**, **PostgreSQL**, **MongoDB**, **Excel (.xls/.xlsx)** and **Clarion TPS / DAT** files, built with **C# / WPF (.NET 9)**.
 
 Add connection strings, browse the server tree (databases → schemas → tables), open a table, and
 view & edit its records in place — including adding and deleting rows — with changes pushed back to
 the database.
 
-![Status](https://img.shields.io/badge/status-v1.0.19-blue) ![Platform](https://img.shields.io/badge/platform-Windows-informational) ![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
+![Status](https://img.shields.io/badge/status-v1.0.20-blue) ![Platform](https://img.shields.io/badge/platform-Windows-informational) ![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
 
 ## Download
 
 Grab the latest release from the
 [**Releases**](https://github.com/robertorenz/DataPortStudio/releases/latest) page.
 
-**Option 1 — Installer** (`DataPortStudio-1.0.19-Setup.exe`, ~84 MB)
+**Option 1 — Installer** (`DataPortStudio-1.0.20-Setup.exe`, ~90 MB)
 - Installs to `Program Files`, creates a Start Menu entry, and adds an optional Desktop shortcut.
 - Includes a proper uninstaller (Add/Remove Programs).
 
@@ -29,8 +29,8 @@ Both options are **self-contained** — no .NET runtime install required.
 
 - **Multiple database engines** — pick the engine when creating a connection. Each connection is
   tagged with an engine icon in the tree so you can tell them apart at a glance.
-  - **SQL Server**, **SQLite**, **MySQL**, **MariaDB**, **Firebird**, **Oracle**, **MongoDB** and
-    **Clarion TPS / DAT** files are supported today; **PostgreSQL** is selectable now and being wired up next.
+  - **SQL Server**, **SQLite**, **MySQL**, **MariaDB**, **Firebird**, **Oracle**, **PostgreSQL**, **MongoDB** and
+    **Clarion TPS / DAT** files are all fully supported.
   - **SQLite**: just point to a `.db` / `.sqlite` file — browse tables & views, view and edit rows
     (primary-key or rowid-safe), **design tables** (create new, or alter existing via a safe
     table-rebuild), and inspect structure/DDL.
@@ -55,6 +55,13 @@ Both options are **self-contained** — no .NET runtime install required.
     inspect structure (Info, reconstructed DDL, indexes), run SQL in the query window, drop tables, and
     copy tables to/from any SQL database. Identifiers are double-quoted; uses Oracle's bundled managed
     driver. (The visual query builder isn't wired for Oracle yet — use the query window.)
+  - **PostgreSQL**: connect with host / port / user / password (defaults to `localhost:5432`, user
+    `postgres`). Browse **databases → schemas → tables / views / functions / procedures**, **view and
+    edit rows** (primary-key or all-columns keyed), inspect structure (Info, reconstructed DDL,
+    indexes, foreign keys), rename tables, drop tables / views / functions / procedures, run SQL in the
+    query window, and copy tables to/from any relational engine. Identifiers are double-quoted
+    (`"schema"."table"`); same-connection copies use `CREATE TABLE … (LIKE … INCLUDING ALL)` to
+    preserve primary keys, constraints and indexes.
   - **Clarion TPS**: point a connection at a **folder** and every `.tps` file in it shows up as a
     table — pick one like you'd pick a table. Selecting the connection lists its files (with size and
     date) in the **Objects** tab. DataPortStudio decodes the TopSpeed binary format directly
@@ -256,4 +263,3 @@ Themes/      Theme.xaml (palette + control styles)
 - Ad-hoc SQL query editor with results grid
 - Filtering / sorting / paging on large tables
 - Export (CSV / JSON), and view table structure (columns, indexes, keys)
-- Support for other engines (PostgreSQL)

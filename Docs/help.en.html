@@ -68,7 +68,7 @@
   <main>
     <header class="hero">
       <h1>DataPortStudio — User Guide</h1>
-      <p>A Navicat-style database manager for SQL Server, SQLite, MySQL/MariaDB, Firebird, MongoDB and Clarion TPS/DAT files.</p>
+      <p>A Navicat-style database manager for SQL Server, SQLite, MySQL/MariaDB, Firebird, PostgreSQL, Oracle, MongoDB and Clarion TPS/DAT files.</p>
     </header>
     <div class="content">
 
@@ -107,6 +107,7 @@
         <tr><td><strong>MySQL / MariaDB</strong></td><td>Host, port, user, password, database</td><td>Browse, view/edit rows, query, copy, export, users &amp; roles</td></tr>
         <tr><td><strong>Firebird</strong></td><td>Host/port + database path (or <em>Embedded</em>)</td><td>Browse, view/edit rows, query, copy, export</td></tr>
         <tr><td><strong>Oracle</strong></td><td>Host, port, service name, user, password</td><td>Browse, view/edit rows, query, structure/indexes, drop, copy, export</td></tr>
+        <tr><td><strong>PostgreSQL</strong></td><td>Host, port, user, password (optional database)</td><td>Browse databases/schemas, view/edit rows, query, structure/indexes/FKs, rename, drop, copy, export</td></tr>
         <tr><td><strong>MongoDB</strong> <span class="ro">read-only</span></td><td>A connection string (<code>mongodb://…</code>)</td><td>Browse databases &amp; collections, view documents, filter/sort/export</td></tr>
         <tr><td><strong>Clarion TPS</strong></td><td>A folder of <code>.tps</code> files</td><td>Browse, view/edit records, filter/sort/export, copy to SQL</td></tr>
         <tr><td><strong>Clarion DAT</strong> <span class="ro">read-only</span></td><td>A folder of <code>.dat</code> files</td><td>Browse, view records, filter/sort/export, copy to SQL</td></tr>
@@ -262,7 +263,7 @@
       <code>date</code>/<code>time</code> and the values are converted automatically.</p>
 
       <h3>8. Can I copy a table between two different database types?</h3>
-      <p>Yes. You can copy between relational engines (for example SQLite → SQL Server, or Firebird → MySQL) and from
+      <p>Yes. You can copy between relational engines (for example SQLite → SQL Server, Firebird → MySQL, or PostgreSQL → SQLite) and from
       Clarion files into any SQL database. DataPortStudio maps each column to a compatible type and copies the rows.</p>
 
       <h3>9. When I edit a table it warns there's "no primary key" — what do I choose?</h3>
@@ -287,6 +288,7 @@
         <tr><td><a href="https://mysqlconnector.net/">MySqlConnector</a></td><td>MySQL &amp; MariaDB connectivity</td><td>MIT</td></tr>
         <tr><td><a href="https://www.firebirdsql.org/en/net-provider/">FirebirdSql.Data.FirebirdClient</a></td><td>Firebird connectivity</td><td>IDPL / IPL</td></tr>
         <tr><td><a href="https://www.nuget.org/packages/Oracle.ManagedDataAccess.Core">Oracle.ManagedDataAccess.Core</a></td><td>Oracle connectivity</td><td>Oracle (OGTP)</td></tr>
+        <tr><td><a href="https://www.npgsql.org/">Npgsql</a></td><td>PostgreSQL connectivity</td><td>PostgreSQL License</td></tr>
         <tr><td><a href="https://www.mongodb.com/docs/drivers/csharp/">MongoDB.Driver</a></td><td>MongoDB connectivity</td><td>Apache-2.0</td></tr>
         <tr><td><a href="https://github.com/Trinitek/TpsParser">TpsParser</a></td><td>Reading Clarion TopSpeed (.tps) files</td><td>MIT</td></tr>
         <tr><td><a href="https://github.com/ClosedXML/ClosedXML">ClosedXML</a></td><td>Excel (.xlsx) export</td><td>MIT</td></tr>
