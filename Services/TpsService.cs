@@ -205,7 +205,7 @@ public static class TpsService
         ClaSingleReal sr => sr.Value,
         ClaReal r => r.Value,
         ClaDecimal dec => dec.ToDecimal() is { HasValue: true } m ? m.Value : DBNull.Value,
-        IClaString str => Clean(str.StringValue),
+        IClaString str => Clean(str.ToString(TextEncoding)),
         _ => value.ToString() ?? ""
     };
 

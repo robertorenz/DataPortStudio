@@ -29,6 +29,28 @@ static class TpsTest
                 Console.WriteLine($"  [{f.Offset,3}] {f.Name,-20} ({f.TypeCode}) len={f.Length}");
         }
 
+        // ---- 1b. Field values for key records ------------------------------------
+        Console.WriteLine("\n--- Field values for records of interest ---");
+        {
+            using var ms = new MemoryStream(origBytes.ToArray());
+            var tbl2 = Table.MaterializeFromFile(new TpsFile(ms), tableNumber);
+            foreach (int r in new[] { 596, 597, 1992, 1993, 175, 176 })
+            {
+                var row = tbl2.Rows.FirstOrDefault(x => x.RecordNumber == r);
+                if (row == null) { Console.WriteLine($"  Rec#{r,5}: not found"); continue; }
+                Console.Write($"  Rec#{r,5}:");
+                foreach (var f in tableFields)
+                {
+                    var v = row.GetFieldValueCaseInsensitive(f.Name, isRequired: false);
+                    string vs;
+                    if (v == null) vs = "(null)";
+                    else { var sv = v.ToString()?.TrimEnd('\0', ' ') ?? ""; vs = sv == "" ? "(empty)" : $"[{sv}]"; }
+                    Console.Write($"  {f.Name}={vs}");
+                }
+                Console.WriteLine();
+            }
+        }
+
         // ---- 2. Location map (anchor / delta info) ----------------------------
         Console.WriteLine("\n--- Record location map (anchor / delta records) ---");
         var locations = BuildLocations(origBytes, tableNumber, verbose: true);

@@ -4,6 +4,13 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.10 — 2026-06-25
+
+### Fixed
+- **TPS editing — FString fields reading as null when they have content** — `TpsService.FieldValue` was calling `IClaString.StringValue` to get the string backing a field. When TpsParser constructs a `ClaFString` from raw file bytes it sets `ContentValue` (the byte array) but leaves `StringValue` null (per the library contract: StringValue is available only when the value was constructed from a string, ContentValue when constructed from bytes). Calling `str.StringValue` therefore returned null for every file-read fixed-length string, causing all FString columns to display as `(Null)` in the grid even when the field contains real content like `"4"` or `"BROWSEDRIVERS"`. Fixed by switching to `str.ToString(TextEncoding)`, which returns `StringValue` when available and otherwise decodes `ContentValue` using the Latin-1 encoding — exactly the documented fallback path.
+
+---
+
 ## v1.0.7 — 2026-06-25
 
 ### Fixed / Improved
