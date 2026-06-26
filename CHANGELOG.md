@@ -4,6 +4,16 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.14 — 2026-06-25
+
+### Added / Fixed
+- **Excel — Objects tab now shows files**: clicking an Excel connection in the tree now opens the Objects tab and lists every Excel file (with size and sheet count), matching the TPS/DAT behavior.
+- **Excel — Copy from Objects tab**: select an Excel file in the Objects tab and press **Ctrl+C** (or the Copy toolbar button). Single-sheet files copy immediately; multi-sheet files show a sheet picker. The copied sheet can then be pasted into any SQL database.
+- **Excel — Paste disabled**: the Paste button is hidden for Excel connections (you can't paste a SQL table into an Excel folder).
+- **Fixed installer wizard bitmap error**: Inno Setup `WizardSmallImageFile` now uses `dataporticon.png` instead of the `.ico` — eliminates the "Bitmap image is not valid" error during setup.
+
+---
+
 ## v1.0.13 — 2026-06-25
 
 ### Added / Changed
