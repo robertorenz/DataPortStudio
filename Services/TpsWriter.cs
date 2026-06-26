@@ -53,6 +53,10 @@ public static class TpsWriter
         var tpsFile   = new TpsFile(ms);
         var locations = BuildRecordLocations(tpsFile, tableNumber);
         diagLog.AppendLine($"locations map has {locations.Count} entries: [{string.Join(", ", locations.Keys.Take(10))}...]");
+        var fieldList = def.Fields.ToList();
+        diagLog.AppendLine($"field definitions ({fieldList.Count}):");
+        foreach (var fd in fieldList)
+            diagLog.AppendLine($"  [{fd.TypeCode}] '{fd.Name}' offset={fd.Offset} len={fd.Length}");
 
         // Pages that need full RLE re-encoding: page → working copy of decoded bytes
         var pageReencodes = new Dictionary<PageRleInfo, byte[]>();
@@ -97,15 +101,22 @@ public static class TpsWriter
                 if (loc is DirectLoc dl)
                 {
                     int directBytesWritten = 0;
+                    int firstFilePos = -1;
+                    byte firstOldByte = 0, firstNewByte = 0;
                     for (int i = 0; i < copyLen; i++)
                     {
                         int relOff = field.Offset + i;
                         if (relOff < dl.FieldDataBase) continue; // byte is inherited from anchor — skip
                         int filePos = dl.ContentFileOffset + (relOff - dl.FieldDataBase);
                         if (filePos < 0 || filePos >= fileBytes.Length) continue;
+                        if (firstFilePos < 0) { firstFilePos = filePos; firstOldByte = fileBytes[filePos]; firstNewByte = serialized[i]; }
                         fileBytes[filePos] = serialized[i];
                         directBytesWritten++;
                     }
+                    diagLog.AppendLine($"    DirectLoc '{field.Name}' cfo={dl.ContentFileOffset} fdb={dl.FieldDataBase} " +
+                        $"offset={field.Offset} len={field.Length} copyLen={copyLen} " +
+                        $"written={directBytesWritten} firstFilePos={firstFilePos} " +
+                        $"oldByte={firstOldByte:X2} newByte={firstNewByte:X2}");
                     if (directBytesWritten > 0)
                         directPatched = true;
                     else
@@ -158,12 +169,13 @@ public static class TpsWriter
                         }
                     }
 
-                    pageLog.Add(
-                        $"  rec{edit.RecordNumber} '{field.Name}' newVal='{change.NewValue}' " +
+                    string fieldLine =
+                        $"    RleLoc '{field.Name}' cds={rl.ContentDecStart} fdb={rl.FieldDataBase} " +
                         $"offset={field.Offset} len={field.Length} copyLen={copyLen} " +
-                        $"cds={rl.ContentDecStart} fdb={rl.FieldDataBase} " +
                         $"firstDecIdx={diagFirstDecIdx} oldByte={diagOldByte:X2} newByte={diagNewByte:X2} " +
-                        $"changedBytes={diagChangedBytes}");
+                        $"changedBytes={diagChangedBytes}";
+                    pageLog.Add($"  rec{edit.RecordNumber} {fieldLine}");
+                    diagLog.AppendLine(fieldLine);
 
                     if (anyOutOfRange)
                         warnings.Add(
