@@ -944,6 +944,8 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
             var msgs = new List<string> { $"Saved {result.Patched} record(s) to {Identifier}." };
             msgs.AddRange(result.Warnings);
             msgs.AddRange(skipped.Distinct());
+            if (result.DiagnosticLogPath is not null)
+                msgs.Add($"[Debug log: {result.DiagnosticLogPath}]");
             _setStatus(string.Join("  ", msgs));
 
             if (result.Warnings.Count > 0 || skipped.Count > 0)

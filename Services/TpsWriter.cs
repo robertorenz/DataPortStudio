@@ -8,7 +8,7 @@ public static class TpsWriter
 {
     public record TpsFieldChange(string FieldName, object? NewValue);
     public record TpsRowEdit(int RecordNumber, IReadOnlyList<TpsFieldChange> Changes);
-    public record SaveResult(int Patched, IReadOnlyList<string> Warnings);
+    public record SaveResult(int Patched, IReadOnlyList<string> Warnings, string? DiagnosticLogPath = null);
 
     private sealed class PageRleInfo
     {
@@ -37,8 +37,14 @@ public static class TpsWriter
         int tableNumber,
         IEnumerable<TpsRowEdit> edits)
     {
-        var editList = edits.ToList();
-        if (editList.Count == 0) return new SaveResult(0, Array.Empty<string>());
+        var editList  = edits.ToList();
+        var logPath   = Path.Combine(Path.GetTempPath(), "DataPortStudio_tps_debug.txt");
+        var diagLog   = new System.Text.StringBuilder();
+        diagLog.AppendLine($"=== TPS Save Debug ===  file={filePath}  edits={editList.Count}");
+        foreach (var e in editList)
+            diagLog.AppendLine($"  edit rec={e.RecordNumber} fields=[{string.Join(", ", e.Changes.Select(c => $"{c.FieldName}='{c.NewValue}'"))}]");
+
+        if (editList.Count == 0) { File.WriteAllText(logPath, diagLog.ToString()); return new SaveResult(0, Array.Empty<string>(), logPath); }
 
         var fileBytes = File.ReadAllBytes(filePath);
         var warnings  = new List<string>();
@@ -46,6 +52,7 @@ public static class TpsWriter
         using var ms  = new MemoryStream(fileBytes.ToArray());
         var tpsFile   = new TpsFile(ms);
         var locations = BuildRecordLocations(tpsFile, tableNumber);
+        diagLog.AppendLine($"locations map has {locations.Count} entries: [{string.Join(", ", locations.Keys.Take(10))}...]");
 
         // Pages that need full RLE re-encoding: page → working copy of decoded bytes
         var pageReencodes = new Dictionary<PageRleInfo, byte[]>();
@@ -60,9 +67,11 @@ public static class TpsWriter
         {
             if (!locations.TryGetValue(edit.RecordNumber, out var loc))
             {
+                diagLog.AppendLine($"  rec{edit.RecordNumber}: NOT IN LOCATIONS MAP");
                 warnings.Add($"Record {edit.RecordNumber}: could not locate in file.");
                 continue;
             }
+            diagLog.AppendLine($"  rec{edit.RecordNumber}: loc={loc}");
 
             bool directPatched = false;
             foreach (var change in edit.Changes)
@@ -179,6 +188,7 @@ public static class TpsWriter
             // Nothing actually changed in decoded data — no need to write, don't count as patched
             if (workDec.AsSpan().SequenceEqual(pageInfo.Decoded.AsSpan()))
             {
+                diagLog.AppendLine($"  page {pageInfo.PageAddr:X6}: NO-OP (decoded unchanged)");
                 if (reencodePendingPerPage.TryGetValue(pageInfo, out var noOpSet))
                 {
                     var sb = new System.Text.StringBuilder();
@@ -186,10 +196,10 @@ public static class TpsWriter
                         $"Page {pageInfo.PageAddr:X6} — decoded UNCHANGED after applying " +
                         $"{string.Join(", ", noOpSet.Select(r => $"rec {r}"))}. " +
                         $"anchorCds={pageInfo.AnchorContentDecStart} decoded.Length={pageInfo.Decoded.Length}.");
-                    if (rleWriteLog.TryGetValue(pageInfo, out var log))
+                    if (rleWriteLog.TryGetValue(pageInfo, out var pageWriteLog))
                     {
                         sb.Append("\nWrite details (changedBytes=0 means value already matched):");
-                        foreach (var line in log) sb.Append("\n" + line);
+                        foreach (var line in pageWriteLog) sb.Append("\n" + line);
                     }
                     warnings.Add(sb.ToString());
                 }
@@ -197,6 +207,7 @@ public static class TpsWriter
             }
 
             byte[] newComp = RleEncode(workDec);
+            diagLog.AppendLine($"  page {pageInfo.PageAddr:X6}: re-encoded {newComp.Length} bytes (CompLen={pageInfo.CompLen})");
             if (newComp.Length > pageInfo.CompLen)
             {
                 warnings.Add(
@@ -222,10 +233,14 @@ public static class TpsWriter
         }
 
         int patched = changedRecordNumbers.Count;
+        diagLog.AppendLine($"patched={patched} warnings={warnings.Count}");
+        foreach (var w in warnings) diagLog.AppendLine($"  WARN: {w}");
+        File.WriteAllText(logPath, diagLog.ToString());
+
         if (patched > 0)
             File.WriteAllBytes(filePath, fileBytes);
 
-        return new SaveResult(patched, warnings);
+        return new SaveResult(patched, warnings, logPath);
     }
 
     // ---- record location builder --------------------------------------------
