@@ -28,6 +28,12 @@
                         <TextBlock Style="{StaticResource ToolIcon}" Text="&#xE70F;"/><TextBlock Text="{loc:Tr OL_DesignTable}"/>
                     </StackPanel>
                 </Button>
+                <Button Command="{Binding RenameCommand}" Style="{StaticResource ToolButton}"
+                        Visibility="{Binding CanRename, Converter={StaticResource BoolToVis}}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource ToolIcon}" Text="&#xE8AC;"/><TextBlock Text="{loc:Tr OL_RenameTable}"/>
+                    </StackPanel>
+                </Button>
                 <Button Command="{Binding NewCommand}" Style="{StaticResource ToolButton}"
                         Visibility="{Binding CanCreate, Converter={StaticResource BoolToVis}}">
                     <StackPanel Orientation="Horizontal">
@@ -75,6 +81,8 @@
                     <MenuItem Header="{loc:Tr OL_OpenTable}" Command="{Binding OpenCommand}"/>
                     <MenuItem Header="{loc:Tr OL_DesignTable}" Command="{Binding DesignCommand}"
                               Visibility="{Binding CanDesign, Converter={StaticResource BoolToVis}}"/>
+                    <MenuItem Header="{loc:Tr Ctx_Rename}" Command="{Binding RenameCommand}"
+                              Visibility="{Binding CanRename, Converter={StaticResource BoolToVis}}"/>
                     <Separator Visibility="{Binding IsTables, Converter={StaticResource BoolToVis}}"/>
                     <MenuItem Header="{loc:Tr Ctx_CopyTable}" Command="{Binding CopyCommand}"
                               Visibility="{Binding IsTables, Converter={StaticResource BoolToVis}}"/>

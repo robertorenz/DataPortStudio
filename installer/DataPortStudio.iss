@@ -1,5 +1,5 @@
 #define AppName "DataPortStudio"
-#define AppVersion "1.0.18"
+#define AppVersion "1.0.19"
 #define AppPublisher "Reddin Assessments"
 #define AppURL "https://github.com/robertorenz/DataPortStudio"
 #define AppExeName "DataPortStudio.exe"
@@ -42,30 +42,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-; Main executable
+; Single-file self-contained exe — all native DLLs are bundled inside
 Source: "{#SrcDir}\DataPortStudio.exe"; DestDir: "{app}"; Flags: ignoreversion
-
-; WPF native DLLs (required alongside the single-file exe)
-Source: "{#SrcDir}\D3DCompiler_47_cor3.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#SrcDir}\wpfgfx_cor3.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#SrcDir}\PresentationNative_cor3.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#SrcDir}\PenImc_cor3.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#SrcDir}\vcruntime140_cor3.dll"; DestDir: "{app}"; Flags: ignoreversion
-
-; SQLite native
-Source: "{#SrcDir}\e_sqlite3.dll"; DestDir: "{app}"; Flags: ignoreversion
-
-; SQL Server SNI
-Source: "{#SrcDir}\Microsoft.Data.SqlClient.SNI.dll"; DestDir: "{app}"; Flags: ignoreversion
-
-; WebView2
-Source: "{#SrcDir}\WebView2Loader.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#SrcDir}\runtimes\win-x64\native\WebView2Loader.dll"; DestDir: "{app}\runtimes\win-x64\native"; Flags: ignoreversion
-
-; XML docs (optional, can be removed if you don't need IntelliSense)
-Source: "{#SrcDir}\Microsoft.Web.WebView2.Core.xml"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#SrcDir}\Microsoft.Web.WebView2.Wpf.xml"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#SrcDir}\Microsoft.Web.WebView2.WinForms.xml"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\{#AppExeName}"

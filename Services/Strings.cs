@@ -99,6 +99,7 @@ public static class Strings
         // Object list (Objects tab)
         ["OL_OpenTable"] = "Open",
         ["OL_DesignTable"] = "Design",
+        ["OL_RenameTable"] = "Rename…",
         ["OL_NewTable"] = "New Table",
         ["OL_DeleteTable"] = "Drop…",
         ["OL_Tables"] = "tables",
@@ -132,6 +133,9 @@ public static class Strings
         ["ObjType_view"] = "view",
         ["ObjType_function"] = "function",
         ["ObjType_procedure"] = "procedure",
+        ["Rename_TitleFmt"] = "Rename {0}",
+        ["Rename_Q"] = "New name for {0} “{1}”:",
+        ["Rename_InvalidName"] = "Name must not be empty.",
         ["Drop_TitleFmt"] = "Drop {0}",
         ["Drop_Q"] = "Permanently drop {0} “{1}”?",
         ["Drop_DataLoss"] = "⚠ ALL the data in this table will be permanently lost.",
@@ -156,6 +160,7 @@ public static class Strings
         // Context menu
         ["Ctx_Open"] = "Open",
         ["Ctx_Design"] = "Design",
+        ["Ctx_Rename"] = "Rename…",
         ["Ctx_CopyTable"] = "Copy",
         ["Ctx_PasteTable"] = "Paste",
         ["Ctx_GenerateInsert"] = "Generate INSERT script…",
@@ -323,6 +328,7 @@ public static class Strings
         // Lista de objetos
         ["OL_OpenTable"] = "Abrir",
         ["OL_DesignTable"] = "Diseñar",
+        ["OL_RenameTable"] = "Renombrar…",
         ["OL_NewTable"] = "Nueva tabla",
         ["OL_DeleteTable"] = "Eliminar…",
         ["OL_Tables"] = "tablas",
@@ -356,6 +362,9 @@ public static class Strings
         ["ObjType_view"] = "la vista",
         ["ObjType_function"] = "la función",
         ["ObjType_procedure"] = "el procedimiento",
+        ["Rename_TitleFmt"] = "Renombrar {0}",
+        ["Rename_Q"] = "Nuevo nombre para {0} “{1}”:",
+        ["Rename_InvalidName"] = "El nombre no puede estar vacío.",
         ["Drop_TitleFmt"] = "Eliminar {0}",
         ["Drop_Q"] = "¿Eliminar permanentemente {0} “{1}”?",
         ["Drop_DataLoss"] = "⚠ TODOS los datos de esta tabla se perderán permanentemente.",
@@ -380,6 +389,7 @@ public static class Strings
         // Menú contextual
         ["Ctx_Open"] = "Abrir",
         ["Ctx_Design"] = "Diseñar",
+        ["Ctx_Rename"] = "Renombrar…",
         ["Ctx_CopyTable"] = "Copiar",
         ["Ctx_PasteTable"] = "Pegar",
         ["Ctx_GenerateInsert"] = "Generar script INSERT…",

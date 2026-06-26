@@ -4,6 +4,13 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.19 — 2026-06-26
+
+### Added
+- **Rename table** — tables can now be renamed directly from the Objects list toolbar, the context menu in the Objects list, and the tree right-click menu. Supported for SQL Server, SQLite, MySQL, MariaDB, and Oracle (Firebird excluded — no native DDL support).
+
+---
+
 ## v1.0.18 — 2026-06-26
 
 ### Fixed

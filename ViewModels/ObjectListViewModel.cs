@@ -11,6 +11,7 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
 {
     private readonly Action<DbTreeNode, ObjectListItem> _open;
     private readonly Action<DbTreeNode, ObjectListItem> _design;
+    private readonly Action<DbTreeNode, ObjectListItem> _rename;
     private readonly Action<DbTreeNode, ObjectListItem> _delete;
     private readonly Action<DbTreeNode> _new;
     private readonly Action<DbTreeNode, ObjectListItem> _copy;
@@ -26,6 +27,7 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
     [ObservableProperty] private string countText = "";
     [ObservableProperty] private bool canDesign;
     [ObservableProperty] private bool canCreate;
+    [ObservableProperty] private bool canRename;
     [ObservableProperty] private bool canDelete = true;
     [ObservableProperty] private bool canPaste = true;
     [ObservableProperty] private bool isTables = true;
@@ -41,11 +43,12 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
 
     public ObjectListViewModel(
         Action<DbTreeNode, ObjectListItem> open, Action<DbTreeNode, ObjectListItem> design,
-        Action<DbTreeNode, ObjectListItem> delete, Action<DbTreeNode> @new,
-        Action<DbTreeNode, ObjectListItem> copy, Action<DbTreeNode> paste)
+        Action<DbTreeNode, ObjectListItem> rename, Action<DbTreeNode, ObjectListItem> delete,
+        Action<DbTreeNode> @new, Action<DbTreeNode, ObjectListItem> copy, Action<DbTreeNode> paste)
     {
         _open = open;
         _design = design;
+        _rename = rename;
         _delete = delete;
         _new = @new;
         _copy = copy;
@@ -64,6 +67,8 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
         // Read-only engines and file-folder engines (MongoDB, Clarion, Excel) can't be dropped or pasted into.
         // Copy stays available so their data can be copied out to a SQL database.
         var isFolderEngine = engine is DatabaseEngine.Tps or DatabaseEngine.ClarionDat or DatabaseEngine.Excel;
+        CanRename = IsTables && engine is (DatabaseEngine.SqlServer or DatabaseEngine.Sqlite
+                    or DatabaseEngine.MySql or DatabaseEngine.MariaDb or DatabaseEngine.Oracle);
         CanDelete = !engine.IsReadOnly() && !isFolderEngine;
         CanPaste = IsTables && !engine.IsReadOnly() && !isFolderEngine;
 
@@ -118,6 +123,12 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
     private void Design()
     {
         if (_container is not null && SelectedItem is not null) _design(_container, SelectedItem);
+    }
+
+    [RelayCommand]
+    private void Rename()
+    {
+        if (_container is not null && SelectedItem is not null) _rename(_container, SelectedItem);
     }
 
     [RelayCommand]

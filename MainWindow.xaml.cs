@@ -89,11 +89,11 @@ public partial class MainWindow : Window
         {
             // SQLite — same actions as the Objects list: Open, Design, Copy, Paste, Delete.
             case NodeType.Table when node.Connection.Engine == DatabaseEngine.Sqlite:
-                AddTableMenu(menu, node, canDesign: true, canDrop: true, sqlServerExtras: false);
+                AddTableMenu(menu, node, canDesign: true, canRename: true, canDrop: true, sqlServerExtras: false);
                 break;
 
             case NodeType.Table when node.Connection.Engine == DatabaseEngine.Firebird:
-                AddTableMenu(menu, node, canDesign: false, canDrop: true, sqlServerExtras: false);
+                AddTableMenu(menu, node, canDesign: false, canRename: false, canDrop: true, sqlServerExtras: false);
                 break;
 
             // MongoDB is read-only (and can't be dropped here): open and copy/paste collections only.
@@ -143,15 +143,15 @@ public partial class MainWindow : Window
                 break;
 
             case NodeType.Table when node.Connection.Engine == DatabaseEngine.Oracle:
-                AddTableMenu(menu, node, canDesign: false, canDrop: true, sqlServerExtras: false);
+                AddTableMenu(menu, node, canDesign: false, canRename: true, canDrop: true, sqlServerExtras: false);
                 break;
 
             case NodeType.Table when node.Connection.Engine.IsMySql():
-                AddTableMenu(menu, node, canDesign: false, canDrop: true, sqlServerExtras: false);
+                AddTableMenu(menu, node, canDesign: false, canRename: true, canDrop: true, sqlServerExtras: false);
                 break;
 
             case NodeType.Table: // SQL Server
-                AddTableMenu(menu, node, canDesign: true, canDrop: true, sqlServerExtras: true);
+                AddTableMenu(menu, node, canDesign: true, canRename: true, canDrop: true, sqlServerExtras: true);
                 break;
 
             case NodeType.View when node.Connection.Engine is DatabaseEngine.Sqlite or DatabaseEngine.Firebird
@@ -255,7 +255,7 @@ public partial class MainWindow : Window
     /// Builds a table's context menu to match the Objects list: Open, Design (where supported),
     /// Copy, Paste, Delete — plus SQL Server's Generate INSERT / Import extras when requested.
     /// </summary>
-    private void AddTableMenu(ContextMenu menu, DbTreeNode node, bool canDesign, bool canDrop, bool sqlServerExtras)
+    private void AddTableMenu(ContextMenu menu, DbTreeNode node, bool canDesign, bool canRename, bool canDrop, bool sqlServerExtras)
     {
         MenuItem Item(string headerKey, Action action)
         {
@@ -267,6 +267,8 @@ public partial class MainWindow : Window
         menu.Items.Add(Item("Ctx_Open", () => Run(Vm.OpenTableCommand, node)));
         if (canDesign)
             menu.Items.Add(Item("Ctx_Design", () => Run(Vm.DesignTableCommand, node)));
+        if (canRename)
+            menu.Items.Add(Item("Ctx_Rename", () => Run(Vm.RenameTableCommand, node)));
 
         if (sqlServerExtras)
         {

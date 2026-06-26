@@ -67,6 +67,7 @@ public partial class MainViewModel : ObservableObject
         _objectsTab ??= new ObjectListViewModel(
             open: OpenFromList,
             design: (c, item) => DesignTableCommand.Execute(NodeForItem(c, item)),
+            rename: RenameFromListAsync,
             delete: DeleteFromListAsync,
             @new: c => NewTableCommand.Execute(c),
             copy: CopyFromList,
@@ -131,6 +132,12 @@ public partial class MainViewModel : ObservableObject
         {
             CopyTableCommand.Execute(NodeForItem(container, item));
         }
+    }
+
+    private async void RenameFromListAsync(DbTreeNode container, ObjectListItem item)
+    {
+        await RenameTable(NodeForItem(container, item));
+        if (_objectsTab is not null) await _objectsTab.LoadAsync();
     }
 
     private async void DeleteFromListAsync(DbTreeNode container, ObjectListItem item)
@@ -760,6 +767,67 @@ public partial class MainViewModel : ObservableObject
         {
             Dialogs.ShowError("Drop failed", ex.Message);
         }
+    }
+
+    [RelayCommand]
+    private async Task RenameTable(DbTreeNode? node)
+    {
+        node ??= SelectedNode;
+        if (node is not { Type: NodeType.Table }) return;
+        if (!CanRenameEngine(node.Connection.Engine)) return;
+
+        string L(string key) => LocalizationManager.Instance[key];
+        var typeWord = L("ObjType_table");
+        var newName = ModalDialog.PromptText(
+            string.Format(L("Rename_TitleFmt"), typeWord),
+            string.Format(L("Rename_Q"), typeWord, node.Name),
+            node.Name);
+
+        if (newName is null) return;
+        newName = newName.Trim();
+        if (newName == node.Name) return;
+        if (string.IsNullOrEmpty(newName))
+        {
+            Dialogs.ShowError(string.Format(L("Rename_TitleFmt"), typeWord), L("Rename_InvalidName"));
+            return;
+        }
+
+        try
+        {
+            await ExecuteRenameAsync(node, newName);
+            StatusText = $"Renamed '{node.Name}' → '{newName}'.";
+            if (node.Parent is not null) await RefreshNode(node.Parent);
+        }
+        catch (Exception ex)
+        {
+            Dialogs.ShowError("Rename failed", ex.Message);
+        }
+    }
+
+    private static bool CanRenameEngine(DatabaseEngine engine) =>
+        engine is DatabaseEngine.SqlServer or DatabaseEngine.Sqlite
+            or DatabaseEngine.MySql or DatabaseEngine.MariaDb or DatabaseEngine.Oracle;
+
+    private static Task ExecuteRenameAsync(DbTreeNode node, string newName)
+    {
+        var cs = node.Connection.BuildConnectionString();
+        var db = node.Database ?? "";
+        var schema = node.Schema ?? "dbo";
+        return node.Connection.Engine switch
+        {
+            DatabaseEngine.Sqlite =>
+                SqliteService.ExecuteWithoutForeignKeysAsync(cs,
+                    $"ALTER TABLE \"{node.Name.Replace("\"", "\"\"")}\" RENAME TO \"{newName.Replace("\"", "\"\"")}\""),
+            DatabaseEngine.MySql or DatabaseEngine.MariaDb =>
+                MySqlService.ExecuteAsync(cs, db,
+                    $"RENAME TABLE `{node.Name.Replace("`", "``")}` TO `{newName.Replace("`", "``")}`"),
+            DatabaseEngine.Oracle =>
+                OracleService.ExecuteAsync(cs,
+                    $"ALTER TABLE \"{node.Name.Replace("\"", "\"\"")}\" RENAME TO \"{newName.Replace("\"", "\"\"")}\""),
+            _ => // SQL Server
+                SqlServerService.ExecuteAsync(cs, db,
+                    $"EXEC sp_rename N'[{schema.Replace("]", "]]")}].[{node.Name.Replace("]", "]]")}]', N'{newName.Replace("'", "''")}', N'OBJECT'")
+        };
     }
 
     [RelayCommand]
