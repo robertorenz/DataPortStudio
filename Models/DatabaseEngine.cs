@@ -45,7 +45,8 @@ public static class DatabaseEngineInfo
             or DatabaseEngine.Firebird or DatabaseEngine.MongoDb
             or DatabaseEngine.MySql or DatabaseEngine.MariaDb
             or DatabaseEngine.Tps or DatabaseEngine.ClarionDat
-            or DatabaseEngine.Oracle or DatabaseEngine.Excel;
+            or DatabaseEngine.Oracle or DatabaseEngine.Excel
+            or DatabaseEngine.PostgreSql;
 
     /// <summary>Read-only engines: browse and copy out, but no editing, designing or writing back.</summary>
     public static bool IsReadOnly(this DatabaseEngine e) =>

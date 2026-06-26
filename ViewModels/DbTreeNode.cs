@@ -158,6 +158,7 @@ public partial class DbTreeNode : ObservableObject
                 DatabaseEngine.Excel => LoadExcelFileChildren(ExcelService.ListFiles(Connection.FilePath)),
                 DatabaseEngine.MySql or DatabaseEngine.MariaDb => await LoadMySqlChildrenAsync(connStr),
                 DatabaseEngine.Oracle => await LoadOracleChildrenAsync(connStr),
+                DatabaseEngine.PostgreSql => await LoadPostgresChildrenAsync(connStr),
                 _ => await LoadSqlServerChildrenAsync(connStr)
             };
 
@@ -359,6 +360,51 @@ public partial class DbTreeNode : ObservableObject
     /// <summary>Creates a sheet tab node from an Excel file node. Schema = sheetName, Database = fileName.</summary>
     public static DbTreeNode ExcelSheetNode(ConnectionProfile connection, string fileName, string sheetName, string displayName) =>
         new() { Type = NodeType.Table, Name = displayName, Connection = connection, Database = fileName, Schema = sheetName };
+
+    /// <summary>PostgreSQL: Server → databases → schemas → Tables/Views/Functions/Procedures.</summary>
+    private async Task<List<DbTreeNode>> LoadPostgresChildrenAsync(string connStr)
+    {
+        var items = new List<DbTreeNode>();
+        switch (Type)
+        {
+            case NodeType.Server:
+                if (!string.IsNullOrWhiteSpace(Connection.Database))
+                {
+                    var db = Connection.Database!;
+                    foreach (var schema in await PostgresService.GetSchemasAsync(connStr, db))
+                        items.Add(SchemaNode(Connection, db, schema));
+                }
+                else
+                {
+                    foreach (var db in await PostgresService.GetDatabasesAsync(connStr))
+                        items.Add(DatabaseNode(Connection, db));
+                }
+                break;
+            case NodeType.Database:
+                foreach (var schema in await PostgresService.GetSchemasAsync(connStr, Database!))
+                    items.Add(SchemaNode(Connection, Database!, schema));
+                break;
+            case NodeType.Schema:
+                items.Add(CategoryNode(Connection, Database!, Schema!, "Tables", NodeType.Table));
+                items.Add(CategoryNode(Connection, Database!, Schema!, "Views", NodeType.View));
+                items.Add(CategoryNode(Connection, Database!, Schema!, "Functions", NodeType.Function));
+                items.Add(CategoryNode(Connection, Database!, Schema!, "Procedures", NodeType.Procedure));
+                break;
+            case NodeType.Category:
+                var names = CategoryChildType switch
+                {
+                    NodeType.Table => await PostgresService.GetTablesAsync(connStr, Database!, Schema!),
+                    NodeType.View => await PostgresService.GetViewsAsync(connStr, Database!, Schema!),
+                    NodeType.Function => await PostgresService.GetFunctionsAsync(connStr, Database!, Schema!),
+                    NodeType.Procedure => await PostgresService.GetProceduresAsync(connStr, Database!, Schema!),
+                    _ => new List<string>()
+                };
+                foreach (var n in names)
+                    items.Add(ObjectNode(CategoryChildType, Connection, Database!, Schema!, n));
+                break;
+        }
+        return items;
+    }
 
     /// <summary>MongoDB: Server → databases → collections (shown as table nodes).</summary>
     private async Task<List<DbTreeNode>> LoadMongoChildrenAsync(string uri)

@@ -806,7 +806,8 @@ public partial class MainViewModel : ObservableObject
 
     private static bool CanRenameEngine(DatabaseEngine engine) =>
         engine is DatabaseEngine.SqlServer or DatabaseEngine.Sqlite
-            or DatabaseEngine.MySql or DatabaseEngine.MariaDb or DatabaseEngine.Oracle;
+            or DatabaseEngine.MySql or DatabaseEngine.MariaDb or DatabaseEngine.Oracle
+            or DatabaseEngine.PostgreSql;
 
     private static Task ExecuteRenameAsync(DbTreeNode node, string newName)
     {
@@ -824,6 +825,9 @@ public partial class MainViewModel : ObservableObject
             DatabaseEngine.Oracle =>
                 OracleService.ExecuteAsync(cs,
                     $"ALTER TABLE \"{node.Name.Replace("\"", "\"\"")}\" RENAME TO \"{newName.Replace("\"", "\"\"")}\""),
+            DatabaseEngine.PostgreSql =>
+                PostgresService.ExecuteAsync(cs, db,
+                    $"ALTER TABLE \"{node.Schema}\".\"{node.Name.Replace("\"", "\"\"")}\" RENAME TO \"{newName.Replace("\"", "\"\"")}\""),
             _ => // SQL Server
                 SqlServerService.ExecuteAsync(cs, db,
                     $"EXEC sp_rename N'[{schema.Replace("]", "]]")}].[{node.Name.Replace("]", "]]")}]', N'{newName.Replace("'", "''")}', N'OBJECT'")
@@ -906,6 +910,8 @@ public partial class MainViewModel : ObservableObject
                 MySqlService.ExecuteAsync(cs, db, $"DROP {keyword} `{node.Name}`"),
             DatabaseEngine.Oracle =>
                 OracleService.ExecuteAsync(cs, $"DROP {keyword} \"{node.Name}\""),
+            DatabaseEngine.PostgreSql =>
+                PostgresService.ExecuteAsync(cs, db, $"DROP {keyword} \"{node.Schema}\".\"{node.Name}\""),
             _ => SqlServerService.ExecuteAsync(cs, db, $"DROP {keyword} [{node.Schema}].[{node.Name}]")
         };
     }

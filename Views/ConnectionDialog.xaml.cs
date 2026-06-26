@@ -78,6 +78,15 @@ public partial class ConnectionDialog : Window
             OraPassBox.Password = _profile.Password ?? "";
         }
 
+        if (_profile.Engine == DatabaseEngine.PostgreSql)
+        {
+            PgHostBox.Text = string.IsNullOrWhiteSpace(_profile.Server) ? "localhost" : _profile.Server;
+            PgPortBox.Text = (_profile.Port > 0 ? _profile.Port : 5432).ToString();
+            PgDatabaseBox.Text = _profile.Database ?? "";
+            PgUserBox.Text = string.IsNullOrWhiteSpace(_profile.Username) ? "postgres" : _profile.Username;
+            PgPassBox.Password = _profile.Password ?? "";
+        }
+
         _engine = _profile.Engine;
         (_engine switch
         {
@@ -167,6 +176,17 @@ public partial class ConnectionDialog : Window
             return;
         }
 
+        if (_engine == DatabaseEngine.PostgreSql)
+        {
+            p.Server = string.IsNullOrWhiteSpace(PgHostBox.Text) ? "localhost" : PgHostBox.Text.Trim();
+            p.Port = int.TryParse(PgPortBox.Text, out var pgPort) ? pgPort : 5432;
+            p.Database = string.IsNullOrWhiteSpace(PgDatabaseBox.Text) ? null : PgDatabaseBox.Text.Trim();
+            p.Username = string.IsNullOrWhiteSpace(PgUserBox.Text) ? "postgres" : PgUserBox.Text.Trim();
+            p.Password = string.IsNullOrEmpty(PgPassBox.Password) ? null : PgPassBox.Password;
+            p.UseRawConnectionString = false;
+            return;
+        }
+
         p.Server = ServerBox.Text.Trim();
         p.Database = string.IsNullOrWhiteSpace(DatabaseBox.Text) ? null : DatabaseBox.Text.Trim();
         p.IntegratedSecurity = WinAuthRadio.IsChecked == true;
@@ -213,6 +233,7 @@ public partial class ConnectionDialog : Window
         var isDat = _engine == DatabaseEngine.ClarionDat;
         var isOracle = _engine == DatabaseEngine.Oracle;
         var isExcel = _engine == DatabaseEngine.Excel;
+        var isPostgres = _engine == DatabaseEngine.PostgreSql;
         var supported = _engine.IsSupported();
 
         SqlServerPanel.Visibility = isSql ? Visibility.Visible : Visibility.Collapsed;
@@ -224,6 +245,7 @@ public partial class ConnectionDialog : Window
         DatPanel.Visibility = isDat ? Visibility.Visible : Visibility.Collapsed;
         OraclePanel.Visibility = isOracle ? Visibility.Visible : Visibility.Collapsed;
         ExcelPanel.Visibility = isExcel ? Visibility.Visible : Visibility.Collapsed;
+        PostgresPanel.Visibility = isPostgres ? Visibility.Visible : Visibility.Collapsed;
         if (isFirebird) ApplyFirebirdState();
         ComingSoonPanel.Visibility = supported ? Visibility.Collapsed : Visibility.Visible;
         if (!supported)
@@ -350,6 +372,8 @@ public partial class ConnectionDialog : Window
                 ExcelService.TestConnection(temp.FilePath);
             else if (_engine == DatabaseEngine.Oracle)
                 await OracleService.TestConnectionAsync(temp.BuildConnectionString());
+            else if (_engine == DatabaseEngine.PostgreSql)
+                await PostgresService.TestConnectionAsync(temp.BuildConnectionString());
             else
                 await SqlServerService.TestConnectionAsync(temp.BuildConnectionString());
             TestStatus.Text = "Connection succeeded.";
@@ -426,6 +450,14 @@ public partial class ConnectionDialog : Window
             if (string.IsNullOrWhiteSpace(OraHostBox.Text) || string.IsNullOrWhiteSpace(OraServiceBox.Text))
             {
                 Dialogs.ShowError("Missing details", "Please enter the Oracle host and service name.");
+                return;
+            }
+        }
+        else if (_engine == DatabaseEngine.PostgreSql)
+        {
+            if (string.IsNullOrWhiteSpace(PgHostBox.Text))
+            {
+                Dialogs.ShowError("Missing host", "Please enter a PostgreSQL host name.");
                 return;
             }
         }

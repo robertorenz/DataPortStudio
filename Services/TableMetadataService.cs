@@ -35,6 +35,7 @@ public static class TableMetadataService
             DatabaseEngine.Excel => ExcelService.GetStructureAsync(connectionString, database!, schema!, connectionName),
             DatabaseEngine.MySql or DatabaseEngine.MariaDb => GetMySqlAsync(connectionString, database, table, connectionName),
             DatabaseEngine.Oracle => GetOracleAsync(connectionString, table, connectionName),
+            DatabaseEngine.PostgreSql => GetPostgresAsync(connectionString, database, schema, table, connectionName),
             _ => GetSqlServerAsync(connectionString, database, schema, table, connectionName)
         };
 
@@ -65,6 +66,45 @@ public static class TableMetadataService
             info.AppendLine($"  • {c.Name}  {c.TypeName}  {(c.Nullable ? "NULL" : "NOT NULL")}");
 
         return new TableStructure(ddl, info.ToString().TrimEnd(), BuildIndexText(indexes));
+    }
+
+    private static async Task<TableStructure> GetPostgresAsync(string cs, string db, string schema, string table, string connectionName)
+    {
+        var loc = LocalizationManager.Instance;
+        var cols = await PostgresService.GetColumnsAsync(cs, db ?? "", schema ?? "public", table);
+        var indexes = await PostgresService.GetIndexesAsync(cs, db ?? "", schema ?? "public", table);
+        var pk = cols.Where(c => c.IsPrimaryKey).Select(c => c.Name).ToList();
+        long rows = -1;
+        try { rows = await PostgresService.GetRowCountAsync(cs, db ?? "", schema ?? "public", table); } catch { }
+
+        var lines = cols.Select(c =>
+            $"  {PostgresService.Quote(c.Name)} {c.TypeName}{(c.Nullable ? "" : " NOT NULL")}").ToList();
+        if (pk.Count > 0)
+            lines.Add($"  PRIMARY KEY ({string.Join(", ", pk.Select(PostgresService.Quote))})");
+        var ddlSb = new System.Text.StringBuilder(
+            $"CREATE TABLE {PostgresService.Quote(schema ?? "public")}.{PostgresService.Quote(table)} (\n{string.Join(",\n", lines)}\n);");
+        foreach (var ix in indexes)
+            ddlSb.Append($"\nCREATE {(ix.Unique ? "UNIQUE " : "")}INDEX {PostgresService.Quote(ix.Name)} " +
+                $"ON {PostgresService.Quote(schema ?? "public")}.{PostgresService.Quote(table)} " +
+                $"({string.Join(", ", ix.Columns.Select(PostgresService.Quote))});");
+
+        const int w = -18;
+        var info = new System.Text.StringBuilder();
+        if (!string.IsNullOrEmpty(connectionName)) info.AppendLine($"{loc["Info_Connection"],w}{connectionName}");
+        if (!string.IsNullOrEmpty(db)) info.AppendLine($"{loc["Info_Database"],w}{db}");
+        info.AppendLine($"{loc["Info_Schema"],w}{schema}");
+        info.AppendLine($"{loc["Info_Table"],w}{table}");
+        info.AppendLine($"{loc["Info_PrimaryKey"],w}{(pk.Count == 0 ? loc["Info_None"] : string.Join(", ", pk))}");
+        info.AppendLine($"{loc["Info_Indexes"],w}{indexes.Count}");
+        if (rows >= 0) info.AppendLine($"{loc["Info_Rows"],w}{rows:N0}");
+        info.AppendLine();
+        info.AppendLine($"{loc["Info_Columns"],w}{cols.Count}");
+        info.AppendLine();
+        info.AppendLine(loc["Info_Columns"]);
+        foreach (var c in cols)
+            info.AppendLine($"  • {c.Name}  {c.TypeName}  {(c.Nullable ? "NULL" : "NOT NULL")}");
+
+        return new TableStructure(ddlSb.ToString(), info.ToString().TrimEnd(), BuildIndexText(indexes));
     }
 
     private static async Task<TableStructure> GetOracleAsync(string cs, string table, string connectionName)

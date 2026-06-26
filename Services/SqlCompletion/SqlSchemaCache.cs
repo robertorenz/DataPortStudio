@@ -3,6 +3,7 @@ using FirebirdSql.Data.FirebirdClient;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using MySqlConnector;
+using Npgsql;
 using DataPortStudio.Models;
 using Oracle.ManagedDataAccess.Client;
 
@@ -158,6 +159,11 @@ public class SqlSchemaCache
             "ORDER BY table_name, column_id",
             null, null),
 
+        DatabaseEngine.PostgreSql => (
+            "SELECT table_name, column_name FROM information_schema.columns " +
+            "WHERE table_schema = @s ORDER BY table_name, ordinal_position",
+            new NpgsqlParameter("@s", schema), null),
+
         _ => ("SELECT '' WHERE 1=0", null, null)
     };
 
@@ -171,6 +177,8 @@ public class SqlSchemaCache
             DatabaseEngine.MySql or DatabaseEngine.MariaDb =>
                 new MySqlConnection(string.IsNullOrEmpty(database) ? cs : MySqlService.WithDatabase(cs, database)),
             DatabaseEngine.Oracle => new OracleConnection(cs),
+            DatabaseEngine.PostgreSql =>
+                new NpgsqlConnection(string.IsNullOrEmpty(database) ? cs : PostgresService.WithDatabase(cs, database)),
             _ => new SqlConnection(string.IsNullOrEmpty(database) ? cs : SqlServerService.WithDatabase(cs, database)),
         };
     }

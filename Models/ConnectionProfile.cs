@@ -2,6 +2,7 @@ using FirebirdSql.Data.FirebirdClient;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using MySqlConnector;
+using Npgsql;
 
 namespace DataPortStudio.Models;
 
@@ -65,6 +66,17 @@ public class ConnectionProfile
             case DatabaseEngine.MongoDb:
                 // The MongoDB URI is stored verbatim in Server (e.g. mongodb://localhost:27017).
                 return string.IsNullOrWhiteSpace(Server) ? "mongodb://localhost:27017" : Server.Trim();
+            case DatabaseEngine.PostgreSql:
+                var pg = new NpgsqlConnectionStringBuilder
+                {
+                    Host = string.IsNullOrWhiteSpace(Server) ? "localhost" : Server,
+                    Port = Port > 0 ? Port : 5432,
+                    Username = string.IsNullOrWhiteSpace(Username) ? "postgres" : Username,
+                    Password = Password ?? "",
+                    Database = string.IsNullOrWhiteSpace(Database) ? "postgres" : Database,
+                    Timeout = 15
+                };
+                return pg.ConnectionString;
             case DatabaseEngine.MySql:
             case DatabaseEngine.MariaDb:
                 var my = new MySqlConnectionStringBuilder

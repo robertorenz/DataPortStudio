@@ -239,6 +239,8 @@ public partial class QueryWindow : Window
             DatabaseEngine.MySql or DatabaseEngine.MariaDb =>
                 new MySqlConnection(string.IsNullOrEmpty(_database) ? cs : MySqlService.WithDatabase(cs, _database)),
             DatabaseEngine.Oracle    => new Oracle.ManagedDataAccess.Client.OracleConnection(cs),
+            DatabaseEngine.PostgreSql =>
+                new Npgsql.NpgsqlConnection(string.IsNullOrEmpty(_database) ? cs : PostgresService.WithDatabase(cs, _database)),
             _                        => new SqlConnection(string.IsNullOrEmpty(_database) ? cs : SqlServerService.WithDatabase(cs, _database))
         };
     }

@@ -393,6 +393,47 @@
                                Text="Each worksheet in every .xls/.xlsx file appears as a table. Fully editable — edit cells, add and delete rows, and Save writes back to the file. Use Copy to migrate a sheet to a SQL database."/>
                 </StackPanel>
 
+                <!-- ===== PostgreSQL ===== -->
+                <StackPanel x:Name="PostgresPanel" Visibility="Collapsed">
+                    <Grid Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="100"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <Label Content="Host"/>
+                            <TextBox x:Name="PgHostBox" Text="localhost"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <Label Content="Port"/>
+                            <TextBox x:Name="PgPortBox" Text="5432"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Label Content="Database  (optional — leave blank to browse all)"/>
+                    <TextBox x:Name="PgDatabaseBox" Margin="0,0,0,14"/>
+
+                    <Grid Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="14"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <Label Content="Username"/>
+                            <TextBox x:Name="PgUserBox" Text="postgres"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <Label Content="Password"/>
+                            <PasswordBox x:Name="PgPassBox"/>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" FontSize="11" FontStyle="Italic"
+                               Foreground="{StaticResource B.TextMuted}"
+                               Text="Full-featured: browse databases, schemas, tables and views; view and edit rows; run SQL; copy, paste, rename and drop tables."/>
+                </StackPanel>
+
                 <!-- ===== Not-yet-supported engines ===== -->
                 <Border x:Name="ComingSoonPanel" Visibility="Collapsed" Margin="0,4,0,4"
                         Background="{StaticResource B.SurfaceAlt}" CornerRadius="8"

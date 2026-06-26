@@ -8,6 +8,7 @@ using Microsoft.Data.Sqlite;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MySqlConnector;
+using Npgsql;
 using DataPortStudio.Models;
 
 namespace DataPortStudio.Services;
@@ -28,6 +29,7 @@ public static class TableCopyService
             DatabaseEngine.ClarionDat => Task.FromResult(DatService.ListTables(p.FilePath)),
             DatabaseEngine.Oracle => OracleService.GetTablesAsync(cs),
             DatabaseEngine.MySql or DatabaseEngine.MariaDb => MySqlService.GetTablesAsync(cs, database),
+            DatabaseEngine.PostgreSql => PostgresService.GetTablesAsync(cs, database, schema),
             _ => SqlServerService.GetTablesAsync(cs, database, schema)
         };
     }
@@ -54,6 +56,7 @@ public static class TableCopyService
             DatabaseEngine.MongoDb => CopyMongoAsync(p, tgtDatabase, srcName, newName, includeData),
             DatabaseEngine.MySql or DatabaseEngine.MariaDb => CopyMySqlAsync(p, srcDatabase, srcName, newName, includeData),
             DatabaseEngine.Oracle => CopyOracleAsync(p, srcName, newName, includeData),
+            DatabaseEngine.PostgreSql => CopyPostgresAsync(p, tgtDatabase, srcSchema, srcName, tgtSchema, newName, includeData),
             _ => CopySqlServerAsync(p, tgtDatabase, srcSchema, srcName, tgtSchema, newName, includeData)
         };
 
@@ -66,6 +69,19 @@ public static class TableCopyService
         await MySqlService.ExecuteAsync(cs, db, $"CREATE TABLE {dst} LIKE {src}");
         if (includeData)
             await MySqlService.ExecuteAsync(cs, db, $"INSERT INTO {dst} SELECT * FROM {src}");
+    }
+
+    // ---- PostgreSQL (LIKE … INCLUDING ALL preserves constraints/indexes) ----
+    private static async Task CopyPostgresAsync(ConnectionProfile p, string db,
+        string srcSchema, string srcName, string tgtSchema, string newName, bool includeData)
+    {
+        var src = $"\"{srcSchema.Replace("\"", "\"\"")}\".\"{ srcName.Replace("\"", "\"\"")}\"";
+        var dst = $"\"{tgtSchema.Replace("\"", "\"\"")}\".\"{ newName.Replace("\"", "\"\"")}\"";
+        await PostgresService.ExecuteAsync(p.BuildConnectionString(), db,
+            $"CREATE TABLE {dst} (LIKE {src} INCLUDING ALL)");
+        if (includeData)
+            await PostgresService.ExecuteAsync(p.BuildConnectionString(), db,
+                $"INSERT INTO {dst} SELECT * FROM {src}");
     }
 
     // ---- Oracle (CREATE TABLE AS SELECT) --------------------------------
@@ -167,7 +183,8 @@ public static class TableCopyService
 
     public static bool IsRelational(DatabaseEngine e) =>
         e is DatabaseEngine.SqlServer or DatabaseEngine.Sqlite or DatabaseEngine.Firebird
-          or DatabaseEngine.MySql or DatabaseEngine.MariaDb or DatabaseEngine.Oracle;
+          or DatabaseEngine.MySql or DatabaseEngine.MariaDb or DatabaseEngine.Oracle
+          or DatabaseEngine.PostgreSql;
 
     /// <summary>True if a table can be copied from one engine to the other.</summary>
     public static bool CanCopyBetween(DatabaseEngine a, DatabaseEngine b) =>
@@ -196,14 +213,17 @@ public static class TableCopyService
         return CopyRelationalCrossAsync(src, srcDb, srcSchema, srcName, tgt, tgtDb, tgtSchema, newName, includeData);
     }
 
-    private static string Q(DatabaseEngine e, string id) => e is DatabaseEngine.Firebird or DatabaseEngine.Oracle
-        ? "\"" + id.Replace("\"", "\"\"") + "\""
-        : e.IsMySql()
-            ? "`" + id.Replace("`", "``") + "`"
-            : "[" + id.Replace("]", "]]") + "]";
+    private static string Q(DatabaseEngine e, string id) =>
+        e is DatabaseEngine.Firebird or DatabaseEngine.Oracle or DatabaseEngine.PostgreSql
+            ? "\"" + id.Replace("\"", "\"\"") + "\""
+            : e.IsMySql()
+                ? "`" + id.Replace("`", "``") + "`"
+                : "[" + id.Replace("]", "]]") + "]";
 
     private static string Fq(DatabaseEngine e, string schema, string name) =>
-        e == DatabaseEngine.SqlServer ? $"{Q(e, schema)}.{Q(e, name)}" : Q(e, name);
+        e is DatabaseEngine.SqlServer or DatabaseEngine.PostgreSql
+            ? $"{Q(e, schema)}.{Q(e, name)}"
+            : Q(e, name);
 
     private static async Task<DbConnection> OpenAsync(ConnectionProfile p, string db)
     {
@@ -215,6 +235,8 @@ public static class TableCopyService
             DatabaseEngine.Oracle => new Oracle.ManagedDataAccess.Client.OracleConnection(p.BuildConnectionString()),
             DatabaseEngine.MySql or DatabaseEngine.MariaDb =>
                 new MySqlConnection(string.IsNullOrEmpty(db) ? p.BuildConnectionString() : MySqlService.WithDatabase(p.BuildConnectionString(), db)),
+            DatabaseEngine.PostgreSql =>
+                new NpgsqlConnection(string.IsNullOrEmpty(db) ? p.BuildConnectionString() : PostgresService.WithDatabase(p.BuildConnectionString(), db)),
             _ => throw new NotSupportedException($"{p.Engine.DisplayName()} cross-copy is not supported.")
         };
         await conn.OpenAsync();
@@ -360,6 +382,16 @@ public static class TableCopyService
                 if (pk.Count > 0) lines.Add($"  PRIMARY KEY ({string.Join(", ", pk)})");
                 return $"CREATE TABLE {Q(src.Engine, newName)} (\n{string.Join(",\n", lines)}\n)";
             }
+            case DatabaseEngine.PostgreSql:
+            {
+                var cols = await PostgresService.GetColumnsAsync(cs, srcDb, srcSchema, srcName);
+                if (cols.Count == 0)
+                    throw new InvalidOperationException($"Could not read the columns of '{srcName}'.");
+                var lines = cols.Select(c => $"  {Q(src.Engine, c.Name)} {c.TypeName}{(c.Nullable ? "" : " NOT NULL")}").ToList();
+                var pk = cols.Where(c => c.IsPrimaryKey).Select(c => Q(src.Engine, c.Name)).ToList();
+                if (pk.Count > 0) lines.Add($"  PRIMARY KEY ({string.Join(", ", pk)})");
+                return $"CREATE TABLE {Q(src.Engine, tgtSchema)}.{Q(src.Engine, newName)} (\n{string.Join(",\n", lines)}\n)";
+            }
             default: // SQL Server
             {
                 var cols = await SqlServerService.GetColumnDetailsAsync(cs, srcDb, srcSchema, srcName);
@@ -450,6 +482,7 @@ public static class TableCopyService
                 .ContinueWith(t => t.Result.Where(c => c.Pk > 0).OrderBy(c => c.Pk).Select(c => c.Name).ToList()),
             DatabaseEngine.MySql or DatabaseEngine.MariaDb => MySqlService.GetPrimaryKeyAsync(cs, db, name),
             DatabaseEngine.Oracle => OracleService.GetPrimaryKeyAsync(cs, name),
+            DatabaseEngine.PostgreSql => PostgresService.GetPrimaryKeyAsync(cs, db, schema, name),
             _ => Task.FromResult(new List<string>())
         };
     }
@@ -463,6 +496,24 @@ public static class TableCopyService
 
         return target switch
         {
+            DatabaseEngine.PostgreSql => tn switch
+            {
+                "Int64" => "bigint",
+                "Int32" => "integer",
+                "Int16" => "smallint",
+                "Byte" or "SByte" => "smallint",
+                "Boolean" => "boolean",
+                "Decimal" => $"numeric({ClampPrec(c.Precision, 38)},{ClampScale(c.Scale, c.Precision, 38)})",
+                "Double" => "double precision",
+                "Single" => "real",
+                "Guid" => "uuid",
+                "DateTime" or "DateTimeOffset" => "timestamptz",
+                "DateOnly" => "date",
+                "TimeSpan" or "TimeOnly" => "time",
+                "Byte[]" => "bytea",
+                "String" or "Char" => IsLarge(c.Size, 4000) ? "text" : $"varchar({c.Size})",
+                _ => "text"
+            },
             DatabaseEngine.Oracle => tn switch
             {
                 "Int64" => "NUMBER(19)",
@@ -574,6 +625,7 @@ public static class TableCopyService
             case DatabaseEngine.Firebird: await FirebirdService.ExecuteAsync(p.BuildConnectionString(), sql); break;
             case DatabaseEngine.MySql or DatabaseEngine.MariaDb: await MySqlService.ExecuteAsync(p.BuildConnectionString(), db, sql); break;
             case DatabaseEngine.Oracle: await OracleService.ExecuteAsync(p.BuildConnectionString(), sql); break;
+            case DatabaseEngine.PostgreSql: await PostgresService.ExecuteAsync(p.BuildConnectionString(), db, sql); break;
             default: await SqlServerService.ExecuteAsync(p.BuildConnectionString(), db, sql); break;
         }
     }

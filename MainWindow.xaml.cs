@@ -150,12 +150,16 @@ public partial class MainWindow : Window
                 AddTableMenu(menu, node, canDesign: false, canRename: true, canDrop: true, sqlServerExtras: false);
                 break;
 
+            case NodeType.Table when node.Connection.Engine == DatabaseEngine.PostgreSql:
+                AddTableMenu(menu, node, canDesign: false, canRename: true, canDrop: true, sqlServerExtras: false);
+                break;
+
             case NodeType.Table: // SQL Server
                 AddTableMenu(menu, node, canDesign: true, canRename: true, canDrop: true, sqlServerExtras: true);
                 break;
 
             case NodeType.View when node.Connection.Engine is DatabaseEngine.Sqlite or DatabaseEngine.Firebird
-                                     or DatabaseEngine.Oracle:
+                                     or DatabaseEngine.Oracle or DatabaseEngine.PostgreSql:
                 menu.Items.Add(Item("Ctx_Open", () => Run(Vm.OpenTableCommand, node)));
                 break;
 
@@ -166,6 +170,10 @@ public partial class MainWindow : Window
                 break;
 
             case NodeType.Function or NodeType.Procedure when node.Connection.Engine.IsMySql():
+                menu.Items.Add(Item("Ctx_Drop", () => Run(Vm.DropRoutineCommand, node)));
+                break;
+
+            case NodeType.Function or NodeType.Procedure when node.Connection.Engine == DatabaseEngine.PostgreSql:
                 menu.Items.Add(Item("Ctx_Drop", () => Run(Vm.DropRoutineCommand, node)));
                 break;
 
@@ -183,7 +191,7 @@ public partial class MainWindow : Window
                 menu.Items.Add(Item("Ctx_Drop", () => Run(Vm.DropRoutineCommand, node)));
                 break;
 
-            case NodeType.Category when node.Connection.Engine == DatabaseEngine.Oracle:
+            case NodeType.Category when node.Connection.Engine is DatabaseEngine.Oracle or DatabaseEngine.PostgreSql:
                 if (node.CategoryChildType is NodeType.Table) AddPaste(menu, node);
                 menu.Items.Add(Item("Ctx_Refresh", () => Run(Vm.RefreshNodeCommand, node)));
                 break;
