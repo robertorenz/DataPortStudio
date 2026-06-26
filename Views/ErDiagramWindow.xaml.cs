@@ -1,6 +1,7 @@
 using System.Windows;
 using DataPortStudio.Models;
 using DataPortStudio.Services;
+using Microsoft.Web.WebView2.Core;
 
 namespace DataPortStudio.Views;
 
@@ -30,7 +31,7 @@ public partial class ErDiagramWindow : Window
         StatusText.Text = "Loading schema…";
         try
         {
-            await WebView.EnsureCoreWebView2Async();
+            await WebView.EnsureCoreWebView2Async(await WebViewEnvironment.GetAsync());
             var (tables, fks) = await ErDiagramService.LoadAsync(_connection, _database, _schema);
 
             StatusText.Text = $"{tables.Count} tables · {fks.Count} FK relationships";

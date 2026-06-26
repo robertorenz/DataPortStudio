@@ -4,6 +4,15 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.18 — 2026-06-26
+
+### Fixed
+- **User Guide (and Cell Detail / ER Diagram) blank when installed** — WebView2 was using the default user-data folder, which fails when the app is installed to `Program Files` (the folder is read-only). All WebView2 instances now share a fixed user-data folder at `%LOCALAPPDATA%\DataPortStudio\WebView2`.
+- **Help → About version** — version number now correctly shows the release (was stuck at `0.0.0`). Moved version attributes to `AssemblyInfo.cs` and updated the About dialog to read `AssemblyInformationalVersion`.
+- **Connection dialog descriptions** — DAT and Excel connections no longer say "Read-only viewer"; TPS description corrected (cell edits only, add/delete rows not supported).
+
+---
+
 ## v1.0.17 — 2026-06-26
 
 ### Fixed

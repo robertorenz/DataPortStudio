@@ -1,4 +1,5 @@
 using System.Windows;
+using DataPortStudio.Services;
 using Microsoft.Web.WebView2.Wpf;
 
 namespace DataPortStudio.Behaviors;
@@ -47,7 +48,7 @@ public static class WebViewHtml
                 return;
             }
 
-            await webView.EnsureCoreWebView2Async();
+            await webView.EnsureCoreWebView2Async(await WebViewEnvironment.GetAsync());
             webView.NavigateToString(html);
         }
         catch

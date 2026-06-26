@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DataPortStudio.Models;
@@ -404,10 +405,12 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void ShowAbout()
     {
-        var v = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version;
-        var version = v is null ? "" : $"Version {v.Major}.{v.Minor}.{v.Build}";
+        var v = Assembly.GetEntryAssembly()
+            ?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion ?? "";
+        var version = v.Length > 0 ? $"Version {v}" : "";
         Dialogs.ShowMessage("About DataPortStudio",
-            $"DataPortStudio — SQL Server Manager\n{version}\n\nA Navicat-style database manager for SQL Server.\n{RepoUrl}");
+            $"DataPortStudio\n{version}\n\nA Navicat-style database manager for SQL Server, SQLite, MySQL, MariaDB, Firebird, Oracle, MongoDB, Excel and Clarion TPS/DAT.\n{RepoUrl}");
     }
 
     [RelayCommand]
