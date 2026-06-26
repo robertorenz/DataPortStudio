@@ -66,6 +66,9 @@ public partial class ConnectionDialog : Window
         if (_profile.Engine == DatabaseEngine.ClarionDat)
             DatFolderBox.Text = _profile.FilePath ?? "";
 
+        if (_profile.Engine == DatabaseEngine.Excel)
+            ExcelFolderBox.Text = _profile.FilePath ?? "";
+
         if (_profile.Engine == DatabaseEngine.Oracle)
         {
             OraHostBox.Text = string.IsNullOrWhiteSpace(_profile.Server) ? "localhost" : _profile.Server;
@@ -87,6 +90,7 @@ public partial class ConnectionDialog : Window
             DatabaseEngine.Tps => EngTps,
             DatabaseEngine.ClarionDat => EngClarionDat,
             DatabaseEngine.Oracle => EngOracle,
+            DatabaseEngine.Excel => EngExcel,
             _ => EngSqlServer
         }).IsChecked = true;
 
@@ -145,6 +149,13 @@ public partial class ConnectionDialog : Window
             return;
         }
 
+        if (_engine == DatabaseEngine.Excel)
+        {
+            p.FilePath = string.IsNullOrWhiteSpace(ExcelFolderBox.Text) ? null : ExcelFolderBox.Text.Trim();
+            p.UseRawConnectionString = false;
+            return;
+        }
+
         if (_engine == DatabaseEngine.Oracle)
         {
             p.Server = string.IsNullOrWhiteSpace(OraHostBox.Text) ? "localhost" : OraHostBox.Text.Trim();
@@ -183,6 +194,7 @@ public partial class ConnectionDialog : Window
             var s when s == EngTps => DatabaseEngine.Tps,
             var s when s == EngClarionDat => DatabaseEngine.ClarionDat,
             var s when s == EngOracle => DatabaseEngine.Oracle,
+            var s when s == EngExcel => DatabaseEngine.Excel,
             _ => DatabaseEngine.SqlServer
         };
         ApplyEngineState();
@@ -200,6 +212,7 @@ public partial class ConnectionDialog : Window
         var isTps = _engine == DatabaseEngine.Tps;
         var isDat = _engine == DatabaseEngine.ClarionDat;
         var isOracle = _engine == DatabaseEngine.Oracle;
+        var isExcel = _engine == DatabaseEngine.Excel;
         var supported = _engine.IsSupported();
 
         SqlServerPanel.Visibility = isSql ? Visibility.Visible : Visibility.Collapsed;
@@ -210,6 +223,7 @@ public partial class ConnectionDialog : Window
         TpsPanel.Visibility = isTps ? Visibility.Visible : Visibility.Collapsed;
         DatPanel.Visibility = isDat ? Visibility.Visible : Visibility.Collapsed;
         OraclePanel.Visibility = isOracle ? Visibility.Visible : Visibility.Collapsed;
+        ExcelPanel.Visibility = isExcel ? Visibility.Visible : Visibility.Collapsed;
         if (isFirebird) ApplyFirebirdState();
         ComingSoonPanel.Visibility = supported ? Visibility.Collapsed : Visibility.Visible;
         if (!supported)
@@ -283,6 +297,8 @@ public partial class ConnectionDialog : Window
 
     private void DatBrowse_Click(object sender, RoutedEventArgs e) => BrowseFolderInto(DatFolderBox, "Select the folder containing .dat files");
 
+    private void ExcelBrowse_Click(object sender, RoutedEventArgs e) => BrowseFolderInto(ExcelFolderBox, "Select the folder containing Excel files (.xls / .xlsx)");
+
     private void BrowseFolderInto(System.Windows.Controls.TextBox box, string title)
     {
         var dlg = new OpenFolderDialog { Title = title };
@@ -330,6 +346,8 @@ public partial class ConnectionDialog : Window
                 TpsService.TestConnection(temp.FilePath);
             else if (_engine == DatabaseEngine.ClarionDat)
                 DatService.TestConnection(temp.FilePath);
+            else if (_engine == DatabaseEngine.Excel)
+                ExcelService.TestConnection(temp.FilePath);
             else if (_engine == DatabaseEngine.Oracle)
                 await OracleService.TestConnectionAsync(temp.BuildConnectionString());
             else
@@ -392,6 +410,14 @@ public partial class ConnectionDialog : Window
             if (string.IsNullOrWhiteSpace(DatFolderBox.Text))
             {
                 Dialogs.ShowError("Missing folder", "Please choose the folder that contains your .dat files.");
+                return;
+            }
+        }
+        else if (_engine == DatabaseEngine.Excel)
+        {
+            if (string.IsNullOrWhiteSpace(ExcelFolderBox.Text))
+            {
+                Dialogs.ShowError("Missing folder", "Please choose the folder that contains your Excel files.");
                 return;
             }
         }

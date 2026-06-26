@@ -23,6 +23,7 @@ public static class ObjectListService
             DatabaseEngine.MySql or DatabaseEngine.MariaDb => LoadMySqlAsync(p, database),
             DatabaseEngine.Tps => LoadClarionFilesAsync(p, ".tps", TpsService.ListTables(p.FilePath)),
             DatabaseEngine.ClarionDat => LoadClarionFilesAsync(p, ".dat", DatService.ListTables(p.FilePath)),
+            DatabaseEngine.Excel => LoadExcelSheetsAsync(p),
             DatabaseEngine.Oracle => LoadOracleAsync(p),
             _ => Task.FromResult(new List<ObjectListItem>())
         };
@@ -39,6 +40,26 @@ public static class ObjectListService
             result.Add(new ObjectListItem(n, rows, null, null));
         }
         return result;
+    }
+
+    /// <summary>Excel folder: one item per sheet across all Excel files, with the file size as a comment.</summary>
+    private static Task<List<ObjectListItem>> LoadExcelSheetsAsync(ConnectionProfile p)
+    {
+        var folder = p.FilePath;
+        var sheets = ExcelService.ListSheets(folder);
+        var result = sheets.Select(s =>
+        {
+            DateTime? modified = null;
+            string? size = null;
+            try
+            {
+                var fi = new FileInfo(Path.Combine(folder!, s.FileName));
+                if (fi.Exists) { modified = fi.LastWriteTime; size = FormatSize(fi.Length); }
+            }
+            catch { /* best effort */ }
+            return new ObjectListItem(s.DisplayName, null, modified, size);
+        }).ToList();
+        return Task.FromResult(result);
     }
 
     /// <summary>Clarion flat files: each file in the connection's folder, with its size as a comment.</summary>

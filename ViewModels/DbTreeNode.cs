@@ -155,6 +155,7 @@ public partial class DbTreeNode : ObservableObject
                 DatabaseEngine.MongoDb => await LoadMongoChildrenAsync(connStr),
                 DatabaseEngine.Tps => LoadClarionFileChildren(TpsService.ListTables(Connection.FilePath)),
                 DatabaseEngine.ClarionDat => LoadClarionFileChildren(DatService.ListTables(Connection.FilePath)),
+                DatabaseEngine.Excel => LoadExcelFileChildren(ExcelService.ListSheets(Connection.FilePath)),
                 DatabaseEngine.MySql or DatabaseEngine.MariaDb => await LoadMySqlChildrenAsync(connStr),
                 DatabaseEngine.Oracle => await LoadOracleChildrenAsync(connStr),
                 _ => await LoadSqlServerChildrenAsync(connStr)
@@ -342,6 +343,16 @@ public partial class DbTreeNode : ObservableObject
         if (Type == NodeType.Server)
             foreach (var name in names)
                 items.Add(ObjectNode(NodeType.Table, Connection, "", "", name));
+        return items;
+    }
+
+    /// <summary>Excel folder: each sheet across all workbooks. FileName goes in Database, SheetName in Schema.</summary>
+    private List<DbTreeNode> LoadExcelFileChildren(List<DataPortStudio.Services.ExcelSheet> sheets)
+    {
+        var items = new List<DbTreeNode>();
+        if (Type == NodeType.Server)
+            foreach (var s in sheets)
+                items.Add(ObjectNode(NodeType.Table, Connection, s.FileName, s.SheetName, s.DisplayName));
         return items;
     }
 

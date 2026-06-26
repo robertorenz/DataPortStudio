@@ -52,7 +52,8 @@ public class ConnectionProfile
                 return new SqliteConnectionStringBuilder { DataSource = FilePath ?? "" }.ToString();
             case DatabaseEngine.Tps:
             case DatabaseEngine.ClarionDat:
-                // No real connection string — Clarion files are read directly from a folder.
+            case DatabaseEngine.Excel:
+                // No real connection string — files are read directly from a folder.
                 return FilePath ?? "";
             case DatabaseEngine.Oracle:
                 // Easy Connect: Data Source = host:port/service_name.

@@ -4,6 +4,13 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.11 — 2026-06-25
+
+### Added
+- **Excel (.xls / .xlsx) folder connections** — add a connection that points at a folder and every worksheet in every Excel file in that folder appears as a table, exactly like TPS and Clarion DAT connections. Select a worksheet to browse its rows in a read-only grid (first row = column headers, empty rows skipped). Use **Copy** on a worksheet to migrate its data into any SQL database. `.xlsx` / `.xlsm` are read via ClosedXML; `.xls` via NPOI. Both are already bundled with the app — no extra install needed.
+
+---
+
 ## v1.0.10 — 2026-06-25
 
 ### Fixed

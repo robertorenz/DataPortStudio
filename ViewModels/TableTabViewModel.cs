@@ -26,7 +26,8 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
             var c = Node.Connection;
             var location = c.Engine switch
             {
-                DatabaseEngine.Sqlite or DatabaseEngine.Firebird => Node.Name,
+                DatabaseEngine.Sqlite or DatabaseEngine.Firebird
+                    or DatabaseEngine.Tps or DatabaseEngine.ClarionDat or DatabaseEngine.Excel => Node.Name,
                 DatabaseEngine.MongoDb or DatabaseEngine.MySql or DatabaseEngine.MariaDb => $"{Node.Database}.{Node.Name}",
                 _ => $"{Node.Database}.{Node.Schema}.{Node.Name}"
             };
@@ -598,7 +599,8 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
         Identifier = node.Connection.Engine switch
         {
             DatabaseEngine.Sqlite or DatabaseEngine.Firebird
-                or DatabaseEngine.Tps or DatabaseEngine.ClarionDat or DatabaseEngine.Oracle => node.Name,
+                or DatabaseEngine.Tps or DatabaseEngine.ClarionDat
+                or DatabaseEngine.Excel or DatabaseEngine.Oracle => node.Name,
             DatabaseEngine.MongoDb or DatabaseEngine.MySql or DatabaseEngine.MariaDb => $"{node.Database}.{node.Name}",
             _ => $"{node.Database}.{node.Schema}.{node.Name}"
         };
@@ -625,6 +627,11 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
             if (Node.Connection.Engine == DatabaseEngine.ClarionDat)
                 return await LoadClarionFileAsync(
                     () => DatService.ReadTable(Node.Connection.FilePath ?? "", Node.Name, RowLimit), "Clarion DAT file");
+
+            if (Node.Connection.Engine == DatabaseEngine.Excel)
+                return await LoadClarionFileAsync(
+                    () => ExcelService.ReadTable(Node.Connection.FilePath ?? "", Node.Database ?? "", Node.Schema ?? "", RowLimit),
+                    "Excel file");
 
             _session = await EditableTableSession.OpenAsync(
                 Node.Connection.Engine, Node.Connection.BuildConnectionString(),

@@ -1,13 +1,13 @@
 # DataPortStudio
 
 A lightweight, Navicat-style database manager for **SQL Server**, **SQLite**, **MySQL**,
-**MariaDB**, **Firebird**, **Oracle**, **MongoDB** and **Clarion TPS / DAT** files, built with **C# / WPF (.NET 9)**.
+**MariaDB**, **Firebird**, **Oracle**, **MongoDB**, **Excel (.xls/.xlsx)** and **Clarion TPS / DAT** files, built with **C# / WPF (.NET 9)**.
 
 Add connection strings, browse the server tree (databases → schemas → tables), open a table, and
 view & edit its records in place — including adding and deleting rows — with changes pushed back to
 the database.
 
-![Status](https://img.shields.io/badge/status-v1.0.10-blue) ![Platform](https://img.shields.io/badge/platform-Windows-informational) ![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
+![Status](https://img.shields.io/badge/status-v1.0.11-blue) ![Platform](https://img.shields.io/badge/platform-Windows-informational) ![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
 
 ## Download
 
@@ -57,6 +57,10 @@ Grab the latest **portable `.exe`** from the
     file** (UPDATE only — adding/deleting rows is not supported, as those require rebuilding the TPS
     index files). Use **Copy** on a `.tps` table and paste it onto any SQL database to migrate the
     data across (**TPS → SQL**); the schema and rows are created for you.
+  - **Excel (.xls / .xlsx)**: point a connection at a **folder** and every worksheet in every Excel
+    file in it shows up as a table. First row = column headers; empty rows are skipped; all values
+    are read as text. Read-only viewer and copy source — use **Copy** to move a sheet into any SQL
+    database. `.xlsx`/`.xlsm` read via ClosedXML; `.xls` via NPOI. No extra install needed.
   - **Clarion DAT**: the *classic* Clarion ISAM format (pre-TopSpeed, `.dat`). Same folder model —
     point at a folder and each `.dat` file is a table. DataPortStudio decodes the format from its public
     spec (Clarion Technical Bulletin 117): header, field descriptors and fixed-length records,

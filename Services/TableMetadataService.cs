@@ -32,6 +32,7 @@ public static class TableMetadataService
             DatabaseEngine.MongoDb => MongoService.GetStructureAsync(connectionString, database, table, connectionName),
             DatabaseEngine.Tps => TpsService.GetStructureAsync(connectionString, table, connectionName),
             DatabaseEngine.ClarionDat => DatService.GetStructureAsync(connectionString, table, connectionName),
+            DatabaseEngine.Excel => ExcelService.GetStructureAsync(connectionString, database!, schema!, connectionName),
             DatabaseEngine.MySql or DatabaseEngine.MariaDb => GetMySqlAsync(connectionString, database, table, connectionName),
             DatabaseEngine.Oracle => GetOracleAsync(connectionString, table, connectionName),
             _ => GetSqlServerAsync(connectionString, database, schema, table, connectionName)
