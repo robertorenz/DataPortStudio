@@ -60,7 +60,7 @@ public partial class MainViewModel : ObservableObject
                                  or NodeType.Function or NodeType.Procedure }
                    or { Type: NodeType.Schema }
                    or { Type: NodeType.Database }
-                   or { Type: NodeType.Server, Connection.Engine: DatabaseEngine.Tps or DatabaseEngine.ClarionDat };
+                   or { Type: NodeType.Server, Connection.Engine: DatabaseEngine.Tps or DatabaseEngine.ClarionDat or DatabaseEngine.Excel };
         if (!show) return;
 
         _objectsTab ??= new ObjectListViewModel(
@@ -68,7 +68,7 @@ public partial class MainViewModel : ObservableObject
             design: (c, item) => DesignTableCommand.Execute(NodeForItem(c, item)),
             delete: DeleteFromListAsync,
             @new: c => NewTableCommand.Execute(c),
-            copy: (c, item) => CopyTableCommand.Execute(NodeForItem(c, item)),
+            copy: CopyFromList,
             paste: PasteFromListAsync);
 
         if (!Tabs.Contains(_objectsTab))
@@ -91,6 +91,45 @@ public partial class MainViewModel : ObservableObject
         var node = NodeForItem(container, item);
         if (node.IsOpenable) OpenTableCommand.Execute(node);          // table / view
         else EditRoutineCommand.Execute(node);                        // function / procedure
+    }
+
+    /// <summary>
+    /// Copy action for the Objects list. Excel file nodes need sheet-level resolution before copy.
+    /// </summary>
+    private void CopyFromList(DbTreeNode container, ObjectListItem item)
+    {
+        if (container.Connection.Engine == DatabaseEngine.Excel)
+        {
+            var folder = container.Connection.FilePath ?? "";
+            var fileName = item.Name;
+            List<string> sheets;
+            try { sheets = ExcelService.ListSheetsForFile(folder, fileName); }
+            catch { sheets = []; }
+
+            if (sheets.Count == 0) { StatusText = $"No sheets found in '{fileName}'."; return; }
+
+            string sheetName;
+            if (sheets.Count == 1)
+            {
+                sheetName = sheets[0];
+            }
+            else
+            {
+                var picked = Views.ModalDialog.PickItem(
+                    "Copy sheet",
+                    $"'{fileName}' has multiple sheets. Which sheet do you want to copy?",
+                    sheets);
+                if (picked is null) { StatusText = "Copy cancelled."; return; }
+                sheetName = picked;
+            }
+
+            var sheetNode = DbTreeNode.ExcelSheetNode(container.Connection, fileName, sheetName, sheetName);
+            CopyTableCommand.Execute(sheetNode);
+        }
+        else
+        {
+            CopyTableCommand.Execute(NodeForItem(container, item));
+        }
     }
 
     private async void DeleteFromListAsync(DbTreeNode container, ObjectListItem item)

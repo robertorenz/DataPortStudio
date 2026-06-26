@@ -61,10 +61,11 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
         var engine = container.Connection.Engine;
         CanDesign = IsTables && engine is DatabaseEngine.SqlServer or DatabaseEngine.Sqlite;
         CanCreate = CanDesign;
-        // Read-only engines (MongoDB, Clarion TPS/DAT) can't be dropped or pasted into — hide those.
+        // Read-only engines and file-folder engines (MongoDB, Clarion, Excel) can't be dropped or pasted into.
         // Copy stays available so their data can be copied out to a SQL database.
-        CanDelete = !engine.IsReadOnly();
-        CanPaste = IsTables && !engine.IsReadOnly();
+        var isFolderEngine = engine is DatabaseEngine.Tps or DatabaseEngine.ClarionDat or DatabaseEngine.Excel;
+        CanDelete = !engine.IsReadOnly() && !isFolderEngine;
+        CanPaste = IsTables && !engine.IsReadOnly() && !isFolderEngine;
 
         var loc = LocalizationManager.Instance;
         var kindWord = ChildType switch
