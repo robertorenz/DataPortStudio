@@ -4,6 +4,13 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.15 — 2026-06-25
+
+### Fixed
+- **Ctrl+C now works in the Objects tab for all connections** — WPF's `DataGrid` has a built-in `ApplicationCommands.Copy` binding that was intercepting Ctrl+C and marking the key event as handled before the table-copy handler could run. Fixed by setting `ClipboardCopyMode="None"` on the Objects list grid, which removes the built-in clipboard command and lets Ctrl+C reach our handler reliably. Ctrl+V (paste) was already working.
+
+---
+
 ## v1.0.14 — 2026-06-25
 
 ### Added / Fixed

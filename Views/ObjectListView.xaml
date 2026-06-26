@@ -67,6 +67,7 @@
                   SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
                   AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
                   SelectionMode="Single" SelectionUnit="FullRow" HeadersVisibility="Column"
+                  ClipboardCopyMode="None"
                   MouseDoubleClick="Grid_DoubleClick" KeyDown="Grid_KeyDown"
                   PreviewMouseRightButtonDown="Grid_RightClick">
             <DataGrid.ContextMenu>
