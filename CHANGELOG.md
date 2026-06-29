@@ -4,6 +4,14 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.22 — 2026-06-29
+
+### Added
+- **Load / Save SQL scripts to file — Query window** — new Load… and Save… buttons (and keyboard shortcuts Ctrl+O / Ctrl+S) allow loading and saving `.sql` scripts directly from/to disk. Run also responds to Ctrl+E in addition to F5.
+- **Load / Save SQL scripts to file — Routine editor** — same Load… (Ctrl+O) and Save… (Ctrl+Shift+S) buttons added to the function/stored procedure editor. Ctrl+S continues to save to the database; Ctrl+Shift+S saves to file.
+
+---
+
 ## v1.0.21 — 2026-06-26
 
 ### Fixed

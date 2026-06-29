@@ -33,9 +33,12 @@ public partial class RoutineEditorWindow : Window
 
         PreviewKeyDown += async (_, e) =>
         {
-            if (e.Key == Key.S && (Keyboard.Modifiers & ModifierKeys.Control) != 0) { e.Handled = true; await SaveAsync(); }
-            if (e.Key == Key.F && (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) == (ModifierKeys.Control | ModifierKeys.Shift))
-            { e.Handled = true; FormatSql(); }
+            var ctrl = (Keyboard.Modifiers & ModifierKeys.Control) != 0;
+            var ctrlShift = (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) == (ModifierKeys.Control | ModifierKeys.Shift);
+            if (e.Key == Key.S && ctrl && !ctrlShift)    { e.Handled = true; await SaveAsync(); }
+            if (e.Key == Key.O && ctrl)                  { e.Handled = true; LoadFile_Click(this, new()); }
+            if (e.Key == Key.S && ctrlShift)             { e.Handled = true; SaveFile_Click(this, new()); }
+            if (e.Key == Key.F && ctrlShift)             { e.Handled = true; FormatSql(); }
         };
 
         if (_isNew)
@@ -115,6 +118,33 @@ public partial class RoutineEditorWindow : Window
         {
             SaveButton.IsEnabled = true;
         }
+    }
+
+    // ── Load / Save script to file ───────────────────────────────────────────
+
+    private void LoadFile_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Load SQL script",
+            Filter = "SQL files (*.sql)|*.sql|Text files (*.txt)|*.txt|All files (*.*)|*.*",
+            DefaultExt = ".sql"
+        };
+        if (dlg.ShowDialog(this) == true)
+            Editor.Document.Text = System.IO.File.ReadAllText(dlg.FileName, System.Text.Encoding.UTF8);
+    }
+
+    private void SaveFile_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Save SQL script",
+            Filter = "SQL files (*.sql)|*.sql|Text files (*.txt)|*.txt|All files (*.*)|*.*",
+            DefaultExt = ".sql",
+            FileName = _name
+        };
+        if (dlg.ShowDialog(this) == true)
+            System.IO.File.WriteAllText(dlg.FileName, Editor.Document.Text, System.Text.Encoding.UTF8);
     }
 
     /// <summary>Turns a leading CREATE (or CREATE OR ALTER) into ALTER so an existing routine updates in place.</summary>

@@ -18,6 +18,8 @@
                 <TextBlock x:Name="TitleLabel" VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold"
                            Foreground="{StaticResource B.Text}"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Load…" Margin="0,0,10,0" Click="LoadFile_Click" ToolTip="Load SQL script from file  (Ctrl+O)"/>
+                <Button Content="Save…" Margin="0,0,10,0" Click="SaveFile_Click" ToolTip="Save SQL script to file  (Ctrl+Shift+S)"/>
                 <Button Content="Format  (Ctrl+Shift+F)" Margin="0,0,10,0" Click="Format_Click" ToolTip="Beautify SQL"/>
                 <Button x:Name="SaveButton" Style="{StaticResource AccentButton}" Click="Save_Click">
                     <StackPanel Orientation="Horizontal">
