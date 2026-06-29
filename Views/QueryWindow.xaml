@@ -24,7 +24,7 @@
                     <Button x:Name="RunButton" Style="{StaticResource AccentButton}" Click="Run_Click">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Style="{StaticResource ToolIcon}" Text="&#xE768;"/>
-                            <TextBlock Text="Run  (F5)"/>
+                            <TextBlock Text="Run  (F5 / Ctrl+E)"/>
                         </StackPanel>
                     </Button>
                     <Button Content="Clear" Margin="10,0,0,0" Click="Clear_Click"/>
@@ -74,6 +74,8 @@
                             </Grid>
                         </Border>
                     </Popup>
+                    <Button Content="Load…" Margin="10,0,0,0" Click="Load_Click" ToolTip="Load SQL script from file  (Ctrl+O)"/>
+                    <Button Content="Save…" Margin="10,0,0,0" Click="Save_Click" ToolTip="Save SQL script to file  (Ctrl+S)"/>
                     <Button x:Name="ExportButton" Content="Export…" Margin="10,0,0,0" Click="Export_Click" IsEnabled="False"/>
                 </StackPanel>
             </Grid>

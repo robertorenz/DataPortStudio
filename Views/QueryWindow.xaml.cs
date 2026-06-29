@@ -37,10 +37,14 @@ public partial class QueryWindow : Window
 
         PreviewKeyDown += async (_, e) =>
         {
-            if (e.Key == Key.F5) { e.Handled = true; await RunAsync(); }
-            if (e.Key == Key.H && (Keyboard.Modifiers & ModifierKeys.Control) != 0) { e.Handled = true; OpenHistory(); }
-            if (e.Key == Key.F && (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) == (ModifierKeys.Control | ModifierKeys.Shift))
-            { e.Handled = true; FormatSql(); }
+            var ctrl = (Keyboard.Modifiers & ModifierKeys.Control) != 0;
+            var ctrlShift = (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) == (ModifierKeys.Control | ModifierKeys.Shift);
+            if (e.Key == Key.F5)                          { e.Handled = true; await RunAsync(); }
+            if (e.Key == Key.E && ctrl)                   { e.Handled = true; await RunAsync(); }
+            if (e.Key == Key.O && ctrl)                   { e.Handled = true; Load_Click(this, new()); }
+            if (e.Key == Key.S && ctrl)                   { e.Handled = true; Save_Click(this, new()); }
+            if (e.Key == Key.H && ctrl)                   { e.Handled = true; OpenHistory(); }
+            if (e.Key == Key.F && ctrlShift)              { e.Handled = true; FormatSql(); }
         };
         Editor.Focus();
     }
@@ -214,6 +218,33 @@ public partial class QueryWindow : Window
             Editor.Document.Text = SqlBeautifier.Format(Editor.Document.Text);
             Editor.CaretOffset = Math.Min(caret, Editor.Document.TextLength);
         }
+    }
+
+    // ── Load / Save script ──────────────────────────────────────────────────
+
+    private void Load_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Load SQL script",
+            Filter = "SQL files (*.sql)|*.sql|Text files (*.txt)|*.txt|All files (*.*)|*.*",
+            DefaultExt = ".sql"
+        };
+        if (dlg.ShowDialog(this) == true)
+            Editor.Document.Text = System.IO.File.ReadAllText(dlg.FileName, System.Text.Encoding.UTF8);
+    }
+
+    private void Save_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Save SQL script",
+            Filter = "SQL files (*.sql)|*.sql|Text files (*.txt)|*.txt|All files (*.*)|*.*",
+            DefaultExt = ".sql",
+            FileName = "query"
+        };
+        if (dlg.ShowDialog(this) == true)
+            System.IO.File.WriteAllText(dlg.FileName, Editor.Document.Text, System.Text.Encoding.UTF8);
     }
 
     // ── Export ───────────────────────────────────────────────────────────────
