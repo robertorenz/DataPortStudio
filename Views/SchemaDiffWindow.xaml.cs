@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -544,19 +545,8 @@ public partial class SchemaDiffWindow : Window
         var source = leftToRight ? left : right;
         var target = leftToRight ? right : left;
         var withData = IncludeDataCheck.IsChecked == true;
-        var tableCount = objects.Count(x => x.ObjectType == SchemaObjectType.Table);
-        var replacementCount = objects.Count(x => x.Kind == DiffKind.DefinitionDiffers);
-        var tableChangeCount = objects.Count(x => x.Kind == DiffKind.ColumnsDiffer);
-        var summary = string.Join(", ", objects.GroupBy(x => x.ObjectType)
-            .Select(g => $"{g.Count()} {g.Key.DisplayName().ToLowerInvariant()}(s)"));
-        var dataText = tableCount == 0 ? "" :
-            $"\nTable data: {(withData ? "included" : "structure only")}";
-        var replacementText = replacementCount == 0 ? "" :
-            $"\n\nWarning: {replacementCount} existing destination definition(s) will be replaced.";
-        var tableChangeText = tableChangeCount == 0 ? "" :
-            $"\n\nWarning: columns in {tableChangeCount} existing table(s) will be altered transactionally.";
-        if (!Dialogs.Confirm("Transfer selected objects",
-                $"Transfer {objects.Count} object(s) ({summary}) from\n{source.DisplayName}\n\nto\n{target.DisplayName}?{dataText}{replacementText}{tableChangeText}"))
+        var applySummary = BuildApplySummary(objects, source, target, leftToRight, withData);
+        if (!Dialogs.ConfirmSummary("Apply selected changes", applySummary, this))
             return;
 
         SetBusy(true);
@@ -602,6 +592,54 @@ public partial class SchemaDiffWindow : Window
             SetBusy(false);
             await CompareAsync();
         }
+    }
+
+    private static string BuildApplySummary(
+        IReadOnlyList<TableDiff> objects, SchemaEndpoint source, SchemaEndpoint target,
+        bool sourceIsLeft, bool includeTableData)
+    {
+        var text = new StringBuilder();
+        text.AppendLine($"Direction: {(sourceIsLeft ? "LEFT → RIGHT" : "RIGHT → LEFT")}");
+        text.AppendLine($"Source:      {source.DisplayName}");
+        text.AppendLine($"Destination: {target.DisplayName}");
+        text.AppendLine();
+        text.AppendLine($"Objects to apply ({objects.Count}):");
+        text.AppendLine(new string('─', 76));
+
+        foreach (var obj in objects)
+        {
+            var label = $"{obj.ObjectType.DisplayName()} · {obj.TableName}";
+            if (obj.Kind == DiffKind.DefinitionDiffers)
+            {
+                text.AppendLine($"REPLACE  {label}");
+                continue;
+            }
+            if (obj.Kind is DiffKind.OnlyInLeft or DiffKind.OnlyInRight)
+            {
+                var data = obj.ObjectType == SchemaObjectType.Table
+                    ? (includeTableData ? " + data" : " (structure only)")
+                    : "";
+                text.AppendLine($"CREATE   {label}{data}");
+                continue;
+            }
+
+            text.AppendLine($"ALTER    {label}");
+            foreach (var column in obj.ColumnDiffs)
+            {
+                var sourceColumn = sourceIsLeft ? column.Left : column.Right;
+                var targetColumn = sourceIsLeft ? column.Right : column.Left;
+                if (sourceColumn is null) continue;
+                var nullability = sourceColumn.IsNullable ? "NULL" : "NOT NULL";
+                if (targetColumn is null)
+                    text.AppendLine($"  + ADD      {sourceColumn.Name} {sourceColumn.DataType} {nullability}");
+                else
+                    text.AppendLine($"  ~ ALTER    {sourceColumn.Name} {sourceColumn.DataType} {nullability}");
+            }
+        }
+
+        text.AppendLine();
+        text.AppendLine("Review the operations above, then choose Apply or Cancel.");
+        return text.ToString();
     }
 
     private enum DiffLineKind { Equal, Added, Removed, Changed }
