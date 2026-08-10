@@ -340,9 +340,16 @@ public partial class MainViewModel : ObservableObject
         var connection = node?.Connection
             ?? Roots.FirstOrDefault(r => r.Type == NodeType.Server)?.Connection;
         if (connection is null) { StatusText = "Add a connection first."; return; }
-        if (connection.Engine is DatabaseEngine.MongoDb or DatabaseEngine.Sqlite)
-        { Dialogs.ShowMessage("Not available", "Schema diff requires a server with multiple databases."); return; }
-        new Views.SchemaDiffWindow(connection, node?.Database).Show();
+        var relational = Roots.Select(r => r.Connection)
+            .Where(SchemaDiffService.IsSupported)
+            .DistinctBy(c => c.Id)
+            .ToList();
+        if (relational.Count == 0)
+        {
+            Dialogs.ShowMessage("Not available", "Schema diff requires at least one relational database connection.");
+            return;
+        }
+        new Views.SchemaDiffWindow(relational, connection, node?.Database, AddConnectionProfile).Show();
     }
 
     [RelayCommand]
@@ -454,11 +461,14 @@ public partial class MainViewModel : ObservableObject
     {
         var profile = new ConnectionProfile();
         if (Dialogs.EditConnection(profile))
-        {
-            Roots.Add(DbTreeNode.Server(profile));
-            Persist();
-            StatusText = $"Added connection '{profile.Name}'.";
-        }
+            AddConnectionProfile(profile);
+    }
+
+    private void AddConnectionProfile(ConnectionProfile profile)
+    {
+        Roots.Add(DbTreeNode.Server(profile));
+        Persist();
+        StatusText = $"Added connection '{profile.Name}'.";
     }
 
     [RelayCommand]

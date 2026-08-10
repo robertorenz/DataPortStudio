@@ -463,6 +463,11 @@ public partial class ConnectionDialog : Window
         }
         else if (_engine == DatabaseEngine.SqlServer)
         {
+            if (RawModeCheck.IsChecked == true && string.IsNullOrWhiteSpace(RawBox.Text))
+            {
+                Dialogs.ShowError("Missing connection string", "Please enter a SQL Server connection string.");
+                return;
+            }
             if (RawModeCheck.IsChecked != true && string.IsNullOrWhiteSpace(ServerBox.Text))
             {
                 Dialogs.ShowError("Missing server", "Please enter a server name.");
