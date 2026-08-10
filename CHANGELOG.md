@@ -4,6 +4,17 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.23 — 2026-08-10
+
+### Added / Improved
+- **Schema comparator overhaul** (contributed by [@jarodav1](https://github.com/jarodav1)) — Schema Diff now compares far more than tables:
+  - **Programmable objects** — views, functions, and stored procedures are compared by definition, alongside tables and columns.
+  - **Selective object transfer** — push a missing or differing object from one database to the other directly from the diff window. Tables are copied cross-engine (where table copy is supported); views and routines are created or replaced on the destination (same engine only), with per-engine safety checks (e.g. Firebird routine reconstruction and MySQL routine replacement are intentionally disabled).
+  - **Existing-table column synchronization (SQL Server)** — non-destructive column additions and alterations are applied to the destination table in a single transaction. Column drops and physical reordering are excluded to prevent data loss.
+  - **Apply summary confirmation** — before any schema change is applied, a summary dialog lists exactly what will be created, replaced, or altered.
+
+---
+
 ## v1.0.22 — 2026-06-29
 
 ### Added
