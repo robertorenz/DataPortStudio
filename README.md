@@ -263,3 +263,20 @@ Themes/      Theme.xaml (palette + control styles)
 - Ad-hoc SQL query editor with results grid
 - Filtering / sorting / paging on large tables
 - Export (CSV / JSON), and view table structure (columns, indexes, keys)
+
+## Acknowledgments
+
+Warm thanks to the contributors who have improved DataPortStudio:
+
+- [**@asantarelli**](https://github.com/asantarelli) — Load / Save SQL scripts to file in the Query window and Routine editor (v1.0.22).
+- [**@jarodav1**](https://github.com/jarodav1) (Victor Montanez) — Schema comparator overhaul: programmable-object comparison, selective object transfer, SQL Server column synchronization, and the apply-summary confirmation (v1.0.23).
+
+DataPortStudio also stands on the shoulders of excellent open-source libraries and public format
+documentation — including [TpsParser](https://github.com/Trinitek/TpsParser),
+[AvalonEdit](https://github.com/icsharpcode/AvalonEdit),
+[ClosedXML](https://github.com/ClosedXML/ClosedXML), [NPOI](https://github.com/nissl-lab/npoi),
+[Npgsql](https://www.npgsql.org/), [MySqlConnector](https://mysqlconnector.net/), the
+[Firebird .NET provider](https://www.firebirdsql.org/en/net-provider/), and Clarion Technical
+Bulletin 117 (the public spec behind the clean-room DAT decoder). The full component list with
+licenses is in the in-app **User Guide ▸ Credits & licenses** (F1). Our sincere thanks to their
+authors and maintainers.
