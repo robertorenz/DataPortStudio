@@ -125,6 +125,10 @@ public static class Strings
         ["Col_Modified"] = "Modified Date",
         ["Col_Comment"] = "Comment",
         ["OL_Count"] = "{0} object(s)",
+        ["OL_LocatorPlaceholder"] = "Locate by name…",
+        ["OL_LocatorTooltip"] = "Type an object name. Press Enter or F3 for the next match; Esc clears.",
+        ["OL_LocatorNoMatches"] = "No matches",
+        ["OL_LocatorPosition"] = "{0}/{1}",
 
         // Drop confirmation
         ["Btn_Yes"] = "Yes",
@@ -354,6 +358,10 @@ public static class Strings
         ["Col_Modified"] = "Fecha de modificación",
         ["Col_Comment"] = "Comentario",
         ["OL_Count"] = "{0} objeto(s)",
+        ["OL_LocatorPlaceholder"] = "Localizar por nombre…",
+        ["OL_LocatorTooltip"] = "Escriba el nombre del objeto. Enter o F3 avanza; Esc limpia.",
+        ["OL_LocatorNoMatches"] = "Sin coincidencias",
+        ["OL_LocatorPosition"] = "{0}/{1}",
 
         // Confirmación de eliminación
         ["Btn_Yes"] = "Sí",

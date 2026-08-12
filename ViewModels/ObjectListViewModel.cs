@@ -31,6 +31,8 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
     [ObservableProperty] private bool canDelete = true;
     [ObservableProperty] private bool canPaste = true;
     [ObservableProperty] private bool isTables = true;
+    [ObservableProperty] private string locatorText = "";
+    [ObservableProperty] private string locatorStatus = "";
 
     /// <summary>The kind of objects listed: Table, View, Function, or Procedure.</summary>
     public NodeType ChildType { get; private set; } = NodeType.Table;
@@ -40,6 +42,7 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
     public string TabToolTip => Title;
 
     partial void OnTitleChanged(string value) => OnPropertyChanged(nameof(TabToolTip));
+    partial void OnLocatorTextChanged(string value) => Locate(reset: true);
 
     public ObjectListViewModel(
         Action<DbTreeNode, ObjectListItem> open, Action<DbTreeNode, ObjectListItem> design,
@@ -59,6 +62,8 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
     public async Task ConfigureAsync(DbTreeNode container)
     {
         _container = container;
+        LocatorText = "";
+        LocatorStatus = "";
         ChildType = container.Type == NodeType.Category ? container.CategoryChildType : NodeType.Table;
         IsTables = ChildType == NodeType.Table;
         var engine = container.Connection.Engine;
@@ -102,6 +107,7 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
             Items.Clear();
             foreach (var i in items) Items.Add(i);
             CountText = string.Format(LocalizationManager.Instance["OL_Count"], Items.Count);
+            if (!string.IsNullOrWhiteSpace(LocatorText)) Locate(reset: true);
         }
         catch (Exception ex)
         {
@@ -157,4 +163,52 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
 
     [RelayCommand]
     private async Task Refresh() => await LoadAsync();
+
+    [RelayCommand]
+    private void LocateNext() => Locate(reset: false);
+
+    [RelayCommand]
+    private void ClearLocator()
+    {
+        LocatorText = "";
+        LocatorStatus = "";
+    }
+
+    /// <summary>Selects a matching object by name only; schema and metadata are intentionally ignored.</summary>
+    private void Locate(bool reset)
+    {
+        var query = LocatorText.Trim();
+        if (query.Length == 0)
+        {
+            LocatorStatus = "";
+            return;
+        }
+
+        var matches = Items
+            .Where(item => item.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (matches.Count == 0)
+        {
+            SelectedItem = null;
+            LocatorStatus = LocalizationManager.Instance["OL_LocatorNoMatches"];
+            return;
+        }
+
+        ObjectListItem match;
+        if (reset)
+        {
+            // A prefix match feels most natural while typing; fall back to a match anywhere.
+            match = matches.FirstOrDefault(item =>
+                item.Name.StartsWith(query, StringComparison.OrdinalIgnoreCase)) ?? matches[0];
+        }
+        else
+        {
+            var current = SelectedItem is null ? -1 : matches.IndexOf(SelectedItem);
+            match = matches[(current + 1) % matches.Count];
+        }
+
+        SelectedItem = match;
+        LocatorStatus = string.Format(LocalizationManager.Instance["OL_LocatorPosition"],
+            matches.IndexOf(match) + 1, matches.Count);
+    }
 }
