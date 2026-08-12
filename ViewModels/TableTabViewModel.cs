@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Data;
+using System.Globalization;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -157,6 +158,10 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
 
     private string _sortExpression = "";
     private string _filterExpression = "";
+    private TableQuery _activeQuery = TableQuery.Empty;
+
+    private bool UsesDatabaseQuery => Node.Connection.Engine is
+        not (DatabaseEngine.MongoDb or DatabaseEngine.Tps or DatabaseEngine.ClarionDat or DatabaseEngine.Excel);
 
     public Array SortDirections { get; } = Enum.GetValues(typeof(SortDirection));
     public Array FilterOperators { get; } = Enum.GetValues(typeof(FilterOperator));
@@ -488,8 +493,23 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
     }
 
     [RelayCommand]
-    private void ApplySort()
+    private async Task ApplySort()
     {
+        if (UsesDatabaseQuery)
+        {
+            var sorts = SortLevels
+                .Where(s => !string.IsNullOrEmpty(s.Column))
+                .Select(s => new TableQuerySort(s.Column!, s.Direction == SortDirection.Desc))
+                .ToList();
+            var candidate = _activeQuery with { Sorts = sorts };
+            if (!await ApplyDatabaseQueryAsync(candidate)) return;
+            HasActiveSort = sorts.Count > 0;
+            _setStatus(HasActiveSort
+                ? $"Sorted {GridData?.Count ?? 0} row(s) from the full table."
+                : "Sort cleared.");
+            return;
+        }
+
         var parts = SortLevels
             .Where(s => !string.IsNullOrEmpty(s.Column))
             .Select(s => $"{Bracket(s.Column!)} {(s.Direction == SortDirection.Desc ? "DESC" : "ASC")}");
@@ -500,8 +520,16 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
     }
 
     [RelayCommand]
-    private void ClearSort()
+    private async Task ClearSort()
     {
+        if (UsesDatabaseQuery)
+        {
+            if (!await ApplyDatabaseQueryAsync(_activeQuery with { Sorts = [] })) return;
+            SortLevels.Clear();
+            HasActiveSort = false;
+            _setStatus("Sort cleared.");
+            return;
+        }
         SortLevels.Clear();
         _sortExpression = "";
         HasActiveSort = false;
@@ -522,8 +550,30 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
     }
 
     [RelayCommand]
-    private void ApplyFilter()
+    private async Task ApplyFilter()
     {
+        if (UsesDatabaseQuery)
+        {
+            try
+            {
+                var filters = FilterConditions
+                    .Where(c => !string.IsNullOrEmpty(c.Column))
+                    .Select(ToTableQueryFilter)
+                    .ToList();
+                var candidate = _activeQuery with { Filters = filters, MatchAll = FilterMatchAll };
+                if (!await ApplyDatabaseQueryAsync(candidate)) return;
+                HasActiveFilter = filters.Count > 0;
+                _setStatus(HasActiveFilter
+                    ? $"Filter applied to the full table — {GridData?.Count ?? 0} row(s) loaded (limit {RowLimit})."
+                    : "Filter cleared.");
+            }
+            catch (Exception ex)
+            {
+                Dialogs.ShowError("Invalid filter", ex.Message);
+            }
+            return;
+        }
+
         var expr = BuildFilterExpression();
         try
         {
@@ -541,8 +591,16 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
     }
 
     [RelayCommand]
-    private void ClearFilter()
+    private async Task ClearFilter()
     {
+        if (UsesDatabaseQuery)
+        {
+            if (!await ApplyDatabaseQueryAsync(_activeQuery with { Filters = [] })) return;
+            FilterConditions.Clear();
+            HasActiveFilter = false;
+            _setStatus("Filter cleared.");
+            return;
+        }
         FilterConditions.Clear();
         _filterExpression = "";
         HasActiveFilter = false;
@@ -560,6 +618,100 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
         if (clauses.Count == 0) return "";
         var joiner = FilterMatchAll ? " AND " : " OR ";
         return string.Join(joiner, clauses.Select(c => $"({c})"));
+    }
+
+    private async Task<bool> ApplyDatabaseQueryAsync(TableQuery candidate)
+    {
+        if (HasUnsavedChangesNow)
+        {
+            Dialogs.ShowError("Pending changes",
+                "Save or reload the pending row changes before applying a filter or sort.");
+            return false;
+        }
+
+        var previous = _activeQuery;
+        _activeQuery = candidate;
+        if (await LoadAsync()) return true;
+        _activeQuery = previous;
+        return false;
+    }
+
+    private TableQueryFilter ToTableQueryFilter(FilterCondition condition)
+    {
+        if (_sourceData is null || string.IsNullOrEmpty(condition.Column) ||
+            !_sourceData.Columns.Contains(condition.Column))
+            throw new InvalidOperationException($"Column '{condition.Column}' is not available.");
+
+        var column = _sourceData.Columns[condition.Column]!;
+        var isString = column.DataType == typeof(string);
+        var op = Enum.Parse<TableFilterOperator>(condition.Operator.ToString());
+        object? value = null;
+
+        if (op is not (TableFilterOperator.IsEmpty or TableFilterOperator.IsNotEmpty))
+        {
+            if (op is TableFilterOperator.Contains or TableFilterOperator.StartsWith or TableFilterOperator.EndsWith && !isString)
+                throw new InvalidOperationException(
+                    $"Operator '{condition.Operator}' can only be used with text columns.");
+            value = ConvertFilterValue(condition.Value ?? "", column.DataType, column.ColumnName);
+        }
+
+        return new TableQueryFilter(column.ColumnName, op, value, isString);
+    }
+
+    private static object ConvertFilterValue(string raw, Type dataType, string column)
+    {
+        var target = Nullable.GetUnderlyingType(dataType) ?? dataType;
+        if (target == typeof(string) || target == typeof(object)) return raw;
+        try
+        {
+            if (target == typeof(Guid)) return Guid.Parse(raw);
+            if (target == typeof(DateTime))
+                return DateTime.Parse(raw, CultureInfo.CurrentCulture, DateTimeStyles.AllowWhiteSpaces);
+            if (target == typeof(DateTimeOffset))
+                return DateTimeOffset.Parse(raw, CultureInfo.CurrentCulture, DateTimeStyles.AllowWhiteSpaces);
+            if (target == typeof(TimeSpan)) return TimeSpan.Parse(raw, CultureInfo.CurrentCulture);
+            if (target == typeof(DateOnly)) return DateOnly.Parse(raw, CultureInfo.CurrentCulture);
+            if (target == typeof(TimeOnly)) return TimeOnly.Parse(raw, CultureInfo.CurrentCulture);
+            if (target == typeof(bool))
+            {
+                if (raw == "1") return true;
+                if (raw == "0") return false;
+                return bool.Parse(raw);
+            }
+            if (target.IsEnum) return Enum.Parse(target, raw, ignoreCase: true);
+            try { return Convert.ChangeType(raw, target, CultureInfo.CurrentCulture); }
+            catch (FormatException) { return Convert.ChangeType(raw, target, CultureInfo.InvariantCulture); }
+        }
+        catch (Exception ex) when (ex is FormatException or InvalidCastException or OverflowException)
+        {
+            throw new FormatException($"'{raw}' is not a valid value for column '{column}'.", ex);
+        }
+    }
+
+    /// <summary>
+    /// Refreshes the choices without clearing an unchanged collection. Clearing it makes WPF's
+    /// ComboBox temporarily select null and, because SelectedItem is two-way by default, erases the
+    /// selected column from active filter/sort rows.
+    /// </summary>
+    private void UpdateColumnNames(IEnumerable<string> columns)
+    {
+        var next = columns.ToList();
+        if (ColumnNames.SequenceEqual(next, StringComparer.Ordinal)) return;
+
+        var sortSelections = SortLevels.Select(level => (level, level.Column)).ToList();
+        var filterSelections = FilterConditions.Select(condition => (condition, condition.Column)).ToList();
+
+        ColumnNames.Clear();
+        foreach (var name in next) ColumnNames.Add(name);
+
+        string? ExistingName(string? selected) => selected is null
+            ? null
+            : next.FirstOrDefault(name => string.Equals(name, selected, StringComparison.OrdinalIgnoreCase));
+
+        foreach (var (level, selected) in sortSelections)
+            level.Column = ExistingName(selected);
+        foreach (var (condition, selected) in filterSelections)
+            condition.Column = ExistingName(selected);
     }
 
     private string BuildClause(FilterCondition c)
@@ -620,23 +772,37 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
         _setStatus($"Loading {Identifier}…");
         try
         {
-            Detach();
-
             if (Node.Connection.Engine == DatabaseEngine.MongoDb)
+            {
+                Detach();
                 return await LoadMongoAsync();
+            }
 
             if (Node.Connection.Engine == DatabaseEngine.Tps)
+            {
+                Detach();
                 return await LoadTpsAsync();
+            }
 
             if (Node.Connection.Engine == DatabaseEngine.ClarionDat)
+            {
+                Detach();
                 return await LoadDatAsync();
+            }
 
             if (Node.Connection.Engine == DatabaseEngine.Excel)
+            {
+                Detach();
                 return await LoadExcelAsync();
+            }
 
-            _session = await EditableTableSession.OpenAsync(
+            // Open the replacement first. If the database rejects a filter or sort, the currently
+            // displayed session remains intact instead of leaving the tab empty.
+            var replacement = await EditableTableSession.OpenAsync(
                 Node.Connection.Engine, Node.Connection.BuildConnectionString(),
-                Node.Database!, Node.Schema!, Node.Name, RowLimit);
+                Node.Database!, Node.Schema!, Node.Name, RowLimit, _activeQuery);
+            Detach();
+            _session = replacement;
             _sourceData = _session.Data;
 
             _session.Data.RowChanged += OnDataChanged;
@@ -647,9 +813,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
             OnPropertyChanged(nameof(HasClarionTypes));
             OnPropertyChanged(nameof(ClarionToggleLabel));
 
-            ColumnNames.Clear();
-            foreach (DataColumn c in _session.Data.Columns)
-                ColumnNames.Add(c.ColumnName);
+            UpdateColumnNames(_session.Data.Columns.Cast<DataColumn>().Select(c => c.ColumnName));
 
             // Apply a saved row-identity choice (keyless tables).
             _identityKey = RowIdentityStore.MakeKey(Node.Connection.Id, Node.Database, Node.Schema, Node.Name);
@@ -711,10 +875,9 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
             OnPropertyChanged(nameof(HasClarionTypes));
             OnPropertyChanged(nameof(ClarionToggleLabel));
 
-            ColumnNames.Clear();
-            foreach (DataColumn c in _sourceData.Columns)
-                if (c.ColumnName != TpsService.RecordNumberColumn)
-                    ColumnNames.Add(c.ColumnName);
+            UpdateColumnNames(_sourceData.Columns.Cast<DataColumn>()
+                .Where(c => c.ColumnName != TpsService.RecordNumberColumn)
+                .Select(c => c.ColumnName));
 
             OnPropertyChanged(nameof(CanPickRowIdentity));
             ProjectView();
@@ -765,10 +928,9 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
             OnPropertyChanged(nameof(HasClarionTypes));
             OnPropertyChanged(nameof(ClarionToggleLabel));
 
-            ColumnNames.Clear();
-            foreach (DataColumn c in _sourceData.Columns)
-                if (c.ColumnName != DatService.SlotColumn)
-                    ColumnNames.Add(c.ColumnName);
+            UpdateColumnNames(_sourceData.Columns.Cast<DataColumn>()
+                .Where(c => c.ColumnName != DatService.SlotColumn)
+                .Select(c => c.ColumnName));
 
             OnPropertyChanged(nameof(CanPickRowIdentity));
             ProjectView();
@@ -846,9 +1008,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
             OnPropertyChanged(nameof(HasClarionTypes));
             OnPropertyChanged(nameof(ClarionToggleLabel));
 
-            ColumnNames.Clear();
-            foreach (DataColumn c in _sourceData.Columns)
-                ColumnNames.Add(c.ColumnName);
+            UpdateColumnNames(_sourceData.Columns.Cast<DataColumn>().Select(c => c.ColumnName));
             OnPropertyChanged(nameof(CanPickRowIdentity));
 
             ProjectView();
@@ -886,9 +1046,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
             OnPropertyChanged(nameof(HasClarionTypes));
             OnPropertyChanged(nameof(ClarionToggleLabel));
 
-            ColumnNames.Clear();
-            foreach (DataColumn c in _sourceData.Columns)
-                ColumnNames.Add(c.ColumnName);
+            UpdateColumnNames(_sourceData.Columns.Cast<DataColumn>().Select(c => c.ColumnName));
             OnPropertyChanged(nameof(CanPickRowIdentity));
 
             ProjectView();
@@ -926,9 +1084,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
             GridReadOnly = false;
             GridCanModifyRows = true;
 
-            ColumnNames.Clear();
-            foreach (DataColumn c in _sourceData.Columns)
-                ColumnNames.Add(c.ColumnName);
+            UpdateColumnNames(_sourceData.Columns.Cast<DataColumn>().Select(c => c.ColumnName));
             OnPropertyChanged(nameof(CanPickRowIdentity));
 
             _sourceData.RowChanged += OnDataChanged;
