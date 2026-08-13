@@ -30,6 +30,12 @@ public partial class MainViewModel : ObservableObject
     private ObjectListViewModel? _objectsTab;
 
     public bool ShowEmpty => Tabs.Count == 0;
+    public bool IsDarkTheme => ThemeManager.Current == "dark";
+    public string ThemeGlyph => IsDarkTheme ? "\uE706" : "\uE708";
+    public string ThemeActionLabel => LocalizationManager.Instance[
+        IsDarkTheme ? "Bar_ThemeLight" : "Bar_ThemeDark"];
+    public string ThemeToolTip => LocalizationManager.Instance[
+        IsDarkTheme ? "Tip_ThemeLight" : "Tip_ThemeDark"];
 
     partial void OnActiveTabChanged(object? value) => OnPropertyChanged(nameof(SelectedTab));
 
@@ -426,8 +432,28 @@ public partial class MainViewModel : ObservableObject
         if (new Views.SettingsDialog().ShowDialog() == true)
         {
             _objectsTab?.ApplySearchMode();
+            NotifyThemeState();
             StatusText = "Settings saved.";
         }
+    }
+
+    [RelayCommand]
+    private void ToggleTheme()
+    {
+        var settings = SettingsStore.Current.Clone();
+        settings.Theme = IsDarkTheme ? "light" : "dark";
+        SettingsStore.Save(settings);
+        ThemeManager.Apply(settings.Theme);
+        NotifyThemeState();
+        StatusText = IsDarkTheme ? "Dark theme enabled." : "Light theme enabled.";
+    }
+
+    private void NotifyThemeState()
+    {
+        OnPropertyChanged(nameof(IsDarkTheme));
+        OnPropertyChanged(nameof(ThemeGlyph));
+        OnPropertyChanged(nameof(ThemeActionLabel));
+        OnPropertyChanged(nameof(ThemeToolTip));
     }
 
     private const string RepoUrl = "https://github.com/robertorenz/DataPortStudio";

@@ -116,6 +116,7 @@
     <SolidColorBrush x:Key="B.RowHover"      Color="#FFEAF2FB"/>
     <SolidColorBrush x:Key="B.RowSelected"   Color="#FFD6E7FA"/>
     <SolidColorBrush x:Key="B.GridLines"     Color="#FFE6EBF0"/>
+    <SolidColorBrush x:Key="B.TabCloseHover" Color="#FFE2E8EE"/>
 
     <!-- Icon glyph (Segoe Fluent / MDL2) used inside toolbar buttons. -->
     <Style x:Key="ToolIcon" TargetType="TextBlock">
@@ -418,7 +419,7 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="#FFE7EDF3"/>
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource B.SidebarHover}"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="{DynamicResource B.RowHover}"/>
@@ -808,7 +809,7 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="#FFE2E8EE"/>
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource B.TabCloseHover}"/>
                             <Setter Property="Foreground" Value="{DynamicResource B.Danger}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>

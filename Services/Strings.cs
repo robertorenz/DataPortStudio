@@ -168,6 +168,10 @@ public static class Strings
         ["Settings_QueryOpenMode"] = "New query opens in",
         ["Settings_QueryWindow"] = "Separate window",
         ["Settings_QueryDocked"] = "Docked tab",
+        ["Bar_ThemeLight"] = "Light",
+        ["Bar_ThemeDark"] = "Dark",
+        ["Tip_ThemeLight"] = "Switch to light theme",
+        ["Tip_ThemeDark"] = "Switch to dark theme",
 
         // Context menu
         ["Ctx_Open"] = "Open",
@@ -409,6 +413,10 @@ public static class Strings
         ["Settings_QueryOpenMode"] = "Abrir nueva consulta en",
         ["Settings_QueryWindow"] = "Ventana separada",
         ["Settings_QueryDocked"] = "Pestaña acoplada",
+        ["Bar_ThemeLight"] = "Claro",
+        ["Bar_ThemeDark"] = "Oscuro",
+        ["Tip_ThemeLight"] = "Cambiar al tema claro",
+        ["Tip_ThemeDark"] = "Cambiar al tema oscuro",
 
         // Menú contextual
         ["Ctx_Open"] = "Abrir",

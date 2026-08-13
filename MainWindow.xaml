@@ -77,7 +77,12 @@
         <!-- ===================== COMMAND BAR ===================== -->
         <Border Grid.Row="1" Background="{DynamicResource B.SurfaceAlt}"
                 BorderBrush="{DynamicResource B.Border}" BorderThickness="0,0,0,1" Padding="10,4">
-            <StackPanel Orientation="Horizontal">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
                 <!-- Connection (glossy green plug) -->
                 <Button Style="{StaticResource RibbonButton}" Command="{Binding AddConnectionCommand}">
                     <StackPanel>
@@ -236,7 +241,24 @@
                         <TextBlock Text="{loc:Tr Bar_Refresh}" FontSize="11" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                     </StackPanel>
                 </Button>
-            </StackPanel>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                            Background="{DynamicResource B.SurfaceAlt}">
+                <Border Width="1" Background="{DynamicResource B.Border}" Margin="6,4"/>
+                <!-- Theme shortcut anchored to the far right of the ribbon. -->
+                <Button Style="{StaticResource RibbonButton}" Command="{Binding ToggleThemeCommand}"
+                        ToolTip="{Binding ThemeToolTip}">
+                    <StackPanel>
+                        <TextBlock Text="{Binding ThemeGlyph}" FontFamily="Segoe MDL2 Assets"
+                                   FontSize="21" Foreground="{DynamicResource B.Accent}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding ThemeActionLabel}" FontSize="11"
+                                   HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                    </StackPanel>
+                </Button>
+                </StackPanel>
+            </Grid>
         </Border>
 
         <!-- ===================== TOP BAR ===================== -->
