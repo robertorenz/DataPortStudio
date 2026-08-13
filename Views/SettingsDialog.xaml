@@ -48,6 +48,16 @@
                     <ComboBox x:Name="ObjectSearchModeCombo" Grid.Column="1" Width="200"
                               HorizontalAlignment="Left" DisplayMemberPath="Name" SelectedValuePath="Value"/>
                 </Grid>
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="{loc:Tr Settings_QueryOpenMode}"
+                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ComboBox x:Name="QueryOpenModeCombo" Grid.Column="1" Width="200"
+                              HorizontalAlignment="Left" DisplayMemberPath="Name" SelectedValuePath="Value"/>
+                </Grid>
 
                 <TextBlock Text="{loc:Tr Settings_WhenOpening}" FontWeight="SemiBold" FontSize="12"
                            Foreground="{DynamicResource B.TextMuted}" Margin="0,0,0,8"/>

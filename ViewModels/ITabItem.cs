@@ -1,6 +1,6 @@
 namespace DataPortStudio.ViewModels;
 
-/// <summary>A tab in the content area (the Objects list, or an open table).</summary>
+/// <summary>A tab in the content area (objects, query editor, or open table).</summary>
 public interface ITabItem
 {
     string Header { get; }

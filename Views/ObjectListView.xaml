@@ -93,8 +93,10 @@
                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <TextBox x:Name="LocatorBox" Grid.Column="1"
                                  Text="{Binding LocatorText, UpdateSourceTrigger=PropertyChanged}"
-                                 BorderThickness="0" Background="Transparent" Padding="2,4"
-                                 VerticalContentAlignment="Center"/>
+                                 BorderThickness="0" Background="Transparent" Padding="2,2"
+                                 VerticalContentAlignment="Center" TextWrapping="NoWrap"
+                                 HorizontalScrollBarVisibility="Hidden"
+                                 ToolTip="{Binding LocatorText}"/>
                         <TextBlock Grid.Column="1" Text="{Binding SearchPlaceholder}"
                                    Foreground="{DynamicResource B.TextMuted}" Margin="4,0,0,0"
                                    VerticalAlignment="Center" IsHitTestVisible="False">
@@ -111,7 +113,8 @@
                         </TextBlock>
                         <TextBlock Grid.Column="2" Text="{Binding LocatorStatus}" Margin="6,0"
                                    Foreground="{DynamicResource B.TextMuted}" FontSize="11"
-                                   VerticalAlignment="Center"/>
+                                   VerticalAlignment="Center"
+                                   Visibility="{Binding IsFilterMode, Converter={StaticResource InvBoolToVis}}"/>
                         <Button Grid.Column="3" Content="&#xE711;" FontFamily="Segoe MDL2 Assets"
                                 Command="{Binding ClearLocatorCommand}" Style="{StaticResource ToolButton}"
                                 Width="28" Height="28" Padding="0" Margin="0"

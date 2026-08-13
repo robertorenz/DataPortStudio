@@ -218,7 +218,9 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
         if (matches.Count == 0)
         {
             SelectedItem = null;
-            LocatorStatus = LocalizationManager.Instance["OL_LocatorNoMatches"];
+            LocatorStatus = IsFilterMode
+                ? ""
+                : LocalizationManager.Instance["OL_LocatorNoMatches"];
             return;
         }
 
@@ -236,8 +238,10 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
         }
 
         SelectedItem = match;
-        LocatorStatus = string.Format(LocalizationManager.Instance["OL_LocatorPosition"],
-            matches.IndexOf(match) + 1, matches.Count);
+        LocatorStatus = IsFilterMode
+            ? ""
+            : string.Format(LocalizationManager.Instance["OL_LocatorPosition"],
+                matches.IndexOf(match) + 1, matches.Count);
     }
 
     private bool MatchesLocator(object item) =>

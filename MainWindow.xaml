@@ -410,6 +410,9 @@
                         <DataTemplate DataType="{x:Type vm:ObjectListViewModel}">
                             <v:ObjectListView/>
                         </DataTemplate>
+                        <DataTemplate DataType="{x:Type vm:QueryTabViewModel}">
+                            <ContentControl Content="{Binding View}"/>
+                        </DataTemplate>
                         <DataTemplate DataType="{x:Type vm:TableTabViewModel}">
                             <Grid>
                                 <Grid.ColumnDefinitions>

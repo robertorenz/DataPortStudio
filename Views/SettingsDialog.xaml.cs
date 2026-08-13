@@ -49,10 +49,21 @@ public partial class SettingsDialog : Window
         };
         ObjectSearchModeCombo.SelectedValue = s.ObjectSearchMode;
         if (ObjectSearchModeCombo.SelectedItem is null) ObjectSearchModeCombo.SelectedIndex = 1;
+
+        QueryOpenModeCombo.ItemsSource = new[]
+        {
+            new QueryModeOption(QueryOpenMode.Window,
+                LocalizationManager.Instance["Settings_QueryWindow"]),
+            new QueryModeOption(QueryOpenMode.Docked,
+                LocalizationManager.Instance["Settings_QueryDocked"]),
+        };
+        QueryOpenModeCombo.SelectedValue = s.QueryOpenMode;
+        if (QueryOpenModeCombo.SelectedItem is null) QueryOpenModeCombo.SelectedIndex = 0;
     }
 
     public record LanguageOption(string Code, string Name);
     public record SearchModeOption(ObjectSearchMode Value, string Name);
+    public record QueryModeOption(QueryOpenMode Value, string Name);
 
     private void Save_Click(object sender, RoutedEventArgs e)
     {
@@ -71,6 +82,8 @@ public partial class SettingsDialog : Window
             s.Theme = theme;
         if (ObjectSearchModeCombo.SelectedValue is ObjectSearchMode searchMode)
             s.ObjectSearchMode = searchMode;
+        if (QueryOpenModeCombo.SelectedValue is QueryOpenMode queryMode)
+            s.QueryOpenMode = queryMode;
 
         SettingsStore.Save(s);
         ThemeManager.Apply(s.Theme);
