@@ -73,6 +73,7 @@ public partial class SettingsDialog : Window
             s.ObjectSearchMode = searchMode;
 
         SettingsStore.Save(s);
+        ThemeManager.Apply(s.Theme);
         LocalizationManager.Instance.Language = s.Language;
         DialogResult = true;
         Close();

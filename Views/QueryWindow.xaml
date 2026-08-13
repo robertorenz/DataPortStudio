@@ -4,7 +4,7 @@
         xmlns:avalon="http://icsharpcode.net/sharpdevelop/avalonedit"
         Title="Query" Height="600" Width="900"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource B.Bg}">
+        Background="{DynamicResource B.Bg}">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -15,11 +15,11 @@
         </Grid.RowDefinitions>
 
         <!-- Toolbar -->
-        <Border Grid.Row="0" Background="{StaticResource B.HeaderBar}"
-                BorderBrush="{StaticResource B.Border}" BorderThickness="0,0,0,1" Padding="14,10">
+        <Border Grid.Row="0" Background="{DynamicResource B.HeaderBar}"
+                BorderBrush="{DynamicResource B.Border}" BorderThickness="0,0,0,1" Padding="14,10">
             <Grid>
                 <TextBlock x:Name="TargetLabel" VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold"
-                           Foreground="{StaticResource B.Text}"/>
+                           Foreground="{DynamicResource B.Text}"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button x:Name="RunButton" Style="{StaticResource AccentButton}" Click="Run_Click">
                         <StackPanel Orientation="Horizontal">
@@ -35,8 +35,8 @@
                     <Popup x:Name="HistoryPopup" StaysOpen="False"
                            PlacementTarget="{Binding ElementName=HistoryButton}"
                            Placement="Bottom" AllowsTransparency="True">
-                        <Border Background="{StaticResource B.Surface}"
-                                BorderBrush="{StaticResource B.Border}" BorderThickness="1"
+                        <Border Background="{DynamicResource B.Surface}"
+                                BorderBrush="{DynamicResource B.Border}" BorderThickness="1"
                                 CornerRadius="6" Width="560" MaxHeight="320">
                             <Border.Effect>
                                 <DropShadowEffect BlurRadius="16" ShadowDepth="2" Opacity="0.2" Color="#FF000000"/>
@@ -46,11 +46,11 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
-                                <Border Grid.Row="0" Background="{StaticResource B.SurfaceAlt}"
-                                        BorderBrush="{StaticResource B.Border}" BorderThickness="0,0,0,1"
+                                <Border Grid.Row="0" Background="{DynamicResource B.SurfaceAlt}"
+                                        BorderBrush="{DynamicResource B.Border}" BorderThickness="0,0,0,1"
                                         Padding="12,8">
                                     <TextBlock Text="Recent queries — click to load · double-click to run"
-                                               FontSize="11" Foreground="{StaticResource B.TextMuted}"/>
+                                               FontSize="11" Foreground="{DynamicResource B.TextMuted}"/>
                                 </Border>
                                 <ListBox x:Name="HistoryList" Grid.Row="1"
                                          Background="Transparent" BorderThickness="0"
@@ -66,7 +66,7 @@
                                         <DataTemplate>
                                             <TextBlock Text="{Binding Preview}" FontFamily="Consolas" FontSize="12"
                                                        TextTrimming="CharacterEllipsis"
-                                                       Foreground="{StaticResource B.Text}"
+                                                       Foreground="{DynamicResource B.Text}"
                                                        ToolTip="{Binding Sql}"/>
                                         </DataTemplate>
                                     </ListBox.ItemTemplate>
@@ -82,7 +82,7 @@
         </Border>
 
         <!-- SQL editor -->
-        <Border Grid.Row="1" Margin="12,12,12,0" BorderBrush="{StaticResource B.Border}" BorderThickness="1" CornerRadius="6">
+        <Border Grid.Row="1" Margin="12,12,12,0" BorderBrush="{DynamicResource B.Border}" BorderThickness="1" CornerRadius="6">
             <avalon:TextEditor x:Name="Editor"
                                VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
                                BorderThickness="0" WordWrap="False"/>
@@ -94,11 +94,11 @@
 
         <!-- Results: TabControl, one tab per resultset -->
         <TabControl x:Name="ResultTabs" Grid.Row="3" Margin="12,0,12,8"
-                    Background="{StaticResource B.Surface}"/>
+                    Background="{DynamicResource B.Surface}"/>
 
         <!-- Messages -->
-        <Border Grid.Row="4" Background="{StaticResource B.Sidebar}" Padding="14,6">
-            <TextBlock x:Name="Messages" Foreground="{StaticResource B.SidebarText}" FontSize="12"
+        <Border Grid.Row="4" Background="{DynamicResource B.Sidebar}" Padding="14,6">
+            <TextBlock x:Name="Messages" Foreground="{DynamicResource B.SidebarText}" FontSize="12"
                        VerticalAlignment="Center" Text="Ready. Type SQL and press F5 to run."/>
         </Border>
     </Grid>

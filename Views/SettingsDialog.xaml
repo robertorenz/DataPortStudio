@@ -6,20 +6,20 @@
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         ResizeMode="NoResize" SizeToContent="Height"
         ShowInTaskbar="False" Width="440">
-    <Border Background="{StaticResource B.Surface}" CornerRadius="12" Margin="16"
-            BorderBrush="{StaticResource B.Border}" BorderThickness="1">
+    <Border Background="{DynamicResource B.Surface}" CornerRadius="12" Margin="16"
+            BorderBrush="{DynamicResource B.Border}" BorderThickness="1">
         <Border.Effect>
             <DropShadowEffect BlurRadius="28" ShadowDepth="4" Opacity="0.25" Color="#FF1F2933"/>
         </Border.Effect>
         <StackPanel>
-            <Border Background="{StaticResource B.Sidebar}" CornerRadius="12,12,0,0" Padding="20,16"
+            <Border Background="{DynamicResource B.Sidebar}" CornerRadius="12,12,0,0" Padding="20,16"
                     MouseLeftButtonDown="Header_MouseDown">
                 <TextBlock Text="{loc:Tr Settings_Title}" FontSize="16" FontWeight="SemiBold" Foreground="White"/>
             </Border>
 
             <StackPanel Margin="22,18,22,8">
                 <TextBlock Text="{loc:Tr Settings_Interface}" FontWeight="SemiBold" FontSize="12"
-                           Foreground="{StaticResource B.TextMuted}" Margin="0,0,0,8"/>
+                           Foreground="{DynamicResource B.TextMuted}" Margin="0,0,0,8"/>
                 <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -50,7 +50,7 @@
                 </Grid>
 
                 <TextBlock Text="{loc:Tr Settings_WhenOpening}" FontWeight="SemiBold" FontSize="12"
-                           Foreground="{StaticResource B.TextMuted}" Margin="0,0,0,8"/>
+                           Foreground="{DynamicResource B.TextMuted}" Margin="0,0,0,8"/>
 
                 <Label Content="{loc:Tr Settings_DefaultRowLimit}"/>
                 <TextBox x:Name="RowLimitBox" Width="120" HorizontalAlignment="Left" Margin="0,0,0,14"/>
@@ -71,11 +71,11 @@
                 <CheckBox x:Name="ClarionCheck" Content="{loc:Tr Settings_ConvertClarion}" Margin="0,0,0,4"/>
 
                 <TextBlock Text="{loc:Tr Settings_ApplyNote}" FontSize="11" FontStyle="Italic"
-                           Foreground="{StaticResource B.TextMuted}" Margin="0,10,0,0"/>
+                           Foreground="{DynamicResource B.TextMuted}" Margin="0,10,0,0"/>
             </StackPanel>
 
-            <Border Background="{StaticResource B.SurfaceAlt}" CornerRadius="0,0,12,12"
-                    BorderBrush="{StaticResource B.Border}" BorderThickness="0,1,0,0" Padding="16,14">
+            <Border Background="{DynamicResource B.SurfaceAlt}" CornerRadius="0,0,12,12"
+                    BorderBrush="{DynamicResource B.Border}" BorderThickness="0,1,0,0" Padding="16,14">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Content="{loc:Tr Btn_Cancel}" MinWidth="90" Margin="0,0,10,0" Click="Cancel_Click"/>
                     <Button Content="{loc:Tr Btn_Save}" MinWidth="90" Style="{StaticResource AccentButton}"

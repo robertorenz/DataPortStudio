@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Users &amp; Roles" Height="620" Width="860"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource B.Bg}">
+        Background="{DynamicResource B.Bg}">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -12,13 +12,13 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0" Background="{StaticResource B.HeaderBar}"
-                BorderBrush="{StaticResource B.Border}" BorderThickness="0,0,0,1" Padding="16,12">
+        <Border Grid.Row="0" Background="{DynamicResource B.HeaderBar}"
+                BorderBrush="{DynamicResource B.Border}" BorderThickness="0,0,0,1" Padding="16,12">
             <StackPanel>
-                <TextBlock FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource B.Text}">
+                <TextBlock FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource B.Text}">
                     <Run Text="Users &amp; Roles"/><Run Text="  —  "/><Run Text="{Binding ConnectionName, Mode=OneWay}"/>
                 </TextBlock>
-                <TextBlock Text="{Binding Caps.Note}" Foreground="{StaticResource B.TextMuted}"
+                <TextBlock Text="{Binding Caps.Note}" Foreground="{DynamicResource B.TextMuted}"
                            FontSize="11" TextWrapping="Wrap" Margin="0,3,0,0"/>
             </StackPanel>
         </Border>
@@ -32,8 +32,8 @@
             </Grid.ColumnDefinitions>
 
             <!-- Principal list -->
-            <Border Grid.Column="0" Background="{StaticResource B.Surface}" CornerRadius="8"
-                    BorderBrush="{StaticResource B.Border}" BorderThickness="1">
+            <Border Grid.Column="0" Background="{DynamicResource B.Surface}" CornerRadius="8"
+                    BorderBrush="{DynamicResource B.Border}" BorderThickness="1">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -74,7 +74,7 @@
                                     </Border>
                                     <TextBlock Grid.Column="1" Text="{Binding Display}" VerticalAlignment="Center"
                                                TextTrimming="CharacterEllipsis"
-                                               Foreground="{StaticResource B.Text}"/>
+                                               Foreground="{DynamicResource B.Text}"/>
                                     <TextBlock Grid.Column="2" Text="🔒" VerticalAlignment="Center" FontSize="10"
                                                Visibility="{Binding Locked, Converter={StaticResource BoolToVis}}"/>
                                 </Grid>
@@ -85,15 +85,15 @@
             </Border>
 
             <!-- Detail -->
-            <Border Grid.Column="2" Background="{StaticResource B.Surface}" CornerRadius="8"
-                    BorderBrush="{StaticResource B.Border}" BorderThickness="1">
+            <Border Grid.Column="2" Background="{DynamicResource B.Surface}" CornerRadius="8"
+                    BorderBrush="{DynamicResource B.Border}" BorderThickness="1">
                 <Grid>
                     <!-- Create panel -->
                     <Border Visibility="{Binding IsCreating, Converter={StaticResource BoolToVis}}"
                             Margin="18" VerticalAlignment="Top">
                         <StackPanel>
                             <TextBlock Text="{Binding CreateTitle}" FontSize="14" FontWeight="SemiBold"
-                                       Foreground="{StaticResource B.Text}" Margin="0,0,0,12"/>
+                                       Foreground="{DynamicResource B.Text}" Margin="0,0,0,12"/>
                             <Label Content="Name"/>
                             <TextBox Text="{Binding NewName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12"/>
 
@@ -137,7 +137,7 @@
                             <TabItem Header="General">
                                 <StackPanel Margin="14">
                                     <TextBlock Text="{Binding SelectionSummary}" FontSize="13" FontWeight="SemiBold"
-                                               Foreground="{StaticResource B.Text}" Margin="0,0,0,16"/>
+                                               Foreground="{DynamicResource B.Text}" Margin="0,0,0,16"/>
 
                                     <StackPanel Visibility="{Binding ShowSetPassword, Converter={StaticResource BoolToVis}}">
                                         <Label Content="Set / change password"/>
@@ -170,7 +170,7 @@
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <CheckBox Content="{Binding Role}" IsChecked="{Binding IsMember}"
-                                                          Margin="0,4" Foreground="{StaticResource B.Text}"/>
+                                                          Margin="0,4" Foreground="{DynamicResource B.Text}"/>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
@@ -187,7 +187,7 @@
                                     <DockPanel Grid.Row="0" Margin="0,0,0,10"
                                                Visibility="{Binding PrivilegesEmpty, Converter={StaticResource InvBoolToVis}}">
                                         <TextBlock Text="Scope" VerticalAlignment="Center" Margin="0,0,8,0"
-                                                   Foreground="{StaticResource B.TextMuted}"/>
+                                                   Foreground="{DynamicResource B.TextMuted}"/>
                                         <ComboBox Width="220" DockPanel.Dock="Left"
                                                   ItemsSource="{Binding Scopes}" SelectedItem="{Binding SelectedScope}"/>
                                         <Button Content="Revoke all" DockPanel.Dock="Right" Margin="6,0,0,0"
@@ -197,7 +197,7 @@
                                     </DockPanel>
 
                                     <TextBlock Grid.Row="1" VerticalAlignment="Top"
-                                               Foreground="{StaticResource B.TextMuted}" TextWrapping="Wrap"
+                                               Foreground="{DynamicResource B.TextMuted}" TextWrapping="Wrap"
                                                Text="No editable privileges for this engine here — use GRANT/REVOKE in a query window."
                                                Visibility="{Binding PrivilegesEmpty, Converter={StaticResource BoolToVis}}"/>
 
@@ -212,7 +212,7 @@
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
                                                     <CheckBox Content="{Binding Name}" IsChecked="{Binding Granted}"
-                                                              Width="200" Margin="0,5" Foreground="{StaticResource B.Text}"/>
+                                                              Width="200" Margin="0,5" Foreground="{DynamicResource B.Text}"/>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
@@ -224,7 +224,7 @@
 
                     <!-- Empty state -->
                     <TextBlock Text="Select a user or role, or create a new one."
-                               Foreground="{StaticResource B.TextMuted}"
+                               Foreground="{DynamicResource B.TextMuted}"
                                HorizontalAlignment="Center" VerticalAlignment="Center">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
@@ -246,11 +246,11 @@
         </Grid>
 
         <!-- Footer -->
-        <Border Grid.Row="2" Background="{StaticResource B.SurfaceAlt}"
-                BorderBrush="{StaticResource B.Border}" BorderThickness="0,1,0,0" Padding="16,12">
+        <Border Grid.Row="2" Background="{DynamicResource B.SurfaceAlt}"
+                BorderBrush="{DynamicResource B.Border}" BorderThickness="0,1,0,0" Padding="16,12">
             <Grid>
                 <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center"
-                           Foreground="{StaticResource B.TextMuted}" FontSize="12"/>
+                           Foreground="{DynamicResource B.TextMuted}" FontSize="12"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Content="Save changes" Style="{StaticResource AccentButton}" MinWidth="120"
                             Command="{Binding SaveCommand}"

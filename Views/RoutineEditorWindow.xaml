@@ -4,7 +4,7 @@
         xmlns:avalon="http://icsharpcode.net/sharpdevelop/avalonedit"
         Title="Edit Routine" Height="600" Width="900"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource B.Bg}">
+        Background="{DynamicResource B.Bg}">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -12,11 +12,11 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Background="{StaticResource B.HeaderBar}"
-                BorderBrush="{StaticResource B.Border}" BorderThickness="0,0,0,1" Padding="14,10">
+        <Border Grid.Row="0" Background="{DynamicResource B.HeaderBar}"
+                BorderBrush="{DynamicResource B.Border}" BorderThickness="0,0,0,1" Padding="14,10">
             <Grid>
                 <TextBlock x:Name="TitleLabel" VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold"
-                           Foreground="{StaticResource B.Text}"/>
+                           Foreground="{DynamicResource B.Text}"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Content="Load…" Margin="0,0,10,0" Click="LoadFile_Click" ToolTip="Load SQL script from file  (Ctrl+O)"/>
                 <Button Content="Save…" Margin="0,0,10,0" Click="SaveFile_Click" ToolTip="Save SQL script to file  (Ctrl+Shift+S)"/>
@@ -31,14 +31,14 @@
             </Grid>
         </Border>
 
-        <Border Grid.Row="1" Margin="12" BorderBrush="{StaticResource B.Border}" BorderThickness="1" CornerRadius="6">
+        <Border Grid.Row="1" Margin="12" BorderBrush="{DynamicResource B.Border}" BorderThickness="1" CornerRadius="6">
             <avalon:TextEditor x:Name="Editor"
                                VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
                                BorderThickness="0" WordWrap="False"/>
         </Border>
 
-        <Border Grid.Row="2" Background="{StaticResource B.Sidebar}" Padding="14,6">
-            <TextBlock x:Name="Messages" Foreground="{StaticResource B.SidebarText}" FontSize="12"
+        <Border Grid.Row="2" Background="{DynamicResource B.Sidebar}" Padding="14,6">
+            <TextBlock x:Name="Messages" Foreground="{DynamicResource B.SidebarText}" FontSize="12"
                        VerticalAlignment="Center" Text="Loading…"/>
         </Border>
     </Grid>

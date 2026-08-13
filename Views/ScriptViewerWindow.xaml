@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Script" Height="560" Width="820"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource B.Bg}">
+        Background="{DynamicResource B.Bg}">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -11,11 +11,11 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Background="{StaticResource B.HeaderBar}"
-                BorderBrush="{StaticResource B.Border}" BorderThickness="0,0,0,1" Padding="14,10">
+        <Border Grid.Row="0" Background="{DynamicResource B.HeaderBar}"
+                BorderBrush="{DynamicResource B.Border}" BorderThickness="0,0,0,1" Padding="14,10">
             <Grid>
                 <TextBlock x:Name="TitleLabel" VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold"
-                           Foreground="{StaticResource B.Text}"/>
+                           Foreground="{DynamicResource B.Text}"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Content="Copy" MinWidth="84" Click="Copy_Click"/>
                     <Button Content="Save…" MinWidth="84" Margin="10,0,0,0" Style="{StaticResource AccentButton}" Click="Save_Click"/>
@@ -23,15 +23,15 @@
             </Grid>
         </Border>
 
-        <Border Grid.Row="1" Margin="12" BorderBrush="{StaticResource B.Border}" BorderThickness="1" CornerRadius="6">
+        <Border Grid.Row="1" Margin="12" BorderBrush="{DynamicResource B.Border}" BorderThickness="1" CornerRadius="6">
             <TextBox x:Name="Editor" IsReadOnly="True" AcceptsReturn="True"
                      VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
                      VerticalContentAlignment="Top" FontFamily="Consolas" FontSize="13"
                      BorderThickness="0" Padding="8"/>
         </Border>
 
-        <Border Grid.Row="2" Background="{StaticResource B.Sidebar}" Padding="14,6">
-            <TextBlock x:Name="Status" Foreground="{StaticResource B.SidebarText}" FontSize="12"/>
+        <Border Grid.Row="2" Background="{DynamicResource B.Sidebar}" Padding="14,6">
+            <TextBlock x:Name="Status" Foreground="{DynamicResource B.SidebarText}" FontSize="12"/>
         </Border>
     </Grid>
 </Window>

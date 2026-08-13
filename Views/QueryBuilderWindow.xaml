@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Query Builder" Height="660" Width="1100"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource B.Bg}">
+        Background="{DynamicResource B.Bg}">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="470"/>
@@ -11,8 +11,8 @@
         </Grid.ColumnDefinitions>
 
         <!-- Builder -->
-        <Border Grid.Column="0" Background="{StaticResource B.Surface}"
-                BorderBrush="{StaticResource B.Border}" BorderThickness="0,0,1,0">
+        <Border Grid.Column="0" Background="{DynamicResource B.Surface}"
+                BorderBrush="{DynamicResource B.Border}" BorderThickness="0,0,1,0">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="14">
                 <StackPanel>
                     <!-- Tables -->
@@ -25,12 +25,12 @@
                     <ItemsControl ItemsSource="{Binding Tables}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border BorderBrush="{StaticResource B.Border}" BorderThickness="1" CornerRadius="6"
+                                <Border BorderBrush="{DynamicResource B.Border}" BorderThickness="1" CornerRadius="6"
                                         Margin="0,0,0,8" Padding="8">
                                     <StackPanel>
                                         <Grid>
                                             <TextBlock Text="{Binding Display}" FontWeight="SemiBold"
-                                                       Foreground="{StaticResource B.Text}" VerticalAlignment="Center"/>
+                                                       Foreground="{DynamicResource B.Text}" VerticalAlignment="Center"/>
                                             <Button Content="✕" Width="22" HorizontalAlignment="Right" Style="{StaticResource ToolButton}"
                                                     Command="{Binding DataContext.RemoveTableCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                     CommandParameter="{Binding}"/>
@@ -153,11 +153,11 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <Border Grid.Row="0" Background="{StaticResource B.HeaderBar}"
-                    BorderBrush="{StaticResource B.Border}" BorderThickness="0,0,0,1" Padding="14,10">
+            <Border Grid.Row="0" Background="{DynamicResource B.HeaderBar}"
+                    BorderBrush="{DynamicResource B.Border}" BorderThickness="0,0,0,1" Padding="14,10">
                 <Grid>
                     <TextBlock Text="Generated SQL" FontWeight="SemiBold" VerticalAlignment="Center"
-                               Foreground="{StaticResource B.Text}"/>
+                               Foreground="{DynamicResource B.Text}"/>
                     <Button HorizontalAlignment="Right" Style="{StaticResource AccentButton}" Command="{Binding RunCommand}">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Style="{StaticResource ToolIcon}" Text="&#xE768;"/><TextBlock Text="Run"/>
@@ -166,7 +166,7 @@
                 </Grid>
             </Border>
 
-            <Border Grid.Row="1" Margin="12,12,12,0" BorderBrush="{StaticResource B.Border}" BorderThickness="1" CornerRadius="6">
+            <Border Grid.Row="1" Margin="12,12,12,0" BorderBrush="{DynamicResource B.Border}" BorderThickness="1" CornerRadius="6">
                 <TextBox Text="{Binding GeneratedSql, Mode=OneWay}" IsReadOnly="True"
                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
                          VerticalContentAlignment="Top" FontFamily="Consolas" FontSize="13"
@@ -180,8 +180,8 @@
             <DataGrid Grid.Row="3" Margin="12,0,12,8" ItemsSource="{Binding Results}"
                       IsReadOnly="True" AutoGenerateColumns="True" CanUserAddRows="False"/>
 
-            <Border Grid.Row="4" Background="{StaticResource B.Sidebar}" Padding="14,6">
-                <TextBlock Text="{Binding Messages}" Foreground="{StaticResource B.SidebarText}" FontSize="12"/>
+            <Border Grid.Row="4" Background="{DynamicResource B.Sidebar}" Padding="14,6">
+                <TextBlock Text="{Binding Messages}" Foreground="{DynamicResource B.SidebarText}" FontSize="12"/>
             </Border>
         </Grid>
     </Grid>
