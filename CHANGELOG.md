@@ -4,6 +4,18 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.26 — 2026-08-13
+
+### Added / Improved
+- **Docked query tabs** (contributed by [@jarodav1](https://github.com/jarodav1)) — **Settings ▸ Interface ▸ New query opens in** now offers **Separate window** (default, unchanged behaviour) or **Docked tab**, which opens the SQL editor as a tab alongside Objects and the open tables. Docked queries are independent and closable, several can be open at once, and each keeps its SQL and results when you switch tabs. Run, Clear, Format, History, Load, Save, Export and all keyboard shortcuts work the same in both modes, and the preference is honoured when executing functions and stored procedures too.
+- **Instant theme switching** (contributed by [@jarodav1](https://github.com/jarodav1)) — changing the Light / Dark theme now applies immediately instead of requiring a restart. Brush instances already resolved by open views are updated in place, so windows and dialogs already on screen repaint straight away.
+- **Theme toggle on the ribbon** (contributed by [@jarodav1](https://github.com/jarodav1)) — a button at the far right of the ribbon flips between Light and Dark in one click; the icon, label and tooltip name the theme you would switch to, and the choice is saved as a preference.
+- **Dark theme completed** (contributed by [@jarodav1](https://github.com/jarodav1)) — the top bar, ribbon, connection tree and its menus, status bars, open tabs and dialogs, menus / submenus / context menus, pickers and drop-down lists, and tab close buttons are now themed, including hover, selection, focus and disabled states. The Light palette was filled in so no section stays dark, dark-menu separators and the side channel were corrected, top-menu spacing was fixed in Dark, and dark ComboBoxes now respect `DisplayMemberPath` so their labels render correctly.
+
+Both new Settings options are available in English and Spanish. Existing settings files without the new properties fall back to the previous behaviour.
+
+---
+
 ## v1.0.25 — 2026-08-12
 
 ### Added / Improved
