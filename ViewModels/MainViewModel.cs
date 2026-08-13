@@ -408,7 +408,10 @@ public partial class MainViewModel : ObservableObject
     private void OpenSettings()
     {
         if (new Views.SettingsDialog().ShowDialog() == true)
-            StatusText = "Settings saved (applies to tables opened from now on).";
+        {
+            _objectsTab?.ApplySearchMode();
+            StatusText = "Settings saved.";
+        }
     }
 
     private const string RepoUrl = "https://github.com/robertorenz/DataPortStudio";

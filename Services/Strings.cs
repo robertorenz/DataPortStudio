@@ -126,7 +126,9 @@ public static class Strings
         ["Col_Comment"] = "Comment",
         ["OL_Count"] = "{0} object(s)",
         ["OL_LocatorPlaceholder"] = "Locate by name…",
-        ["OL_LocatorTooltip"] = "Type an object name. Press Enter or F3 for the next match; Esc clears.",
+        ["OL_LocatorTooltip"] = "Move to objects whose name contains this text without hiding the other rows.",
+        ["OL_FilterPlaceholder"] = "Filter by name…",
+        ["OL_FilterTooltip"] = "Show only objects whose name contains this text.",
         ["OL_LocatorNoMatches"] = "No matches",
         ["OL_LocatorPosition"] = "{0}/{1}",
 
@@ -156,10 +158,13 @@ public static class Strings
         ["Settings_OpenSql"] = "Open the SQL preview panel by default",
         ["Settings_OpenDetail"] = "Open the Cell detail panel by default",
         ["Settings_ConvertClarion"] = "Convert Clarion date / time / timestamp columns by default",
-        ["Settings_ApplyNote"] = "Changes apply to tables opened from now on.",
+        ["Settings_ApplyNote"] = "Objects search changes immediately; table defaults apply to newly opened tables.",
         ["Settings_Language"] = "Language",
         ["Settings_Theme"] = "Theme",
         ["Settings_Interface"] = "Interface",
+        ["Settings_ObjectSearchMode"] = "Objects search",
+        ["Settings_SearchLocator"] = "Locator — keep all rows",
+        ["Settings_SearchFilter"] = "Filter — show matches only",
 
         // Context menu
         ["Ctx_Open"] = "Open",
@@ -359,7 +364,9 @@ public static class Strings
         ["Col_Comment"] = "Comentario",
         ["OL_Count"] = "{0} objeto(s)",
         ["OL_LocatorPlaceholder"] = "Localizar por nombre…",
-        ["OL_LocatorTooltip"] = "Escriba el nombre del objeto. Enter o F3 avanza; Esc limpia.",
+        ["OL_LocatorTooltip"] = "Va a objetos cuyo nombre contiene el texto sin ocultar las demás filas.",
+        ["OL_FilterPlaceholder"] = "Filtrar por nombre…",
+        ["OL_FilterTooltip"] = "Muestra únicamente objetos cuyo nombre contiene este texto.",
         ["OL_LocatorNoMatches"] = "Sin coincidencias",
         ["OL_LocatorPosition"] = "{0}/{1}",
 
@@ -389,10 +396,13 @@ public static class Strings
         ["Settings_OpenSql"] = "Abrir el panel de vista previa SQL de forma predeterminada",
         ["Settings_OpenDetail"] = "Abrir el panel de detalle de celda de forma predeterminada",
         ["Settings_ConvertClarion"] = "Convertir columnas de fecha/hora/marca de tiempo Clarion de forma predeterminada",
-        ["Settings_ApplyNote"] = "Los cambios se aplican a las tablas abiertas a partir de ahora.",
+        ["Settings_ApplyNote"] = "La búsqueda de objetos cambia de inmediato; las opciones de tabla se aplican a nuevas pestañas.",
         ["Settings_Language"] = "Idioma",
         ["Settings_Theme"] = "Tema",
         ["Settings_Interface"] = "Interfaz",
+        ["Settings_ObjectSearchMode"] = "Búsqueda de objetos",
+        ["Settings_SearchLocator"] = "Locator — mantener todas las filas",
+        ["Settings_SearchFilter"] = "Filtro — mostrar coincidencias",
 
         // Menú contextual
         ["Ctx_Open"] = "Abrir",

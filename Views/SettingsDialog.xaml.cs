@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Input;
+using DataPortStudio.Models;
 using DataPortStudio.Services;
 using DataPortStudio.ViewModels;
 
@@ -38,9 +39,20 @@ public partial class SettingsDialog : Window
         };
         ThemeCombo.SelectedValue = s.Theme;
         if (ThemeCombo.SelectedItem is null) ThemeCombo.SelectedIndex = 0;
+
+        ObjectSearchModeCombo.ItemsSource = new[]
+        {
+            new SearchModeOption(ObjectSearchMode.Locator,
+                LocalizationManager.Instance["Settings_SearchLocator"]),
+            new SearchModeOption(ObjectSearchMode.Filter,
+                LocalizationManager.Instance["Settings_SearchFilter"]),
+        };
+        ObjectSearchModeCombo.SelectedValue = s.ObjectSearchMode;
+        if (ObjectSearchModeCombo.SelectedItem is null) ObjectSearchModeCombo.SelectedIndex = 1;
     }
 
     public record LanguageOption(string Code, string Name);
+    public record SearchModeOption(ObjectSearchMode Value, string Name);
 
     private void Save_Click(object sender, RoutedEventArgs e)
     {
@@ -57,6 +69,8 @@ public partial class SettingsDialog : Window
             s.Language = lang;
         if (ThemeCombo.SelectedValue is string theme)
             s.Theme = theme;
+        if (ObjectSearchModeCombo.SelectedValue is ObjectSearchMode searchMode)
+            s.ObjectSearchMode = searchMode;
 
         SettingsStore.Save(s);
         LocalizationManager.Instance.Language = s.Language;

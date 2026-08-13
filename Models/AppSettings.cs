@@ -2,6 +2,8 @@ using DataPortStudio.ViewModels;
 
 namespace DataPortStudio.Models;
 
+public enum ObjectSearchMode { Locator, Filter }
+
 /// <summary>User-configurable application defaults.</summary>
 public class AppSettings
 {
@@ -17,6 +19,9 @@ public class AppSettings
 
     /// <summary>UI theme: "light" or "dark".</summary>
     public string Theme { get; set; } = "light";
+
+    /// <summary>How the Objects search box behaves: move to matches or hide non-matches.</summary>
+    public ObjectSearchMode ObjectSearchMode { get; set; } = ObjectSearchMode.Filter;
 
     /// <summary>Last active database per connection (connectionId → databaseName).</summary>
     public Dictionary<string, string> LastDatabases { get; set; } = new();

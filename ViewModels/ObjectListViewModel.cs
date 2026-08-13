@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DataPortStudio.Models;
@@ -20,6 +22,8 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
     private DbTreeNode? _container;
 
     public ObservableCollection<ObjectListItem> Items { get; } = new();
+    /// <summary>The name-filtered view bound to the Objects grid.</summary>
+    public ICollectionView FilteredItems { get; }
 
     [ObservableProperty] private ObjectListItem? selectedItem;
     [ObservableProperty] private string title = "";
@@ -33,6 +37,10 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
     [ObservableProperty] private bool isTables = true;
     [ObservableProperty] private string locatorText = "";
     [ObservableProperty] private string locatorStatus = "";
+    [ObservableProperty] private string searchPlaceholder = "";
+    [ObservableProperty] private string searchToolTip = "";
+
+    public bool IsFilterMode => SettingsStore.Current.ObjectSearchMode == ObjectSearchMode.Filter;
 
     /// <summary>The kind of objects listed: Table, View, Function, or Procedure.</summary>
     public NodeType ChildType { get; private set; } = NodeType.Table;
@@ -42,7 +50,11 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
     public string TabToolTip => Title;
 
     partial void OnTitleChanged(string value) => OnPropertyChanged(nameof(TabToolTip));
-    partial void OnLocatorTextChanged(string value) => Locate(reset: true);
+    partial void OnLocatorTextChanged(string value)
+    {
+        if (IsFilterMode) FilteredItems.Refresh();
+        Locate(reset: true);
+    }
 
     public ObjectListViewModel(
         Action<DbTreeNode, ObjectListItem> open, Action<DbTreeNode, ObjectListItem> design,
@@ -56,6 +68,9 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
         _new = @new;
         _copy = copy;
         _paste = paste;
+        FilteredItems = CollectionViewSource.GetDefaultView(Items);
+        FilteredItems.Filter = MatchesLocator;
+        ApplySearchMode();
     }
 
     /// <summary>Points the Objects tab at a new container and reloads it.</summary>
@@ -107,6 +122,7 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
             Items.Clear();
             foreach (var i in items) Items.Add(i);
             CountText = string.Format(LocalizationManager.Instance["OL_Count"], Items.Count);
+            FilteredItems.Refresh();
             if (!string.IsNullOrWhiteSpace(LocatorText)) Locate(reset: true);
         }
         catch (Exception ex)
@@ -174,7 +190,19 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
         LocatorStatus = "";
     }
 
-    /// <summary>Selects a matching object by name only; schema and metadata are intentionally ignored.</summary>
+    /// <summary>Reapplies the saved Locator/Filter behavior, including an already-entered query.</summary>
+    public void ApplySearchMode()
+    {
+        OnPropertyChanged(nameof(IsFilterMode));
+        SearchPlaceholder = LocalizationManager.Instance[
+            IsFilterMode ? "OL_FilterPlaceholder" : "OL_LocatorPlaceholder"];
+        SearchToolTip = LocalizationManager.Instance[
+            IsFilterMode ? "OL_FilterTooltip" : "OL_LocatorTooltip"];
+        FilteredItems.Refresh();
+        Locate(reset: true);
+    }
+
+    /// <summary>Filters and selects matching objects by name only; schema and metadata are ignored.</summary>
     private void Locate(bool reset)
     {
         var query = LocatorText.Trim();
@@ -211,4 +239,9 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
         LocatorStatus = string.Format(LocalizationManager.Instance["OL_LocatorPosition"],
             matches.IndexOf(match) + 1, matches.Count);
     }
+
+    private bool MatchesLocator(object item) =>
+        item is ObjectListItem obj &&
+        (!IsFilterMode || string.IsNullOrWhiteSpace(LocatorText) ||
+         obj.Name.Contains(LocatorText.Trim(), StringComparison.OrdinalIgnoreCase));
 }

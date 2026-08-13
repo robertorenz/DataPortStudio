@@ -29,7 +29,7 @@
                     <ComboBox x:Name="LanguageCombo" Grid.Column="1" Width="200" HorizontalAlignment="Left"
                               DisplayMemberPath="Name" SelectedValuePath="Code"/>
                 </Grid>
-                <Grid Margin="0,0,0,16">
+                <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
@@ -37,6 +37,16 @@
                     <Label Grid.Column="0" Content="{loc:Tr Settings_Theme}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                     <ComboBox x:Name="ThemeCombo" Grid.Column="1" Width="200" HorizontalAlignment="Left"
                               DisplayMemberPath="Name" SelectedValuePath="Code"/>
+                </Grid>
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Column="0" Content="{loc:Tr Settings_ObjectSearchMode}"
+                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ComboBox x:Name="ObjectSearchModeCombo" Grid.Column="1" Width="200"
+                              HorizontalAlignment="Left" DisplayMemberPath="Name" SelectedValuePath="Value"/>
                 </Grid>
 
                 <TextBlock Text="{loc:Tr Settings_WhenOpening}" FontWeight="SemiBold" FontSize="12"
