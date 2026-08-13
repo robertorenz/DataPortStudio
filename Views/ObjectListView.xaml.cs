@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using DataPortStudio.ViewModels;
 
 namespace DataPortStudio.Views;
@@ -34,5 +35,39 @@ public partial class ObjectListView : UserControl
         if (Keyboard.Modifiers != ModifierKeys.Control || DataContext is not ObjectListViewModel vm) return;
         if (e.Key == Key.C) { vm.CopyCommand.Execute(null); e.Handled = true; }
         else if (e.Key == Key.V) { vm.PasteCommand.Execute(null); e.Handled = true; }
+    }
+
+    private void Grid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ObjectsGrid.SelectedItem is null) return;
+        // Defer until WPF has generated the virtualized row, then bring the located object onscreen.
+        Dispatcher.BeginInvoke(new Action(() =>
+            ObjectsGrid.ScrollIntoView(ObjectsGrid.SelectedItem)), DispatcherPriority.Background);
+    }
+
+    private void View_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (DataContext is not ObjectListViewModel vm) return;
+
+        if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.F)
+        {
+            LocatorBox.Focus();
+            LocatorBox.SelectAll();
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.F3 || (LocatorBox.IsKeyboardFocusWithin && e.Key == Key.Enter))
+        {
+            if (!string.IsNullOrWhiteSpace(vm.LocatorText)) vm.LocateNextCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+
+        if (LocatorBox.IsKeyboardFocusWithin && e.Key == Key.Escape)
+        {
+            vm.ClearLocatorCommand.Execute(null);
+            e.Handled = true;
+        }
     }
 }

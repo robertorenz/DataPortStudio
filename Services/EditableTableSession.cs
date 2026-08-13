@@ -99,19 +99,109 @@ public sealed class EditableTableSession : IDisposable
     private string Ph => _engine == DatabaseEngine.Oracle ? ":" : "@";
 
     public static Task<EditableTableSession> OpenAsync(
-        DatabaseEngine engine, string connectionString, string database, string schema, string table, int rowLimit)
+        DatabaseEngine engine, string connectionString, string database, string schema, string table, int rowLimit,
+        TableQuery? query = null)
         => engine switch
         {
-            DatabaseEngine.Sqlite => OpenSqliteAsync(connectionString, table, rowLimit),
-            DatabaseEngine.Firebird => OpenFirebirdAsync(connectionString, table, rowLimit),
-            DatabaseEngine.MySql or DatabaseEngine.MariaDb => OpenMySqlAsync(engine, connectionString, database, table, rowLimit),
-            DatabaseEngine.Oracle => OpenOracleAsync(connectionString, database, schema, table, rowLimit),
-            DatabaseEngine.PostgreSql => OpenPostgresAsync(connectionString, database, schema, table, rowLimit),
-            _ => OpenSqlServerAsync(connectionString, database, schema, table, rowLimit)
+            DatabaseEngine.Sqlite => OpenSqliteAsync(connectionString, table, rowLimit, query),
+            DatabaseEngine.Firebird => OpenFirebirdAsync(connectionString, table, rowLimit, query),
+            DatabaseEngine.MySql or DatabaseEngine.MariaDb => OpenMySqlAsync(engine, connectionString, database, table, rowLimit, query),
+            DatabaseEngine.Oracle => OpenOracleAsync(connectionString, database, schema, table, rowLimit, query),
+            DatabaseEngine.PostgreSql => OpenPostgresAsync(connectionString, database, schema, table, rowLimit, query),
+            _ => OpenSqlServerAsync(connectionString, database, schema, table, rowLimit, query)
         };
 
+    /// <summary>
+    /// Builds the browser SELECT with WHERE and ORDER BY before the engine-specific row limit.
+    /// Values are parameters; identifiers are quoted for the active database engine.
+    /// </summary>
+    private static string BuildSelect(
+        DbCommand command, DatabaseEngine engine, string fqTable, int rowLimit, TableQuery? query)
+    {
+        query ??= TableQuery.Empty;
+        var limit = Math.Max(1, rowLimit);
+        var prefix = engine switch
+        {
+            DatabaseEngine.SqlServer => $"TOP ({limit}) ",
+            DatabaseEngine.Firebird => $"FIRST {limit} ",
+            _ => ""
+        };
+        var sql = new StringBuilder($"SELECT {prefix}* FROM {fqTable}");
+
+        if (query.Filters.Count > 0)
+        {
+            var clauses = new List<string>();
+            foreach (var filter in query.Filters)
+            {
+                var column = Quote(engine, filter.Column);
+                if (filter.Operator == TableFilterOperator.IsEmpty)
+                {
+                    clauses.Add(filter.IsString
+                        ? $"({column} IS NULL OR {column} = {AddParameter(command, engine, "")})"
+                        : $"{column} IS NULL");
+                    continue;
+                }
+                if (filter.Operator == TableFilterOperator.IsNotEmpty)
+                {
+                    clauses.Add(filter.IsString
+                        ? $"({column} IS NOT NULL AND {column} <> {AddParameter(command, engine, "")})"
+                        : $"{column} IS NOT NULL");
+                    continue;
+                }
+
+                var value = filter.Operator switch
+                {
+                    TableFilterOperator.Contains => $"%{filter.Value}%",
+                    TableFilterOperator.StartsWith => $"{filter.Value}%",
+                    TableFilterOperator.EndsWith => $"%{filter.Value}",
+                    _ => filter.Value
+                };
+                var parameter = AddParameter(command, engine, value);
+                var op = filter.Operator switch
+                {
+                    TableFilterOperator.Contains or TableFilterOperator.StartsWith or TableFilterOperator.EndsWith => "LIKE",
+                    TableFilterOperator.Equals => "=",
+                    TableFilterOperator.NotEquals => "<>",
+                    TableFilterOperator.GreaterThan => ">",
+                    TableFilterOperator.LessThan => "<",
+                    TableFilterOperator.GreaterOrEqual => ">=",
+                    TableFilterOperator.LessOrEqual => "<=",
+                    _ => throw new ArgumentOutOfRangeException(nameof(filter.Operator))
+                };
+                clauses.Add($"{column} {op} {parameter}");
+            }
+            sql.Append(" WHERE ").Append(string.Join(query.MatchAll ? " AND " : " OR ", clauses));
+        }
+
+        if (query.Sorts.Count > 0)
+        {
+            sql.Append(" ORDER BY ").Append(string.Join(", ", query.Sorts.Select(sort =>
+                $"{Quote(engine, sort.Column)} {(sort.Descending ? "DESC" : "ASC")}")));
+        }
+
+        sql.Append(engine switch
+        {
+            DatabaseEngine.Sqlite or DatabaseEngine.MySql or DatabaseEngine.MariaDb or DatabaseEngine.PostgreSql
+                => $" LIMIT {limit}",
+            DatabaseEngine.Oracle => $" FETCH FIRST {limit} ROWS ONLY",
+            _ => ""
+        });
+        return sql.ToString();
+    }
+
+    private static string AddParameter(DbCommand command, DatabaseEngine engine, object? value)
+    {
+        var index = command.Parameters.Count;
+        var name = $"p{index}";
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = engine == DatabaseEngine.Oracle ? name : "@" + name;
+        parameter.Value = value ?? DBNull.Value;
+        command.Parameters.Add(parameter);
+        return engine == DatabaseEngine.Oracle ? ":" + name : "@" + name;
+    }
+
     private static async Task<EditableTableSession> OpenOracleAsync(
-        string connectionString, string database, string schema, string table, int rowLimit)
+        string connectionString, string database, string schema, string table, int rowLimit, TableQuery? query)
     {
         var connection = new OracleConnection(connectionString);
         await connection.OpenAsync();
@@ -119,7 +209,14 @@ public sealed class EditableTableSession : IDisposable
         var fq = Quote(DatabaseEngine.Oracle, table);
         // Defensive load: Oracle DATE/TIMESTAMP values outside .NET's range become NULL rather than
         // throwing "unrepresentable DateTime" and failing to open the table.
-        var data = await OracleService.ReadTableAsync(connection, table, rowLimit);
+        DataTable data;
+        await using (var cmd = connection.CreateCommand())
+        {
+            cmd.BindByName = true;
+            cmd.CommandText = BuildSelect(cmd, DatabaseEngine.Oracle, fq, rowLimit, query);
+            await using var reader = await cmd.ExecuteReaderAsync();
+            data = ReadReaderDefensively(reader, table);
+        }
 
         var cols = await OracleService.GetColumnsAsync(connectionString, table);
         var nonComparable = new HashSet<string>(cols.Where(c => c.IsLob).Select(c => c.Name), StringComparer.OrdinalIgnoreCase);
@@ -143,14 +240,15 @@ public sealed class EditableTableSession : IDisposable
     }
 
     private static async Task<EditableTableSession> OpenSqlServerAsync(
-        string connectionString, string database, string schema, string table, int rowLimit)
+        string connectionString, string database, string schema, string table, int rowLimit, TableQuery? query)
     {
         var connection = new SqlConnection(SqlServerService.WithDatabase(connectionString, database));
         await connection.OpenAsync();
 
         var fq = $"{Quote(DatabaseEngine.SqlServer, schema)}.{Quote(DatabaseEngine.SqlServer, table)}";
-        var sql = $"SELECT TOP ({rowLimit}) * FROM {fq}";
-        var adapter = new SqlDataAdapter(sql, connection)
+        var selectCommand = connection.CreateCommand();
+        selectCommand.CommandText = BuildSelect(selectCommand, DatabaseEngine.SqlServer, fq, rowLimit, query);
+        var adapter = new SqlDataAdapter(selectCommand)
         {
             MissingSchemaAction = MissingSchemaAction.AddWithKey
         };
@@ -190,7 +288,7 @@ public sealed class EditableTableSession : IDisposable
     }
 
     private static async Task<EditableTableSession> OpenSqliteAsync(
-        string connectionString, string table, int rowLimit)
+        string connectionString, string table, int rowLimit, TableQuery? query)
     {
         var connection = new SqliteConnection(connectionString);
         await connection.OpenAsync();
@@ -199,7 +297,7 @@ public sealed class EditableTableSession : IDisposable
         var data = new DataTable(table);
         await using (var cmd = connection.CreateCommand())
         {
-            cmd.CommandText = $"SELECT * FROM {fq} LIMIT {rowLimit}";
+            cmd.CommandText = BuildSelect(cmd, DatabaseEngine.Sqlite, fq, rowLimit, query);
             await using var reader = await cmd.ExecuteReaderAsync();
             data.Load(reader);
         }
@@ -240,7 +338,7 @@ public sealed class EditableTableSession : IDisposable
     }
 
     private static async Task<EditableTableSession> OpenFirebirdAsync(
-        string connectionString, string table, int rowLimit)
+        string connectionString, string table, int rowLimit, TableQuery? query)
     {
         var connection = new FbConnection(connectionString);
         await connection.OpenAsync();
@@ -249,7 +347,7 @@ public sealed class EditableTableSession : IDisposable
         DataTable data;
         await using (var cmd = connection.CreateCommand())
         {
-            cmd.CommandText = $"SELECT FIRST {rowLimit} * FROM {fq}";
+            cmd.CommandText = BuildSelect(cmd, DatabaseEngine.Firebird, fq, rowLimit, query);
             await using var reader = await cmd.ExecuteReaderAsync();
             // Read into a constraint-free DataTable. DataTable.Load() infers the provider's
             // primary-key/NOT-NULL schema and then re-enables it, throwing "Failed to enable
@@ -315,7 +413,7 @@ public sealed class EditableTableSession : IDisposable
     }
 
     private static async Task<EditableTableSession> OpenMySqlAsync(
-        DatabaseEngine engine, string connectionString, string database, string table, int rowLimit)
+        DatabaseEngine engine, string connectionString, string database, string table, int rowLimit, TableQuery? query)
     {
         var connection = new MySqlConnection(MySqlService.WithDatabase(connectionString, database));
         await connection.OpenAsync();
@@ -324,7 +422,7 @@ public sealed class EditableTableSession : IDisposable
         var data = new DataTable(table);
         await using (var cmd = connection.CreateCommand())
         {
-            cmd.CommandText = $"SELECT * FROM {fq} LIMIT {rowLimit}";
+            cmd.CommandText = BuildSelect(cmd, engine, fq, rowLimit, query);
             await using var reader = await cmd.ExecuteReaderAsync();
             data.Load(reader);
         }
@@ -351,7 +449,7 @@ public sealed class EditableTableSession : IDisposable
     }
 
     private static async Task<EditableTableSession> OpenPostgresAsync(
-        string connectionString, string database, string schema, string table, int rowLimit)
+        string connectionString, string database, string schema, string table, int rowLimit, TableQuery? query)
     {
         var connection = new NpgsqlConnection(PostgresService.WithDatabase(connectionString, database));
         await connection.OpenAsync();
@@ -360,7 +458,7 @@ public sealed class EditableTableSession : IDisposable
         DataTable data;
         await using (var cmd = connection.CreateCommand())
         {
-            cmd.CommandText = $"SELECT * FROM {fq} LIMIT {rowLimit}";
+            cmd.CommandText = BuildSelect(cmd, DatabaseEngine.PostgreSql, fq, rowLimit, query);
             await using var reader = await cmd.ExecuteReaderAsync();
             data = ReadReaderDefensively(reader, table);
         }
