@@ -125,6 +125,10 @@
       <strong>Objetos</strong>: una lista estilo Navicat con el conteo de filas cuando está disponible. En las conexiones
       Clarion (TPS/DAT), al seleccionar la conexión se listan sus archivos (con tamaño y fecha) en la pestaña Objetos.
       Haga doble clic en cualquier elemento para abrirlo.</p>
+      <p>La pestaña Objetos también tiene un <strong>localizador</strong> (<strong>Ctrl+F</strong>): escriba el nombre
+      de un objeto y se selecciona la coincidencia más cercana mientras escribe (primero las que empiezan por el texto).
+      Pulse <strong>Enter</strong> o <strong>F3</strong> para la siguiente coincidencia — el indicador muestra la
+      posición <em>n/m</em> — y <strong>Esc</strong> para limpiar.</p>
 
       <h2 id="view-edit">Ver y editar registros</h2>
       <p>Haga doble clic en una tabla (o use <strong>Abrir</strong> en el menú contextual) para cargar sus filas en una cuadrícula.</p>
@@ -132,7 +136,11 @@
         <li><strong>Edite</strong> una celda escribiendo en ella; los cambios se resaltan hasta que guarde.</li>
         <li><strong>Agregue</strong> una fila en el marcador inferior, o <strong>elimine</strong> las filas seleccionadas.</li>
         <li><strong>Guardar</strong> escribe los cambios pendientes en la base de datos; <strong>Recargar</strong> los descarta.</li>
-        <li><strong>Filtre</strong> y <strong>ordene</strong> columnas desde la barra de herramientas; el SQL en vivo se muestra en el panel SQL.</li>
+        <li><strong>Filtre</strong> y <strong>ordene</strong> columnas desde la barra de herramientas; el SQL en vivo se muestra en el panel SQL.
+        En los motores SQL, el filtro y el orden se ejecutan <em>en la base de datos</em> (<code>WHERE</code> /
+        <code>ORDER BY</code> antes del límite de filas), por lo que consideran la tabla completa — no solo las filas ya
+        cargadas. Guarde o recargue los cambios pendientes primero. Las fuentes de archivo (TPS / DAT / Excel) y MongoDB
+        filtran localmente las filas cargadas.</li>
         <li>El panel <strong>Detalle de celda</strong> muestra el contenido completo de celdas grandes; el panel
         <strong>Estructura</strong> muestra las columnas, el DDL y los índices de la tabla.</li>
       </ul>
@@ -287,7 +295,8 @@
       <a href="https://github.com/asantarelli">asantarelli</a> (cargar/guardar scripts SQL en archivo desde la ventana
       de consultas y el editor de rutinas) y <a href="https://github.com/jarodav1">Victor Montanez — jarodav1</a>
       (mejora integral del comparador de esquemas: comparación de objetos, transferencia selectiva, sincronización de
-      columnas y confirmación antes de aplicar).</p>
+      columnas y confirmación antes de aplicar; filtro y orden en la base de datos aplicados antes del límite de filas;
+      el localizador de la pestaña Objetos).</p>
       <p>DataPortStudio está construido con .NET&nbsp;9 y WPF, y se apoya en estas excelentes bibliotecas de código abierto.
       Gracias a sus autores y colaboradores. Cada una se mantiene bajo su propia licencia.</p>
       <table>

@@ -4,6 +4,14 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.24 — 2026-08-12
+
+### Added / Improved
+- **Database-side filter & sort** (contributed by [@jarodav1](https://github.com/jarodav1)) — the table browser's Filter and Sort builders now run on the database (`WHERE` / `ORDER BY` applied **before** the row limit), so they consider the whole table instead of only the rows already loaded. Applying a filter or sort reloads the grid; pending edits must be saved or reloaded first. Values are sent as parameters and identifiers are quoted per engine. File-based sources (TPS / DAT / Excel) and MongoDB keep filtering the loaded rows locally.
+- **Objects-tab locator** (contributed by [@jarodav1](https://github.com/jarodav1)) — a locator box (Ctrl+F) in the Objects list jumps to an object by name as you type (prefix matches first). Enter / F3 cycles through matches with an `n/m` position readout; Esc clears. Available in English and Spanish.
+
+---
+
 ## v1.0.23 — 2026-08-10
 
 ### Added / Improved

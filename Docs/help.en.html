@@ -123,6 +123,9 @@
       <p>Selecting a <em>Tables</em> folder, a schema, or a database opens the <strong>Objects</strong> tab — a
       Navicat-style list of the tables with row counts where available. For Clarion (TPS/DAT) connections, selecting the
       connection itself lists its files (with size and date) in the Objects tab. Double-click any item to open it.</p>
+      <p>The Objects tab also has a <strong>locator box</strong> (<strong>Ctrl+F</strong>): type an object name and the
+      nearest match is selected as you type (prefix matches first). Press <strong>Enter</strong> or <strong>F3</strong>
+      for the next match — the position readout shows <em>n/m</em> — and <strong>Esc</strong> to clear.</p>
 
       <h2 id="view-edit">Viewing &amp; editing records</h2>
       <p>Double-click a table (or use <strong>Open</strong> from the right-click menu) to load its rows into a grid.</p>
@@ -130,7 +133,10 @@
         <li><strong>Edit</strong> a cell by typing into it; changes are highlighted until you save.</li>
         <li><strong>Add</strong> a row at the bottom placeholder, or <strong>delete</strong> the selected row(s).</li>
         <li><strong>Save</strong> writes pending changes back to the database; <strong>Reload</strong> discards them.</li>
-        <li><strong>Filter</strong> and <strong>sort</strong> columns from the toolbar; the live SQL is shown in the SQL panel.</li>
+        <li><strong>Filter</strong> and <strong>sort</strong> columns from the toolbar; the live SQL is shown in the SQL panel.
+        For SQL engines the filter and sort run <em>on the database</em> (<code>WHERE</code> / <code>ORDER BY</code>
+        before the row limit), so they consider the whole table — not just the rows already loaded. Save or reload
+        pending edits first. File-based sources (TPS / DAT / Excel) and MongoDB filter the loaded rows locally.</li>
         <li>The <strong>Cell detail</strong> panel shows the full content of large cells; the <strong>Structure</strong>
         panel shows the table's columns, DDL and indexes.</li>
       </ul>
@@ -280,7 +286,8 @@
       <p>Warm thanks to the community contributors who have improved DataPortStudio:
       <a href="https://github.com/asantarelli">asantarelli</a> (Load/Save SQL scripts to file in the Query window and
       Routine editor) and <a href="https://github.com/jarodav1">Victor Montanez — jarodav1</a> (schema comparator
-      overhaul: object comparison, selective transfer, column synchronization, and apply confirmation).</p>
+      overhaul: object comparison, selective transfer, column synchronization, and apply confirmation; database-side
+      filter &amp; sort applied before the row limit; the Objects-tab locator).</p>
       <p>DataPortStudio is built with .NET&nbsp;9 and WPF, and stands on the shoulders of these excellent open-source
       libraries. Our thanks to their authors and contributors. Each remains under its own license.</p>
       <table>
