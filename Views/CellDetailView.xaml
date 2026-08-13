@@ -4,7 +4,7 @@
              xmlns:beh="clr-namespace:DataPortStudio.Behaviors"
              xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
              xmlns:loc="clr-namespace:DataPortStudio.Services"
-             Background="{StaticResource B.Surface}">
+             Background="{DynamicResource B.Surface}">
     <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -14,13 +14,13 @@
 
         <Grid Grid.Row="0" Margin="0,0,0,8">
             <StackPanel Orientation="Horizontal">
-                <TextBlock Text="{loc:Tr Detail_Cell}" Foreground="{StaticResource B.TextMuted}" FontSize="12" VerticalAlignment="Center"/>
+                <TextBlock Text="{loc:Tr Detail_Cell}" Foreground="{DynamicResource B.TextMuted}" FontSize="12" VerticalAlignment="Center"/>
                 <TextBlock Text="{Binding DetailColumn}"
                            Margin="6,0,0,0" FontWeight="SemiBold" FontSize="12"
-                           Foreground="{StaticResource B.Text}" VerticalAlignment="Center"/>
-                <Border Margin="10,0,0,0" Padding="6,1" CornerRadius="3" Background="{StaticResource B.SurfaceAlt}"
-                        BorderBrush="{StaticResource B.Border}" BorderThickness="1">
-                    <TextBlock Text="{Binding ViewModeLabel}" FontSize="11" Foreground="{StaticResource B.TextMuted}"/>
+                           Foreground="{DynamicResource B.Text}" VerticalAlignment="Center"/>
+                <Border Margin="10,0,0,0" Padding="6,1" CornerRadius="3" Background="{DynamicResource B.SurfaceAlt}"
+                        BorderBrush="{DynamicResource B.Border}" BorderThickness="1">
+                    <TextBlock Text="{Binding ViewModeLabel}" FontSize="11" Foreground="{DynamicResource B.TextMuted}"/>
                 </Border>
             </StackPanel>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
@@ -32,7 +32,7 @@
 
         <Grid Grid.Row="1">
             <!-- Text -->
-            <Border BorderBrush="{StaticResource B.Border}" BorderThickness="1" CornerRadius="6"
+            <Border BorderBrush="{DynamicResource B.Border}" BorderThickness="1" CornerRadius="6"
                     Visibility="{Binding IsTextMode, Converter={StaticResource BoolToVis}}">
                 <TextBox Text="{Binding DetailText, UpdateSourceTrigger=PropertyChanged}"
                          AcceptsReturn="True" AcceptsTab="True" TextWrapping="Wrap"
@@ -41,7 +41,7 @@
                          FontFamily="Consolas" FontSize="12" BorderThickness="0" Padding="8"/>
             </Border>
             <!-- Hex -->
-            <Border BorderBrush="{StaticResource B.Border}" BorderThickness="1" CornerRadius="6"
+            <Border BorderBrush="{DynamicResource B.Border}" BorderThickness="1" CornerRadius="6"
                     Visibility="{Binding IsHexMode, Converter={StaticResource BoolToVis}}">
                 <TextBox Text="{Binding DetailHex, Mode=OneWay}" IsReadOnly="True" TextWrapping="NoWrap"
                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
@@ -49,8 +49,8 @@
                          FontFamily="Consolas" FontSize="12" BorderThickness="0" Padding="8"/>
             </Border>
             <!-- Image -->
-            <Border BorderBrush="{StaticResource B.Border}" BorderThickness="1" CornerRadius="6"
-                    Background="{StaticResource B.SurfaceAlt}"
+            <Border BorderBrush="{DynamicResource B.Border}" BorderThickness="1" CornerRadius="6"
+                    Background="{DynamicResource B.SurfaceAlt}"
                     Visibility="{Binding IsImageMode, Converter={StaticResource BoolToVis}}">
                 <Grid>
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
@@ -58,12 +58,12 @@
                                HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8"/>
                     </ScrollViewer>
                     <TextBlock Text="{loc:Tr Detail_NotImage}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                               Foreground="{StaticResource B.TextMuted}" FontSize="13"
+                               Foreground="{DynamicResource B.TextMuted}" FontSize="13"
                                Visibility="{Binding DetailImage, Converter={StaticResource NullToVis}}"/>
                 </Grid>
             </Border>
             <!-- Web -->
-            <Border BorderBrush="{StaticResource B.Border}" BorderThickness="1" CornerRadius="6" ClipToBounds="True"
+            <Border BorderBrush="{DynamicResource B.Border}" BorderThickness="1" CornerRadius="6" ClipToBounds="True"
                     Visibility="{Binding IsWebMode, Converter={StaticResource BoolToVis}}">
                 <wv2:WebView2 beh:WebViewHtml.Html="{Binding DetailHtml}"/>
             </Border>

@@ -7,14 +7,14 @@
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         ResizeMode="NoResize" SizeToContent="Height"
         ShowInTaskbar="False" Width="480">
-    <Border Background="{StaticResource B.Surface}" CornerRadius="12" Margin="16"
-            BorderBrush="{StaticResource B.Border}" BorderThickness="1">
+    <Border Background="{DynamicResource B.Surface}" CornerRadius="12" Margin="16"
+            BorderBrush="{DynamicResource B.Border}" BorderThickness="1">
         <Border.Effect>
             <DropShadowEffect BlurRadius="28" ShadowDepth="4" Opacity="0.25" Color="#FF1F2933"/>
         </Border.Effect>
         <StackPanel>
             <!-- Header -->
-            <Border Background="{StaticResource B.Sidebar}" CornerRadius="12,12,0,0"
+            <Border Background="{DynamicResource B.Sidebar}" CornerRadius="12,12,0,0"
                     Padding="20,16" MouseLeftButtonDown="Header_MouseDown">
                 <StackPanel Orientation="Horizontal">
                     <Path x:Name="HeaderIcon" Data="M2,3 H14 V6.5 H2 Z M2,9.5 H14 V13 H2 Z" Width="18" Height="18"
@@ -198,7 +198,7 @@
                                 Margin="8,0,0,0" Click="Browse_Click"/>
                     </Grid>
                     <TextBlock Text="Point to an existing SQLite database file." FontSize="11" FontStyle="Italic"
-                               Foreground="{StaticResource B.TextMuted}"/>
+                               Foreground="{DynamicResource B.TextMuted}"/>
                 </StackPanel>
 
                 <!-- ===== Firebird ===== -->
@@ -256,10 +256,10 @@
                     <TextBox x:Name="MongoUriBox" Margin="0,0,0,8" AcceptsReturn="True" TextWrapping="Wrap"
                              Height="60" VerticalContentAlignment="Top"/>
                     <TextBlock TextWrapping="Wrap" FontSize="11" FontStyle="Italic"
-                               Foreground="{StaticResource B.TextMuted}"
+                               Foreground="{DynamicResource B.TextMuted}"
                                Text="e.g. mongodb://localhost:27017  or  mongodb+srv://user:pass@cluster.mongodb.net"/>
                     <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" FontSize="11"
-                               Foreground="{StaticResource B.TextMuted}"
+                               Foreground="{DynamicResource B.TextMuted}"
                                Text="Read-only viewer: browse databases, collections and documents."/>
                 </StackPanel>
 
@@ -314,7 +314,7 @@
                                 Margin="8,0,0,0" Click="TpsBrowse_Click"/>
                     </Grid>
                     <TextBlock TextWrapping="Wrap" FontSize="11" FontStyle="Italic"
-                               Foreground="{StaticResource B.TextMuted}"
+                               Foreground="{DynamicResource B.TextMuted}"
                                Text="Each .tps file in the folder appears as a table. Cell edits are written back to the binary file (add/delete rows not supported). Use Copy to migrate a table to a SQL database."/>
                 </StackPanel>
 
@@ -355,7 +355,7 @@
                         </StackPanel>
                     </Grid>
                     <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" FontSize="11" FontStyle="Italic"
-                               Foreground="{StaticResource B.TextMuted}"
+                               Foreground="{DynamicResource B.TextMuted}"
                                Text="Browse your schema's tables &amp; views, view and edit rows, run SQL, and copy tables to/from any SQL database."/>
                 </StackPanel>
 
@@ -372,7 +372,7 @@
                                 Margin="8,0,0,0" Click="DatBrowse_Click"/>
                     </Grid>
                     <TextBlock TextWrapping="Wrap" FontSize="11" FontStyle="Italic"
-                               Foreground="{StaticResource B.TextMuted}"
+                               Foreground="{DynamicResource B.TextMuted}"
                                Text="Classic Clarion (.dat) files, one per table. Fully editable — edit cells, add and delete rows. Use Copy to migrate a table to a SQL database."/>
                 </StackPanel>
 
@@ -389,7 +389,7 @@
                                 Margin="8,0,0,0" Click="ExcelBrowse_Click"/>
                     </Grid>
                     <TextBlock TextWrapping="Wrap" FontSize="11" FontStyle="Italic"
-                               Foreground="{StaticResource B.TextMuted}"
+                               Foreground="{DynamicResource B.TextMuted}"
                                Text="Each worksheet in every .xls/.xlsx file appears as a table. Fully editable — edit cells, add and delete rows, and Save writes back to the file. Use Copy to migrate a sheet to a SQL database."/>
                 </StackPanel>
 
@@ -430,28 +430,28 @@
                         </StackPanel>
                     </Grid>
                     <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" FontSize="11" FontStyle="Italic"
-                               Foreground="{StaticResource B.TextMuted}"
+                               Foreground="{DynamicResource B.TextMuted}"
                                Text="Full-featured: browse databases, schemas, tables and views; view and edit rows; run SQL; copy, paste, rename and drop tables."/>
                 </StackPanel>
 
                 <!-- ===== Not-yet-supported engines ===== -->
                 <Border x:Name="ComingSoonPanel" Visibility="Collapsed" Margin="0,4,0,4"
-                        Background="{StaticResource B.SurfaceAlt}" CornerRadius="8"
-                        BorderBrush="{StaticResource B.Border}" BorderThickness="1" Padding="14,12">
-                    <TextBlock x:Name="ComingSoonText" TextWrapping="Wrap" Foreground="{StaticResource B.TextMuted}"
+                        Background="{DynamicResource B.SurfaceAlt}" CornerRadius="8"
+                        BorderBrush="{DynamicResource B.Border}" BorderThickness="1" Padding="14,12">
+                    <TextBlock x:Name="ComingSoonText" TextWrapping="Wrap" Foreground="{DynamicResource B.TextMuted}"
                                Text="Support for this database is coming soon."/>
                 </Border>
             </StackPanel>
 
             <!-- Footer -->
-            <Border Background="{StaticResource B.SurfaceAlt}" CornerRadius="0,0,12,12"
-                    BorderBrush="{StaticResource B.Border}" BorderThickness="0,1,0,0" Padding="16,14">
+            <Border Background="{DynamicResource B.SurfaceAlt}" CornerRadius="0,0,12,12"
+                    BorderBrush="{DynamicResource B.Border}" BorderThickness="0,1,0,0" Padding="16,14">
                 <Grid>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                         <Button Content="Test" MinWidth="84" Click="Test_Click"/>
                         <TextBlock x:Name="TestStatus" VerticalAlignment="Center" Margin="12,0,0,0"
                                    FontSize="12" TextWrapping="Wrap" MaxWidth="150"
-                                   Foreground="{StaticResource B.TextMuted}"/>
+                                   Foreground="{DynamicResource B.TextMuted}"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Content="Cancel" MinWidth="90" Margin="0,0,10,0" Click="Cancel_Click"/>

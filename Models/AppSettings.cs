@@ -3,6 +3,7 @@ using DataPortStudio.ViewModels;
 namespace DataPortStudio.Models;
 
 public enum ObjectSearchMode { Locator, Filter }
+public enum QueryOpenMode { Window, Docked }
 
 /// <summary>User-configurable application defaults.</summary>
 public class AppSettings
@@ -22,6 +23,9 @@ public class AppSettings
 
     /// <summary>How the Objects search box behaves: move to matches or hide non-matches.</summary>
     public ObjectSearchMode ObjectSearchMode { get; set; } = ObjectSearchMode.Filter;
+
+    /// <summary>Where SQL query editors open.</summary>
+    public QueryOpenMode QueryOpenMode { get; set; } = QueryOpenMode.Window;
 
     /// <summary>Last active database per connection (connectionId → databaseName).</summary>
     public Dictionary<string, string> LastDatabases { get; set; } = new();

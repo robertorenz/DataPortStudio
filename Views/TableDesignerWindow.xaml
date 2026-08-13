@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Table Designer" Height="640" Width="940"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource B.Bg}">
+        Background="{DynamicResource B.Bg}">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -13,12 +13,12 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Background="{StaticResource B.HeaderBar}"
-                BorderBrush="{StaticResource B.Border}" BorderThickness="0,0,0,1" Padding="14,10">
+        <Border Grid.Row="0" Background="{DynamicResource B.HeaderBar}"
+                BorderBrush="{DynamicResource B.Border}" BorderThickness="0,0,0,1" Padding="14,10">
             <Grid>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="Table name" VerticalAlignment="Center" Margin="0,0,8,0"
-                               Foreground="{StaticResource B.TextMuted}"/>
+                               Foreground="{DynamicResource B.TextMuted}"/>
                     <TextBox Width="220" Text="{Binding TableName, UpdateSourceTrigger=PropertyChanged}"/>
                     <Button Content="＋ Add column" Margin="12,0,0,0" Command="{Binding AddColumnCommand}"/>
                 </StackPanel>
@@ -98,15 +98,15 @@
                       VerticalAlignment="Center" ResizeBehavior="PreviousAndNext" ResizeDirection="Rows"
                       Style="{StaticResource PaneSplitter}"/>
 
-        <Border Grid.Row="3" Margin="12,0,12,8" BorderBrush="{StaticResource B.Border}" BorderThickness="1" CornerRadius="6">
+        <Border Grid.Row="3" Margin="12,0,12,8" BorderBrush="{DynamicResource B.Border}" BorderThickness="1" CornerRadius="6">
             <TextBox Text="{Binding GeneratedSql, Mode=OneWay}" IsReadOnly="True"
                      VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
                      VerticalContentAlignment="Top" FontFamily="Consolas" FontSize="13"
                      BorderThickness="0" Padding="8"/>
         </Border>
 
-        <Border Grid.Row="4" Background="{StaticResource B.Sidebar}" Padding="14,6">
-            <TextBlock Text="{Binding Messages}" Foreground="{StaticResource B.SidebarText}" FontSize="12"/>
+        <Border Grid.Row="4" Background="{DynamicResource B.Sidebar}" Padding="14,6">
+            <TextBlock Text="{Binding Messages}" Foreground="{DynamicResource B.SidebarText}" FontSize="12"/>
         </Border>
     </Grid>
 </Window>

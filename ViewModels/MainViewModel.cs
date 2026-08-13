@@ -30,6 +30,12 @@ public partial class MainViewModel : ObservableObject
     private ObjectListViewModel? _objectsTab;
 
     public bool ShowEmpty => Tabs.Count == 0;
+    public bool IsDarkTheme => ThemeManager.Current == "dark";
+    public string ThemeGlyph => IsDarkTheme ? "\uE706" : "\uE708";
+    public string ThemeActionLabel => LocalizationManager.Instance[
+        IsDarkTheme ? "Bar_ThemeLight" : "Bar_ThemeDark"];
+    public string ThemeToolTip => LocalizationManager.Instance[
+        IsDarkTheme ? "Tip_ThemeLight" : "Tip_ThemeDark"];
 
     partial void OnActiveTabChanged(object? value) => OnPropertyChanged(nameof(SelectedTab));
 
@@ -302,8 +308,7 @@ public partial class MainViewModel : ObservableObject
                 "The SQL query window doesn't apply to MongoDB.");
             return;
         }
-        new Views.QueryWindow(connection, node?.Database).Show();
-        StatusText = $"Opened a query window for '{connection.Name}'.";
+        OpenQueryEditor(connection, node?.Database);
     }
 
     [RelayCommand]
@@ -350,6 +355,23 @@ public partial class MainViewModel : ObservableObject
             return;
         }
         new Views.SchemaDiffWindow(relational, connection, node?.Database, AddConnectionProfile).Show();
+    }
+
+    private void OpenQueryEditor(ConnectionProfile connection, string? database, string? initialSql = null)
+    {
+        if (SettingsStore.Current.QueryOpenMode == QueryOpenMode.Window)
+        {
+            new Views.QueryWindow(connection, database, initialSql).Show();
+            StatusText = $"Opened a query window for '{connection.Name}'.";
+            return;
+        }
+
+        var tab = new QueryTabViewModel(connection, database, initialSql);
+        tab.CloseRequested += CloseQueryTab;
+        Tabs.Add(tab);
+        OnPropertyChanged(nameof(ShowEmpty));
+        ActiveTab = tab;
+        StatusText = $"Opened a docked query for '{connection.Name}'.";
     }
 
     [RelayCommand]
@@ -410,8 +432,28 @@ public partial class MainViewModel : ObservableObject
         if (new Views.SettingsDialog().ShowDialog() == true)
         {
             _objectsTab?.ApplySearchMode();
+            NotifyThemeState();
             StatusText = "Settings saved.";
         }
+    }
+
+    [RelayCommand]
+    private void ToggleTheme()
+    {
+        var settings = SettingsStore.Current.Clone();
+        settings.Theme = IsDarkTheme ? "light" : "dark";
+        SettingsStore.Save(settings);
+        ThemeManager.Apply(settings.Theme);
+        NotifyThemeState();
+        StatusText = IsDarkTheme ? "Dark theme enabled." : "Light theme enabled.";
+    }
+
+    private void NotifyThemeState()
+    {
+        OnPropertyChanged(nameof(IsDarkTheme));
+        OnPropertyChanged(nameof(ThemeGlyph));
+        OnPropertyChanged(nameof(ThemeActionLabel));
+        OnPropertyChanged(nameof(ThemeToolTip));
     }
 
     private const string RepoUrl = "https://github.com/robertorenz/DataPortStudio";
@@ -885,7 +927,7 @@ public partial class MainViewModel : ObservableObject
         var sql = node.Type == NodeType.Procedure
             ? $"EXEC {qualified} "
             : $"-- Scalar function: SELECT {qualified}(/* args */)\n-- Table function: SELECT * FROM {qualified}(/* args */)\nSELECT {qualified}()";
-        new Views.QueryWindow(node.Connection, node.Database, sql).Show();
+        OpenQueryEditor(node.Connection, node.Database, sql);
     }
 
     [RelayCommand]
@@ -941,6 +983,18 @@ public partial class MainViewModel : ObservableObject
         var wasActive = ReferenceEquals(ActiveTab, tab);
         Tabs.Remove(tab);
         tab.Dispose();
+        OnPropertyChanged(nameof(ShowEmpty));
+
+        if (wasActive)
+            ActiveTab = Tabs.Count > 0 ? Tabs[Math.Min(index, Tabs.Count - 1)] : null;
+    }
+
+    private void CloseQueryTab(QueryTabViewModel tab)
+    {
+        tab.CloseRequested -= CloseQueryTab;
+        var index = Tabs.IndexOf(tab);
+        var wasActive = ReferenceEquals(ActiveTab, tab);
+        Tabs.Remove(tab);
         OnPropertyChanged(nameof(ShowEmpty));
 
         if (wasActive)
