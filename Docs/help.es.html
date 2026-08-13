@@ -125,10 +125,16 @@
       <strong>Objetos</strong>: una lista estilo Navicat con el conteo de filas cuando está disponible. En las conexiones
       Clarion (TPS/DAT), al seleccionar la conexión se listan sus archivos (con tamaño y fecha) en la pestaña Objetos.
       Haga doble clic en cualquier elemento para abrirlo.</p>
-      <p>La pestaña Objetos también tiene un <strong>localizador</strong> (<strong>Ctrl+F</strong>): escriba el nombre
-      de un objeto y se selecciona la coincidencia más cercana mientras escribe (primero las que empiezan por el texto).
-      Pulse <strong>Enter</strong> o <strong>F3</strong> para la siguiente coincidencia — el indicador muestra la
-      posición <em>n/m</em> — y <strong>Esc</strong> para limpiar.</p>
+      <p>La pestaña Objetos también tiene un <strong>buscador</strong> (<strong>Ctrl+F</strong>) que encuentra objetos
+      por nombre, con dos modos seleccionables en <strong>Configuración ▸ Interfaz ▸ Búsqueda de objetos</strong>
+      (el cambio se aplica de inmediato):</p>
+      <ul>
+        <li><strong>Filtro</strong> (predeterminado) — muestra únicamente los objetos cuyo nombre contiene el texto.</li>
+        <li><strong>Locator</strong> — mantiene todas las filas visibles y selecciona la coincidencia más cercana
+        mientras escribe (primero las que empiezan por el texto). Pulse <strong>Enter</strong> o <strong>F3</strong>
+        para la siguiente coincidencia — el indicador muestra la posición <em>n/m</em> — y <strong>Esc</strong> para
+        limpiar.</li>
+      </ul>
 
       <h2 id="view-edit">Ver y editar registros</h2>
       <p>Haga doble clic en una tabla (o use <strong>Abrir</strong> en el menú contextual) para cargar sus filas en una cuadrícula.</p>
@@ -296,7 +302,7 @@
       de consultas y el editor de rutinas) y <a href="https://github.com/jarodav1">Victor Montanez — jarodav1</a>
       (mejora integral del comparador de esquemas: comparación de objetos, transferencia selectiva, sincronización de
       columnas y confirmación antes de aplicar; filtro y orden en la base de datos aplicados antes del límite de filas;
-      el localizador de la pestaña Objetos).</p>
+      la búsqueda configurable de la pestaña Objetos con modos Filtro y Locator).</p>
       <p>DataPortStudio está construido con .NET&nbsp;9 y WPF, y se apoya en estas excelentes bibliotecas de código abierto.
       Gracias a sus autores y colaboradores. Cada una se mantiene bajo su propia licencia.</p>
       <table>

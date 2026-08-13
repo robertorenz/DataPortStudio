@@ -123,9 +123,15 @@
       <p>Selecting a <em>Tables</em> folder, a schema, or a database opens the <strong>Objects</strong> tab — a
       Navicat-style list of the tables with row counts where available. For Clarion (TPS/DAT) connections, selecting the
       connection itself lists its files (with size and date) in the Objects tab. Double-click any item to open it.</p>
-      <p>The Objects tab also has a <strong>locator box</strong> (<strong>Ctrl+F</strong>): type an object name and the
-      nearest match is selected as you type (prefix matches first). Press <strong>Enter</strong> or <strong>F3</strong>
-      for the next match — the position readout shows <em>n/m</em> — and <strong>Esc</strong> to clear.</p>
+      <p>The Objects tab also has a <strong>search box</strong> (<strong>Ctrl+F</strong>) that finds objects by name,
+      with two modes selectable in <strong>Settings ▸ Interface ▸ Objects search</strong> (the change applies
+      immediately):</p>
+      <ul>
+        <li><strong>Filter</strong> (default) — shows only the objects whose name contains the text.</li>
+        <li><strong>Locator</strong> — keeps every row visible and selects the nearest match as you type (prefix
+        matches first). Press <strong>Enter</strong> or <strong>F3</strong> for the next match — the position readout
+        shows <em>n/m</em> — and <strong>Esc</strong> to clear.</li>
+      </ul>
 
       <h2 id="view-edit">Viewing &amp; editing records</h2>
       <p>Double-click a table (or use <strong>Open</strong> from the right-click menu) to load its rows into a grid.</p>
@@ -287,7 +293,8 @@
       <a href="https://github.com/asantarelli">asantarelli</a> (Load/Save SQL scripts to file in the Query window and
       Routine editor) and <a href="https://github.com/jarodav1">Victor Montanez — jarodav1</a> (schema comparator
       overhaul: object comparison, selective transfer, column synchronization, and apply confirmation; database-side
-      filter &amp; sort applied before the row limit; the Objects-tab locator).</p>
+      filter &amp; sort applied before the row limit; the configurable Objects-tab search with Filter and Locator
+      modes).</p>
       <p>DataPortStudio is built with .NET&nbsp;9 and WPF, and stands on the shoulders of these excellent open-source
       libraries. Our thanks to their authors and contributors. Each remains under its own license.</p>
       <table>

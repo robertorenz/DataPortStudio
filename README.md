@@ -7,14 +7,14 @@ Add connection strings, browse the server tree (databases → schemas → tables
 view & edit its records in place — including adding and deleting rows — with changes pushed back to
 the database.
 
-![Status](https://img.shields.io/badge/status-v1.0.24-blue) ![Platform](https://img.shields.io/badge/platform-Windows-informational) ![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
+![Status](https://img.shields.io/badge/status-v1.0.25-blue) ![Platform](https://img.shields.io/badge/platform-Windows-informational) ![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
 
 ## Download
 
 Grab the latest release from the
 [**Releases**](https://github.com/robertorenz/DataPortStudio/releases/latest) page.
 
-**Option 1 — Installer** (`DataPortStudio-1.0.24-Setup.exe`, ~62 MB)
+**Option 1 — Installer** (`DataPortStudio-1.0.25-Setup.exe`, ~62 MB)
 - Installs to `Program Files`, creates a Start Menu entry, and adds an optional Desktop shortcut.
 - Includes a proper uninstaller (Add/Remove Programs).
 
@@ -128,9 +128,11 @@ Both options are **self-contained** — no .NET runtime install required.
   Rows, Modified Date, Comment**, with a toolbar (Open / Design / New / Delete / Refresh).
   Double-click a row to open the table in its own tab — the Objects tab stays put as the first tab
   instead of overlaying your open tables. Clicking a SQL Server database lists every table across
-  its schemas. A **locator box** (Ctrl+F) jumps to an object by name — prefix matches win while
-  you type, **Enter / F3** cycles through the matches (with an `n/m` position readout), and
-  **Esc** clears.
+  its schemas. A **search box** (Ctrl+F) finds objects by name, with two modes selectable in
+  **Settings ▸ Interface ▸ Objects search**: **Filter** (default) shows only the objects whose
+  name contains the text, while **Locator** keeps every row visible and jumps to the matches —
+  **Enter / F3** cycles through them (with an `n/m` position readout) and **Esc** clears. The
+  mode change applies immediately.
 - **Structure inspector** — a dockable/pinnable side panel showing **Info** (connection, database,
   schema, OID/object_id, rows, created/modified dates, comment, columns), **DDL** (`CREATE TABLE` +
   indexes + foreign keys), and **Relationships**.
@@ -191,7 +193,8 @@ Both options are **self-contained** — no .NET runtime install required.
 - **Built-in User Guide** — **Help ▸ User Guide** opens full documentation inside the app (covering
   connections, every engine, viewing/editing, queries, copy &amp; the Clarion → SQL mapping, export,
   users and more), in **English or Spanish** to match the selected language.
-- **Settings** — defaults for row limit, which panels open with a table, and the UI language.
+- **Settings** — defaults for row limit, which panels open with a table, the Objects search mode
+  (Filter / Locator), and the UI language.
 - **Adaptive toolbar** — the per-table command bar is responsive: as the window narrows, button
   labels collapse to icons (with tooltips), and any buttons that still don't fit move into a
   **»** overflow menu — so the toolbar stays usable at any size.
@@ -274,7 +277,7 @@ Themes/      Theme.xaml (palette + control styles)
 Warm thanks to the contributors who have improved DataPortStudio:
 
 - [**@asantarelli**](https://github.com/asantarelli) — Load / Save SQL scripts to file in the Query window and Routine editor (v1.0.22).
-- [**@jarodav1**](https://github.com/jarodav1) (Victor Montanez) — Schema comparator overhaul: programmable-object comparison, selective object transfer, SQL Server column synchronization, and the apply-summary confirmation (v1.0.23); database-side filter & sort applied before the row limit, and the object-list locator (v1.0.24).
+- [**@jarodav1**](https://github.com/jarodav1) (Victor Montanez) — Schema comparator overhaul: programmable-object comparison, selective object transfer, SQL Server column synchronization, and the apply-summary confirmation (v1.0.23); database-side filter & sort applied before the row limit, and the object-list locator (v1.0.24); the configurable object search (Filter / Locator modes) with sort-criteria persistence and a responsive search box (v1.0.25).
 
 DataPortStudio also stands on the shoulders of excellent open-source libraries and public format
 documentation — including [TpsParser](https://github.com/Trinitek/TpsParser),

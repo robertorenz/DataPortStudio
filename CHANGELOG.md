@@ -4,6 +4,17 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.25 — 2026-08-12
+
+### Added / Improved
+- **Configurable Objects search** (contributed by [@jarodav1](https://github.com/jarodav1)) — the Objects-tab search box now has two modes, selectable in **Settings ▸ Interface ▸ Objects search** (applies immediately, saved with your settings):
+  - **Filter** (default) — shows only the objects whose name contains the text.
+  - **Locator** — keeps every row visible and jumps to the matches (Enter / F3 for next, `n/m` readout, Esc clears).
+- **Sort criteria preserved** (contributed by [@jarodav1](https://github.com/jarodav1)) — reopening the table browser's Sort builder shows the currently applied sort levels instead of starting empty.
+- **Responsive Objects toolbar** — the search box stays right-aligned in maximized windows and the toolbar buttons reflow in small windows so nothing overlaps.
+
+---
+
 ## v1.0.24 — 2026-08-12
 
 ### Added / Improved
