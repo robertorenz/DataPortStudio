@@ -22,63 +22,65 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal">
-                <Button Command="{Binding OpenCommand}" Style="{StaticResource ToolButton}">
+
+                <!-- The available width constrains this panel, so commands wrap instead of
+                     extending underneath the search box on smaller windows. -->
+                <WrapPanel Grid.Column="0" Orientation="Horizontal">
+                    <Button Command="{Binding OpenCommand}" Style="{StaticResource ToolButton}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Style="{StaticResource ToolIcon}" Text="&#xE8A7;"/><TextBlock Text="{loc:Tr OL_OpenTable}"/>
                     </StackPanel>
-                </Button>
-                <Button Command="{Binding DesignCommand}" Style="{StaticResource ToolButton}"
+                    </Button>
+                    <Button Command="{Binding DesignCommand}" Style="{StaticResource ToolButton}"
                         Visibility="{Binding CanDesign, Converter={StaticResource BoolToVis}}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Style="{StaticResource ToolIcon}" Text="&#xE70F;"/><TextBlock Text="{loc:Tr OL_DesignTable}"/>
                     </StackPanel>
-                </Button>
-                <Button Command="{Binding RenameCommand}" Style="{StaticResource ToolButton}"
+                    </Button>
+                    <Button Command="{Binding RenameCommand}" Style="{StaticResource ToolButton}"
                         Visibility="{Binding CanRename, Converter={StaticResource BoolToVis}}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Style="{StaticResource ToolIcon}" Text="&#xE8AC;"/><TextBlock Text="{loc:Tr OL_RenameTable}"/>
                     </StackPanel>
-                </Button>
-                <Button Command="{Binding NewCommand}" Style="{StaticResource ToolButton}"
+                    </Button>
+                    <Button Command="{Binding NewCommand}" Style="{StaticResource ToolButton}"
                         Visibility="{Binding CanCreate, Converter={StaticResource BoolToVis}}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Style="{StaticResource ToolIcon}" Text="&#xE710;"/><TextBlock Text="{loc:Tr OL_NewTable}"/>
                     </StackPanel>
-                </Button>
-                <Button Command="{Binding DeleteCommand}" Style="{StaticResource ToolButton}"
+                    </Button>
+                    <Button Command="{Binding DeleteCommand}" Style="{StaticResource ToolButton}"
                         Visibility="{Binding CanDelete, Converter={StaticResource BoolToVis}}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Style="{StaticResource ToolIcon}" Text="&#xE74D;"/><TextBlock Text="{loc:Tr OL_DeleteTable}"/>
                     </StackPanel>
-                </Button>
-                <Border Width="1" Background="{StaticResource B.Border}" Margin="6,2"
+                    </Button>
+                    <Border Width="1" Height="24" Background="{StaticResource B.Border}" Margin="6,2"
                         Visibility="{Binding IsTables, Converter={StaticResource BoolToVis}}"/>
-                <Button Command="{Binding CopyCommand}" Style="{StaticResource ToolButton}"
+                    <Button Command="{Binding CopyCommand}" Style="{StaticResource ToolButton}"
                         Visibility="{Binding IsTables, Converter={StaticResource BoolToVis}}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Style="{StaticResource ToolIcon}" Text="&#xE8C8;"/><TextBlock Text="{loc:Tr Ctx_CopyTable}"/>
                     </StackPanel>
-                </Button>
-                <Button Command="{Binding PasteCommand}" Style="{StaticResource ToolButton}"
+                    </Button>
+                    <Button Command="{Binding PasteCommand}" Style="{StaticResource ToolButton}"
                         Visibility="{Binding CanPaste, Converter={StaticResource BoolToVis}}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Style="{StaticResource ToolIcon}" Text="&#xE77F;"/><TextBlock Text="{loc:Tr Ctx_PasteTable}"/>
                     </StackPanel>
-                </Button>
-                <Border Width="1" Background="{StaticResource B.Border}" Margin="6,2"/>
-                <Button Command="{Binding RefreshCommand}" Style="{StaticResource ToolButton}">
+                    </Button>
+                    <Border Width="1" Height="24" Background="{StaticResource B.Border}" Margin="6,2"/>
+                    <Button Command="{Binding RefreshCommand}" Style="{StaticResource ToolButton}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Style="{StaticResource ToolIcon}" Text="&#xE72C;"/><TextBlock Text="{loc:Tr Btn_Refresh}"/>
                     </StackPanel>
-                </Button>
-                </StackPanel>
+                    </Button>
+                </WrapPanel>
 
-                <!-- Locator: selects and scrolls to objects by Name only; it does not filter the list. -->
-                <Border Grid.Column="1" Width="310" Height="32" Margin="12,0,0,0"
+                <Border Grid.Column="1" Width="250" Height="32" Margin="12,0,0,0"
                         Background="{StaticResource B.Surface}" BorderBrush="{StaticResource B.Border}"
                         BorderThickness="1" CornerRadius="5"
-                        ToolTip="{loc:Tr OL_LocatorTooltip}">
+                        ToolTip="{Binding SearchToolTip}">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="30"/>
@@ -93,7 +95,7 @@
                                  Text="{Binding LocatorText, UpdateSourceTrigger=PropertyChanged}"
                                  BorderThickness="0" Background="Transparent" Padding="2,4"
                                  VerticalContentAlignment="Center"/>
-                        <TextBlock Grid.Column="1" Text="{loc:Tr OL_LocatorPlaceholder}"
+                        <TextBlock Grid.Column="1" Text="{Binding SearchPlaceholder}"
                                    Foreground="{StaticResource B.TextMuted}" Margin="4,0,0,0"
                                    VerticalAlignment="Center" IsHitTestVisible="False">
                             <TextBlock.Style>
@@ -119,7 +121,7 @@
             </Grid>
         </Border>
 
-        <DataGrid x:Name="ObjectsGrid" Grid.Row="1" Margin="12,12,12,8" ItemsSource="{Binding Items}"
+        <DataGrid x:Name="ObjectsGrid" Grid.Row="1" Margin="12,12,12,8" ItemsSource="{Binding FilteredItems}"
                   SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
                   AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
                   SelectionMode="Single" SelectionUnit="FullRow" HeadersVisibility="Column"
