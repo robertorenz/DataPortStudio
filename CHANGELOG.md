@@ -4,6 +4,13 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.28 — 2026-08-14
+
+### Changed
+- **Refined application icon** (designed by **Kyle Renz**) — a cleaner revision of the mark introduced in v1.0.27. The icon now ships nine sizes (16/24/32/48/64/72/96/128/256), adding the 72 and 96 px variants Windows prefers on high-DPI displays, so the taskbar and Explorer no longer scale an intermediate size. Backgrounds are fully transparent on every frame.
+
+---
+
 ## v1.0.27 — 2026-08-14
 
 ### Added / Improved
