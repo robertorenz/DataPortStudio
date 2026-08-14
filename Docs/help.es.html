@@ -50,6 +50,7 @@
     <a href="#view-edit">Ver y editar</a>
     <a href="#clarion-dates">Fechas y horas Clarion</a>
     <a href="#clarion-files">Archivos Clarion TPS y DAT</a>
+    <a href="#tabular-files">Excel, CSV, TSV, JSON y XML</a>
     <a href="#query">Ventana y diseñador de consultas</a>
     <a href="#designer">Diseñador de tablas</a>
     <div class="group">Mover datos</div>
@@ -111,6 +112,7 @@
         <tr><td><strong>Oracle</strong></td><td>Host, puerto, nombre de servicio, usuario, contraseña</td><td>Explorar, ver/editar filas, consultar, estructura/índices, eliminar, copiar, exportar</td></tr>
         <tr><td><strong>PostgreSQL</strong></td><td>Host, puerto, usuario, contraseña (base de datos opcional)</td><td>Explorar bases/esquemas, ver/editar filas, consultar, estructura/índices/FK, renombrar, eliminar, copiar, exportar</td></tr>
         <tr><td><strong>MongoDB</strong> <span class="ro">solo lectura</span></td><td>Una cadena de conexión (<code>mongodb://…</code>)</td><td>Explorar bases y colecciones, ver documentos, filtrar/ordenar/exportar</td></tr>
+        <tr><td><strong>Excel / CSV / TSV / JSON / XML</strong></td><td>Una carpeta con archivos <code>.xls</code>, <code>.xlsx</code>, <code>.csv</code>, <code>.tsv</code>, <code>.json</code> o <code>.xml</code></td><td>Explorar, ver filas (editar Excel/CSV/TSV), filtrar/ordenar/exportar, copiar a SQL</td></tr>
         <tr><td><strong>Clarion TPS</strong></td><td>Una carpeta con archivos <code>.tps</code></td><td>Explorar, ver/editar registros, filtrar/ordenar/exportar, copiar a SQL</td></tr>
         <tr><td><strong>Clarion DAT</strong> <span class="ro">solo lectura</span></td><td>Una carpeta con archivos <code>.dat</code></td><td>Explorar, ver registros, filtrar/ordenar/exportar, copiar a SQL</td></tr>
       </table>
@@ -182,6 +184,41 @@
       <div class="note"><strong>TPS</strong> es el formato TopSpeed; <strong>DAT</strong> es el formato ISAM clásico de
       Clarion (decodificado a partir del Boletín Técnico 117 de Clarion). Los archivos de clave/índice
       (<code>.K??</code>/<code>.I??</code>) y los memos <code>.MEM</code> no se leen.</div>
+
+      <h2 id="tabular-files">Archivos Excel, CSV, TSV, JSON y XML</h2>
+      <p>Un solo tipo de conexión cubre los cinco formatos. Agregue una conexión, elija
+      <strong>Excel / CSV / TSV / JSON / XML</strong> y seleccione la <strong>carpeta</strong> que contiene sus
+      archivos: todo lo legible que haya en ella se convierte en una tabla:</p>
+      <ul>
+        <li>Un <strong>libro de Excel</strong> aporta <em>una tabla por hoja</em>, listada como
+        <code>Libro.xlsx — Hoja1</code>.</li>
+        <li>Un archivo <strong>CSV, TSV, JSON o XML</strong> es siempre una <em>única tabla</em>, con el nombre del
+        archivo.</li>
+      </ul>
+      <p>Seleccione la conexión para listar los archivos en la pestaña Objetos, o expándala en el árbol. Abrir un
+      archivo de Excel abre todas sus hojas; abrir un archivo de texto abre solo ese archivo. Todos los valores se leen
+      como texto, y <strong>Copiar</strong> migra cualquier tabla a una base de datos SQL.</p>
+
+      <h3>Cómo se lee cada formato</h3>
+      <table>
+        <tr><th>Formato</th><th>Notas</th><th>Editable</th></tr>
+        <tr><td><strong>Excel</strong> (<code>.xlsx</code>, <code>.xlsm</code>, <code>.xls</code>)</td>
+            <td>La primera fila son los encabezados; las filas vacías se omiten. Al guardar se reescriben las filas de datos de la hoja y se dejan intactos el encabezado y las demás hojas.</td><td>Sí</td></tr>
+        <tr><td><strong>CSV</strong> (<code>.csv</code>)</td>
+            <td>Los campos entrecomillados conservan separadores, saltos de línea y comillas dobles (<code>""</code>) internos. El separador se detecta a partir de la línea de encabezado, así que las exportaciones separadas por punto y coma también se abren correctamente.</td><td>Sí</td></tr>
+        <tr><td><strong>TSV</strong> (<code>.tsv</code>, <code>.tab</code>)</td>
+            <td>Separado por tabuladores, con las mismas reglas de comillas que CSV.</td><td>Sí</td></tr>
+        <tr><td><strong>JSON</strong> (<code>.json</code>)</td>
+            <td>Lee un arreglo de objetos, el contenedor heredado <code>{"RECORDS":[…]}</code>, cualquier propiedad de tipo arreglo, o un objeto suelto como una fila. Las columnas son la unión de las claves de todos los objetos, de modo que los registros con campos distintos igual se alinean.</td><td>No</td></tr>
+        <tr><td><strong>XML</strong> (<code>.xml</code>)</td>
+            <td>El elemento de fila repetido se detecta automáticamente, incluso a través de un contenedor como <code>&lt;dataset&gt;&lt;rows&gt;&lt;row&gt;…</code>. Tanto los atributos como los elementos hijos se convierten en columnas.</td><td>No</td></tr>
+      </table>
+      <div class="note"><strong>JSON y XML se abren en solo lectura.</strong> Sus valores pueden anidarse y la cuadrícula
+      muestra un valor anidado como texto: volver a escribir el archivo lo aplanaría y perdería la estructura, así que la
+      edición se deshabilita en lugar de ser destructiva en silencio. Filtrar, ordenar, Ver celda, Exportar y Copiar
+      funcionan con normalidad.</div>
+      <div class="tip">Al guardar un CSV o TSV se reescribe todo el archivo con el entrecomillado correcto y una marca de
+      orden de bytes UTF-8, para que el texto acentuado siga abriéndose bien en Excel.</div>
 
       <h2 id="query">Ventana y diseñador de consultas</h2>
       <p><strong>Archivo ▸ Nueva consulta</strong> abre un editor SQL para la conexión seleccionada. Escriba SQL,

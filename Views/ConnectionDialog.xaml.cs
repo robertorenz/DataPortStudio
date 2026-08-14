@@ -369,7 +369,7 @@ public partial class ConnectionDialog : Window
             else if (_engine == DatabaseEngine.ClarionDat)
                 DatService.TestConnection(temp.FilePath);
             else if (_engine == DatabaseEngine.Excel)
-                ExcelService.TestConnection(temp.FilePath);
+                TabularFileService.TestConnection(temp.FilePath);
             else if (_engine == DatabaseEngine.Oracle)
                 await OracleService.TestConnectionAsync(temp.BuildConnectionString());
             else if (_engine == DatabaseEngine.PostgreSql)
@@ -441,7 +441,8 @@ public partial class ConnectionDialog : Window
         {
             if (string.IsNullOrWhiteSpace(ExcelFolderBox.Text))
             {
-                Dialogs.ShowError("Missing folder", "Please choose the folder that contains your Excel files.");
+                Dialogs.ShowError("Missing folder",
+                    "Please choose the folder that contains your Excel, CSV, TSV, JSON or XML files.");
                 return;
             }
         }

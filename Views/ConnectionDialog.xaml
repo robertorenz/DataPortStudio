@@ -129,7 +129,8 @@
                             <Path Width="22" Height="22" Stretch="Uniform" Fill="Transparent" StrokeThickness="1.3"
                                   Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"
                                   Data="M2,2 H14 V14 H2 Z M2,6.5 H14 M2,10.5 H14 M6,2 V14"/>
-                            <TextBlock Text="Excel" Margin="0,6,0,0" FontSize="11" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Excel / CSV / TSV / JSON / XML" Margin="0,6,0,0" FontSize="11"
+                                       TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center"/>
                         </StackPanel>
                     </RadioButton>
                 </UniformGrid>
@@ -376,9 +377,9 @@
                                Text="Classic Clarion (.dat) files, one per table. Fully editable — edit cells, add and delete rows. Use Copy to migrate a table to a SQL database."/>
                 </StackPanel>
 
-                <!-- ===== Excel ===== -->
+                <!-- ===== Excel / CSV / TSV / JSON / XML ===== -->
                 <StackPanel x:Name="ExcelPanel" Visibility="Collapsed">
-                    <Label Content="Folder containing .xls / .xlsx files"/>
+                    <Label Content="Folder containing .xls / .xlsx / .csv / .tsv / .json / .xml files"/>
                     <Grid Margin="0,0,0,8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -390,7 +391,7 @@
                     </Grid>
                     <TextBlock TextWrapping="Wrap" FontSize="11" FontStyle="Italic"
                                Foreground="{DynamicResource B.TextMuted}"
-                               Text="Each worksheet in every .xls/.xlsx file appears as a table. Fully editable — edit cells, add and delete rows, and Save writes back to the file. Use Copy to migrate a sheet to a SQL database."/>
+                               Text="Every worksheet in every .xls/.xlsx file, and every .csv, .tsv, .json and .xml file, appears as a table. Excel, CSV and TSV are fully editable — edit cells, add and delete rows, and Save writes back to the file. JSON and XML open read-only. Use Copy to migrate any of them to a SQL database."/>
                 </StackPanel>
 
                 <!-- ===== PostgreSQL ===== -->

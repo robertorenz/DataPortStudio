@@ -1,20 +1,21 @@
 # DataPortStudio
 
 A lightweight, Navicat-style database manager for **SQL Server**, **SQLite**, **MySQL**,
-**MariaDB**, **Firebird**, **Oracle**, **PostgreSQL**, **MongoDB**, **Excel (.xls/.xlsx)** and **Clarion TPS / DAT** files, built with **C# / WPF (.NET 9)**.
+**MariaDB**, **Firebird**, **Oracle**, **PostgreSQL**, **MongoDB**, **Excel / CSV / TSV / JSON / XML**
+and **Clarion TPS / DAT** files, built with **C# / WPF (.NET 9)**.
 
 Add connection strings, browse the server tree (databases → schemas → tables), open a table, and
 view & edit its records in place — including adding and deleting rows — with changes pushed back to
 the database.
 
-![Status](https://img.shields.io/badge/status-v1.0.29-blue) ![Platform](https://img.shields.io/badge/platform-Windows-informational) ![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
+![Status](https://img.shields.io/badge/status-v1.0.30-blue) ![Platform](https://img.shields.io/badge/platform-Windows-informational) ![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
 
 ## Download
 
 Grab the latest release from the
 [**Releases**](https://github.com/robertorenz/DataPortStudio/releases/latest) page.
 
-**Option 1 — Installer** (`DataPortStudio-1.0.29-Setup.exe`, ~62 MB)
+**Option 1 — Installer** (`DataPortStudio-1.0.30-Setup.exe`, ~62 MB)
 - Installs to `Program Files`, creates a Start Menu entry, and adds an optional Desktop shortcut.
 - Includes a proper uninstaller (Add/Remove Programs).
 
@@ -29,8 +30,9 @@ Both options are **self-contained** — no .NET runtime install required.
 
 - **Multiple database engines** — pick the engine when creating a connection. Each connection is
   tagged with an engine icon in the tree so you can tell them apart at a glance.
-  - **SQL Server**, **SQLite**, **MySQL**, **MariaDB**, **Firebird**, **Oracle**, **PostgreSQL**, **MongoDB** and
-    **Clarion TPS / DAT** files are all fully supported.
+  - **SQL Server**, **SQLite**, **MySQL**, **MariaDB**, **Firebird**, **Oracle**, **PostgreSQL**,
+    **MongoDB**, **Excel / CSV / TSV / JSON / XML** and **Clarion TPS / DAT** files are all fully
+    supported.
   - **SQLite**: just point to a `.db` / `.sqlite` file — browse tables & views, view and edit rows
     (primary-key or rowid-safe), **design tables** (create new, or alter existing via a safe
     table-rebuild), and inspect structure/DDL.
@@ -70,12 +72,28 @@ Both options are **self-contained** — no .NET runtime install required.
     file** (UPDATE only — adding/deleting rows is not supported, as those require rebuilding the TPS
     index files). Use **Copy** on a `.tps` table and paste it onto any SQL database to migrate the
     data across (**TPS → SQL**); the schema and rows are created for you.
-  - **Excel (.xls / .xlsx)**: point a connection at a **folder** and every worksheet in every Excel
-    file in it shows up as a table. First row = column headers; empty rows are skipped; all values
-    are read and written as text. **Fully editable** — add rows, edit cells, delete rows, and
-    **Save** writes the changes back to the worksheet (replaces the sheet's data rows; header row
-    and other sheets are untouched). Use **Copy** to migrate a sheet into any SQL database.
-    `.xlsx`/`.xlsm` use ClosedXML; `.xls` uses NPOI. No extra install needed.
+  - **Excel / CSV / TSV / JSON / XML**: point a connection at a **folder** and every worksheet in
+    every Excel file — plus every `.csv`, `.tsv`, `.json` and `.xml` file — shows up as a table. An
+    Excel workbook contributes one table per sheet; each text file is a single table named after the
+    file. All values are read as text, and **Copy** migrates any of them into any SQL database.
+    - **Excel** (`.xlsx` / `.xlsm` via ClosedXML, `.xls` via NPOI): first row = column headers, empty
+      rows are skipped. **Fully editable** — **Save** rewrites the sheet's data rows, leaving the
+      header row and every other sheet untouched.
+    - **CSV / TSV**: proper RFC 4180 parsing, so quoted fields keep their embedded commas, quotes
+      (`""`) and line breaks. The separator is **sniffed from the header** — a semicolon-separated
+      export from a European locale opens correctly without any setting. **Fully editable**;
+      **Save** rewrites the file with correct quoting and a UTF-8 BOM so Excel keeps reading
+      accented text.
+    - **JSON**: a bare array of objects, the legacy `{"RECORDS":[…]}` wrapper this app exports, any
+      single array property, or a lone object as one row. Columns are the **union of every object's
+      keys**, so ragged records line up; nested objects and arrays are shown as compact JSON, the
+      same way MongoDB documents are.
+    - **XML**: the repeating row element is detected automatically (including through a wrapper such
+      as `<dataset><rows><row>…`). Both **attributes and child elements** become columns, and a
+      nested child keeps its markup so nothing is silently dropped.
+    - **JSON and XML open read-only.** Their values can nest, and the grid flattens nested values to
+      text — writing the file back would destroy that structure, so editing is disabled rather than
+      quietly lossy. Filter, sort, Cell View, Export and Copy all work as usual.
   - **Clarion DAT**: the *classic* Clarion ISAM format (pre-TopSpeed, `.dat`). Same folder model —
     point at a folder and each `.dat` file is a table. DataPortStudio decodes the format from its public
     spec (Clarion Technical Bulletin 117): header, field descriptors and fixed-length records,

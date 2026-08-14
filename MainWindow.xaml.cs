@@ -110,7 +110,7 @@ public partial class MainWindow : Window
                 var excelFolder = node.Connection.FilePath ?? "";
                 var excelFile = string.IsNullOrEmpty(node.Database) ? node.Name : node.Database;
                 List<string> excelSheets;
-                try { excelSheets = ExcelService.ListSheetsForFile(excelFolder, excelFile); }
+                try { excelSheets = TabularFileService.ListSheetsForFile(excelFolder, excelFile); }
                 catch { excelSheets = []; }
                 if (excelSheets.Count == 1)
                 {

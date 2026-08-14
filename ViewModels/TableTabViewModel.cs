@@ -1069,7 +1069,10 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
         }
     }
 
-    /// <summary>Loads an Excel worksheet into an editable grid (full add/edit/delete support).</summary>
+    /// <summary>
+    /// Loads a worksheet or a CSV / TSV / JSON / XML file into the grid. Excel, CSV and TSV are
+    /// fully editable (add/edit/delete); JSON and XML open read-only.
+    /// </summary>
     private async Task<bool> LoadExcelAsync()
     {
         var folder = Node.Connection.FilePath ?? "";
@@ -1078,11 +1081,12 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
         try
         {
             _sourceData = await Task.Run(() =>
-                ExcelService.ReadTable(folder, fileName, sheetName, RowLimit));
+                TabularFileService.ReadTable(folder, fileName, sheetName, RowLimit));
 
+            var editable = TabularFileService.IsEditableFile(fileName);
             _isExcel = true;
-            GridReadOnly = false;
-            GridCanModifyRows = true;
+            GridReadOnly = !editable;
+            GridCanModifyRows = editable;
 
             UpdateColumnNames(_sourceData.Columns.Cast<DataColumn>().Select(c => c.ColumnName));
             OnPropertyChanged(nameof(CanPickRowIdentity));
@@ -1100,8 +1104,8 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
         }
         catch (Exception ex)
         {
-            Dialogs.ShowError("Could not open Excel file", ex.Message);
-            _setStatus("Failed to open Excel file.");
+            Dialogs.ShowError("Could not open file", ex.Message);
+            _setStatus("Failed to open file.");
             return false;
         }
         finally
@@ -1123,7 +1127,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
             var sheetName = Node.Schema ?? "";
             var snapshot = _sourceData;
 
-            await Task.Run(() => ExcelService.SaveTable(folder, fileName, sheetName, snapshot));
+            await Task.Run(() => TabularFileService.SaveTable(folder, fileName, sheetName, snapshot));
             _sourceData.AcceptChanges();
             HasUnsavedChanges = false;
             ProjectView();

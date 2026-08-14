@@ -117,10 +117,10 @@ public partial class MainViewModel : ObservableObject
             var folder = container.Connection.FilePath ?? "";
             var fileName = item.Name;
             List<string> sheets;
-            try { sheets = ExcelService.ListSheetsForFile(folder, fileName); }
+            try { sheets = TabularFileService.ListSheetsForFile(folder, fileName); }
             catch { sheets = []; }
 
-            if (sheets.Count == 0) { StatusText = $"No sheets found in '{fileName}'."; return; }
+            if (sheets.Count == 0) { StatusText = $"No tables found in '{fileName}'."; return; }
 
             string sheetName;
             if (sheets.Count == 1)
@@ -938,15 +938,19 @@ public partial class MainViewModel : ObservableObject
         node ??= SelectedNode;
         if (node is null || !node.IsOpenable) return;
 
-        // Excel file node (Schema is empty) → open each sheet as its own tab.
+        // File node (Schema is empty) → open each table in it as its own tab. Excel workbooks can
+        // hold several sheets; a CSV / TSV / JSON / XML file is always a single table, so it keeps
+        // the plain file name as its tab title instead of "file — sheet".
         if (node.Connection.Engine == DatabaseEngine.Excel && string.IsNullOrEmpty(node.Schema))
         {
             var folder = node.Connection.FilePath ?? "";
             var fileName = string.IsNullOrEmpty(node.Database) ? node.Name : node.Database;
-            var sheets = ExcelService.ListSheetsForFile(folder, fileName);
+            var format = TabularFileService.FormatOf(fileName);
+            var singleTable = format is { } f && !TabularFileService.HasWorksheets(f);
+            var sheets = TabularFileService.ListSheetsForFile(folder, fileName);
             foreach (var sheetName in sheets)
             {
-                var displayName = $"{fileName} — {sheetName}";
+                var displayName = singleTable ? fileName : $"{fileName} — {sheetName}";
                 var sheetNode = DbTreeNode.ExcelSheetNode(node.Connection, fileName, sheetName, displayName);
                 await OpenSingleTableAsync(sheetNode);
             }

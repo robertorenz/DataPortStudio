@@ -4,6 +4,22 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.30 — 2026-08-14
+
+### Added / Improved
+- **The Excel connection now opens CSV, TSV, JSON and XML files too**, and is renamed **Excel / CSV / TSV / JSON / XML** throughout the UI. Point a connection at a folder and every worksheet in every Excel file — plus every `.csv`, `.tsv`, `.json` and `.xml` file — appears as a table. An Excel workbook still contributes one table per sheet; each text file is a single table named after the file, so it opens as `sales.csv` rather than `sales.csv — sales`. Existing Excel connections keep working untouched and simply see more files in the same folder.
+  - **CSV** is parsed RFC 4180-style, so quoted fields keep their embedded separators, line breaks and doubled quotes (`""`). The separator is **sniffed from the header line**, which means a semicolon-separated export from a European locale opens correctly with no setting to find. **TSV** (`.tsv`, `.tab`) follows the same rules with tabs.
+  - **JSON** reads a bare array of objects, the legacy `{"RECORDS":[…]}` wrapper this app itself exports, any single array property, or a lone object as one row. Columns are the **union of every object's keys**, so records with different fields still line up instead of losing data; nested objects and arrays are shown as compact JSON, the same way MongoDB documents already are.
+  - **XML** finds the repeating row element automatically, including through a wrapper such as `<dataset><rows><row>…`. Both **attributes and child elements** become columns, and a nested child keeps its markup so nothing is silently dropped.
+  - **Excel, CSV and TSV are fully editable** — edit cells, add and delete rows, then **Save**. Saving a CSV or TSV rewrites the file with correct quoting and a UTF-8 byte-order mark so accented text keeps opening correctly in Excel.
+  - **JSON and XML open read-only.** Their values can nest and the grid flattens nested values to text, so rewriting the file would destroy that structure — editing is disabled rather than quietly lossy. Filter, sort, Cell View, Export and **Copy to a SQL database** all work as usual.
+  - Files are opened with a shared read lock and honour a UTF-8 / UTF-16 byte-order mark, so a file another program has open still reads.
+  - The Objects tab now describes each file usefully: workbooks report their sheet count, text files report their format (`14 KB — CSV`).
+
+All new labels and messages are available in English and Spanish.
+
+---
+
 ## v1.0.29 — 2026-08-14
 
 ### Added / Improved

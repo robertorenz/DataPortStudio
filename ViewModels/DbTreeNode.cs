@@ -155,7 +155,7 @@ public partial class DbTreeNode : ObservableObject
                 DatabaseEngine.MongoDb => await LoadMongoChildrenAsync(connStr),
                 DatabaseEngine.Tps => LoadClarionFileChildren(TpsService.ListTables(Connection.FilePath)),
                 DatabaseEngine.ClarionDat => LoadClarionFileChildren(DatService.ListTables(Connection.FilePath)),
-                DatabaseEngine.Excel => LoadExcelFileChildren(ExcelService.ListFiles(Connection.FilePath)),
+                DatabaseEngine.Excel => LoadExcelFileChildren(TabularFileService.ListFiles(Connection.FilePath)),
                 DatabaseEngine.MySql or DatabaseEngine.MariaDb => await LoadMySqlChildrenAsync(connStr),
                 DatabaseEngine.Oracle => await LoadOracleChildrenAsync(connStr),
                 DatabaseEngine.PostgreSql => await LoadPostgresChildrenAsync(connStr),

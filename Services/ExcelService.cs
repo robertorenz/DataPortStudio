@@ -8,12 +8,11 @@ using System.Text;
 namespace DataPortStudio.Services;
 
 /// <summary>
-/// An "Excel connection" is a folder: each .xls/.xlsx file's worksheets appear as tables.
-/// Sheet name is stored in Node.Schema; file name (e.g. "Sales.xlsx") in Node.Database.
-/// Read-only — use Copy to move data into a SQL database.
+/// Reads and writes the Excel half of a folder connection: each .xls/.xlsx file's worksheets
+/// appear as tables. Sheet name is stored in Node.Schema; file name (e.g. "Sales.xlsx") in
+/// Node.Database. Folder scanning and the other file formats live in <see cref="TabularFileService"/>,
+/// which is what the rest of the app calls.
 /// </summary>
-public record ExcelSheet(string DisplayName, string FileName, string SheetName);
-
 public static class ExcelService
 {
     private static bool IsXlsx(string ext) =>
@@ -22,27 +21,6 @@ public static class ExcelService
 
     private static bool IsXls(string ext) =>
         ext.Equals(".xls", StringComparison.OrdinalIgnoreCase);
-
-    private static bool IsExcelFile(string path)
-    {
-        var ext = Path.GetExtension(path);
-        return IsXlsx(ext) || IsXls(ext);
-    }
-
-    /// <summary>Lists Excel file names in the folder (sorted). Does not open any files.</summary>
-    public static List<string> ListFiles(string? folder)
-    {
-        if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
-            return [];
-        return new[] { "*.xlsx", "*.xlsm", "*.xls" }
-            .SelectMany(p => Directory.EnumerateFiles(folder, p, SearchOption.TopDirectoryOnly))
-            .Where(IsExcelFile)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Select(Path.GetFileName)
-            .OfType<string>()
-            .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
 
     /// <summary>Returns sheet names for a single Excel file (in workbook order).</summary>
     public static List<string> ListSheetsForFile(string folder, string fileName)
@@ -65,58 +43,6 @@ public static class ExcelService
         }
         catch { /* corrupt / locked file */ }
         return [];
-    }
-
-    /// <summary>Lists all sheets across every Excel file in the folder. Sorted by file name, then sheet order.</summary>
-    public static List<ExcelSheet> ListSheets(string? folder)
-    {
-        if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
-            return [];
-
-        // Use explicit patterns — "*.xls" on Windows (Win32 FindFirstFile) also matches *.xlsx,
-        // so enumerate each extension separately and deduplicate before sorting.
-        var result = new List<ExcelSheet>();
-        var files = new[] { "*.xlsx", "*.xlsm", "*.xls" }
-            .SelectMany(p => Directory.EnumerateFiles(folder, p, SearchOption.TopDirectoryOnly))
-            .Where(IsExcelFile)                              // safety guard against Win32 pattern quirks
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(f => f, StringComparer.OrdinalIgnoreCase);
-
-        foreach (var file in files)
-        {
-            var fileName = Path.GetFileName(file);
-            var ext = Path.GetExtension(file);
-            try
-            {
-                List<string> sheets;
-                if (IsXlsx(ext))
-                {
-                    using var wb = new XLWorkbook(file);
-                    sheets = wb.Worksheets.Select(ws => ws.Name).ToList();
-                }
-                else
-                {
-                    using var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read);
-                    var wb = new HSSFWorkbook(fs);
-                    sheets = Enumerable.Range(0, wb.NumberOfSheets).Select(i => wb.GetSheetName(i)).ToList();
-                }
-                foreach (var sheet in sheets)
-                    result.Add(new ExcelSheet($"{fileName} — {sheet}", fileName, sheet));
-            }
-            catch { /* skip corrupt or locked files */ }
-        }
-        return result;
-    }
-
-    /// <summary>Confirms the folder exists and contains at least one Excel file with at least one sheet.</summary>
-    public static void TestConnection(string? folder)
-    {
-        if (string.IsNullOrWhiteSpace(folder))
-            throw new InvalidOperationException("Choose a folder that contains Excel files (.xls or .xlsx).");
-        if (!Directory.Exists(folder))
-            throw new DirectoryNotFoundException($"Folder not found: {folder}");
-        if (ListSheets(folder).Count == 0)
-            throw new FileNotFoundException($"No Excel files (.xls or .xlsx) were found in {folder}.");
     }
 
     /// <summary>Reads one worksheet into a DataTable. First row = column headers. All values are strings.</summary>
@@ -397,7 +323,8 @@ public static class ExcelService
             info.AppendLine($"{"Modified",w}{fi.LastWriteTime:yyyy-MM-dd HH:mm}");
         }
 
-        var ddl = $"-- Excel workbook — no SQL DDL.\n-- Data in sheet '{sheetName}' is read-only.";
+        var ddl = "-- Excel workbook — no SQL DDL.\n" +
+                  $"-- Edit cells, add and delete rows in sheet '{sheetName}', then Save to write the file back.";
         return Task.FromResult(new TableStructure(ddl, info.ToString().TrimEnd(),
             "Excel files have no foreign-key relationships."));
     }

@@ -2,9 +2,9 @@ using System.Windows;
 using System.Reflection;
 
 // Keep in sync with <Version> in DataPortStudio.csproj
-[assembly: AssemblyVersion("1.0.29.0")]
-[assembly: AssemblyFileVersion("1.0.29.0")]
-[assembly: AssemblyInformationalVersion("1.0.29")]
+[assembly: AssemblyVersion("1.0.30.0")]
+[assembly: AssemblyFileVersion("1.0.30.0")]
+[assembly: AssemblyInformationalVersion("1.0.30")]
 
 [assembly:ThemeInfo(
     ResourceDictionaryLocation.None,

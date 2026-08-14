@@ -699,11 +699,11 @@ public static class TableCopyService
         ConnectionProfile tgt, string tgtDb, string tgtSchema, string newName, bool includeData)
     {
         if (!IsRelational(tgt.Engine))
-            throw new NotSupportedException($"An Excel sheet can only be copied into a SQL database, not {tgt.Engine.DisplayName()}.");
+            throw new NotSupportedException($"A file table can only be copied into a SQL database, not {tgt.Engine.DisplayName()}.");
 
         var folder = src.FilePath ?? "";
         var table = await Task.Run(() =>
-            ExcelService.ReadTable(folder, srcFileName, srcSheetName, int.MaxValue));
+            TabularFileService.ReadTable(folder, srcFileName, srcSheetName, int.MaxValue));
 
         var cols = table.Columns.Cast<DataColumn>().ToList();
         if (cols.Count == 0)

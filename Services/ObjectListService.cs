@@ -42,11 +42,14 @@ public static class ObjectListService
         return result;
     }
 
-    /// <summary>Excel folder: one item per file, with sheet count and size as the comment.</summary>
+    /// <summary>
+    /// Folder connection: one item per file. Excel workbooks report their sheet count; the
+    /// single-table text formats report the format instead, since "1 sheet" says nothing useful.
+    /// </summary>
     private static Task<List<ObjectListItem>> LoadExcelSheetsAsync(ConnectionProfile p)
     {
         var folder = p.FilePath;
-        var files = ExcelService.ListFiles(folder);
+        var files = TabularFileService.ListFiles(folder);
         var result = files.Select(f =>
         {
             DateTime? modified = null;
@@ -57,8 +60,17 @@ public static class ObjectListService
                 if (fi.Exists)
                 {
                     modified = fi.LastWriteTime;
-                    var sheetCount = ExcelService.ListSheetsForFile(folder!, f).Count;
-                    comment = $"{FormatSize(fi.Length)} — {sheetCount} sheet{(sheetCount == 1 ? "" : "s")}";
+                    var format = TabularFileService.FormatOf(f);
+                    if (format is { } value && TabularFileService.HasWorksheets(value))
+                    {
+                        var sheetCount = TabularFileService.ListSheetsForFile(folder!, f).Count;
+                        comment = $"{FormatSize(fi.Length)} — {sheetCount} sheet{(sheetCount == 1 ? "" : "s")}";
+                    }
+                    else
+                    {
+                        var name = format is null ? "File" : TabularFileService.FormatName(format.Value);
+                        comment = $"{FormatSize(fi.Length)} — {name}";
+                    }
                 }
             }
             catch { /* best effort */ }

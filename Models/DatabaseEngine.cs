@@ -31,7 +31,7 @@ public static class DatabaseEngineInfo
         DatabaseEngine.Tps => "TPS (Clarion)",
         DatabaseEngine.ClarionDat => "Clarion DAT",
         DatabaseEngine.Oracle => "Oracle",
-        DatabaseEngine.Excel => "Excel",
+        DatabaseEngine.Excel => "Excel / CSV / TSV / JSON / XML",
         _ => e.ToString()
     };
 

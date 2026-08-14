@@ -50,6 +50,7 @@
     <a href="#view-edit">Viewing &amp; editing</a>
     <a href="#clarion-dates">Clarion dates &amp; times</a>
     <a href="#clarion-files">Clarion TPS &amp; DAT files</a>
+    <a href="#tabular-files">Excel, CSV, TSV, JSON &amp; XML</a>
     <a href="#query">Query window &amp; builder</a>
     <a href="#designer">Table designer</a>
     <div class="group">Moving data</div>
@@ -110,6 +111,7 @@
         <tr><td><strong>Oracle</strong></td><td>Host, port, service name, user, password</td><td>Browse, view/edit rows, query, structure/indexes, drop, copy, export</td></tr>
         <tr><td><strong>PostgreSQL</strong></td><td>Host, port, user, password (optional database)</td><td>Browse databases/schemas, view/edit rows, query, structure/indexes/FKs, rename, drop, copy, export</td></tr>
         <tr><td><strong>MongoDB</strong> <span class="ro">read-only</span></td><td>A connection string (<code>mongodb://…</code>)</td><td>Browse databases &amp; collections, view documents, filter/sort/export</td></tr>
+        <tr><td><strong>Excel / CSV / TSV / JSON / XML</strong></td><td>A folder of <code>.xls</code>, <code>.xlsx</code>, <code>.csv</code>, <code>.tsv</code>, <code>.json</code> or <code>.xml</code> files</td><td>Browse, view rows (edit Excel/CSV/TSV), filter/sort/export, copy to SQL</td></tr>
         <tr><td><strong>Clarion TPS</strong></td><td>A folder of <code>.tps</code> files</td><td>Browse, view/edit records, filter/sort/export, copy to SQL</td></tr>
         <tr><td><strong>Clarion DAT</strong> <span class="ro">read-only</span></td><td>A folder of <code>.dat</code> files</td><td>Browse, view records, filter/sort/export, copy to SQL</td></tr>
       </table>
@@ -176,6 +178,39 @@
       <div class="note"><strong>TPS</strong> is the TopSpeed format; <strong>DAT</strong> is the older classic Clarion
       ISAM format (decoded from Clarion Technical Bulletin 117). Key/index files (<code>.K??</code>/<code>.I??</code>)
       and <code>.MEM</code> memos are not read.</div>
+
+      <h2 id="tabular-files">Excel, CSV, TSV, JSON &amp; XML files</h2>
+      <p>One connection type covers all five formats. Add a connection, pick
+      <strong>Excel / CSV / TSV / JSON / XML</strong>, and choose the <strong>folder</strong> that holds your files —
+      everything readable in it becomes a table:</p>
+      <ul>
+        <li>An <strong>Excel workbook</strong> contributes <em>one table per worksheet</em>, listed as
+        <code>Book.xlsx — Sheet1</code>.</li>
+        <li>A <strong>CSV, TSV, JSON or XML</strong> file is always a <em>single table</em>, named after the file.</li>
+      </ul>
+      <p>Select the connection to list the files in the Objects tab, or expand it in the tree. Opening an Excel file
+      opens every one of its sheets; opening a text file opens just that file. All values are read as text, and
+      <strong>Copy</strong> migrates any table into a SQL database.</p>
+
+      <h3>How each format is read</h3>
+      <table>
+        <tr><th>Format</th><th>Notes</th><th>Editable</th></tr>
+        <tr><td><strong>Excel</strong> (<code>.xlsx</code>, <code>.xlsm</code>, <code>.xls</code>)</td>
+            <td>First row = column headers; empty rows are skipped. Saving rewrites the sheet's data rows and leaves the header row and other sheets untouched.</td><td>Yes</td></tr>
+        <tr><td><strong>CSV</strong> (<code>.csv</code>)</td>
+            <td>Quoted fields keep embedded separators, line breaks and doubled quotes (<code>""</code>). The separator is detected from the header line, so semicolon-separated exports open correctly too.</td><td>Yes</td></tr>
+        <tr><td><strong>TSV</strong> (<code>.tsv</code>, <code>.tab</code>)</td>
+            <td>Tab-separated, same quoting rules as CSV.</td><td>Yes</td></tr>
+        <tr><td><strong>JSON</strong> (<code>.json</code>)</td>
+            <td>Reads a bare array of objects, the legacy <code>{"RECORDS":[…]}</code> wrapper, any single array property, or a lone object as one row. Columns are the union of every object's keys, so records with different fields still line up.</td><td>No</td></tr>
+        <tr><td><strong>XML</strong> (<code>.xml</code>)</td>
+            <td>The repeating row element is found automatically, including through a wrapper such as <code>&lt;dataset&gt;&lt;rows&gt;&lt;row&gt;…</code>. Attributes and child elements both become columns.</td><td>No</td></tr>
+      </table>
+      <div class="note"><strong>JSON and XML open read-only.</strong> Their values can nest, and the grid shows a nested
+      value as text — writing the file back would flatten it and lose the structure, so editing is disabled rather than
+      quietly destructive. Filter, sort, Cell View, Export and Copy all work normally.</div>
+      <div class="tip">Saving a CSV or TSV rewrites the whole file with correct quoting and a UTF-8 byte-order mark, so
+      accented text keeps opening correctly in Excel.</div>
 
       <h2 id="query">Query window &amp; visual builder</h2>
       <p><strong>File ▸ New Query</strong> opens a SQL editor for the selected connection. Type SQL, run it, and browse
