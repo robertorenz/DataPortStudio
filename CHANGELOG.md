@@ -18,6 +18,9 @@ All notable changes to DataPortStudio are documented here.
 
 All new labels and messages are available in English and Spanish.
 
+### Fixed
+- **The User Guide no longer describes Clarion DAT as read-only** — DAT files have been fully editable (edit cells, add and delete records, saved straight to the binary file) since that support landed, but the engines table, the TPS/DAT page and the FAQ all still called them read-only. Corrected in both the English and Spanish guides, which now also document what DAT saving actually does to the file and the reminder to rebuild the key/index files in Clarion afterwards.
+
 ---
 
 ## v1.0.29 — 2026-08-14

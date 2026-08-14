@@ -113,11 +113,12 @@
         <tr><td><strong>MongoDB</strong> <span class="ro">read-only</span></td><td>A connection string (<code>mongodb://…</code>)</td><td>Browse databases &amp; collections, view documents, filter/sort/export</td></tr>
         <tr><td><strong>Excel / CSV / TSV / JSON / XML</strong></td><td>A folder of <code>.xls</code>, <code>.xlsx</code>, <code>.csv</code>, <code>.tsv</code>, <code>.json</code> or <code>.xml</code> files</td><td>Browse, view rows (edit Excel/CSV/TSV), filter/sort/export, copy to SQL</td></tr>
         <tr><td><strong>Clarion TPS</strong></td><td>A folder of <code>.tps</code> files</td><td>Browse, view/edit records, filter/sort/export, copy to SQL</td></tr>
-        <tr><td><strong>Clarion DAT</strong> <span class="ro">read-only</span></td><td>A folder of <code>.dat</code> files</td><td>Browse, view records, filter/sort/export, copy to SQL</td></tr>
+        <tr><td><strong>Clarion DAT</strong></td><td>A folder of <code>.dat</code> files</td><td>Browse, view/edit records, filter/sort/export, copy to SQL</td></tr>
       </table>
-      <div class="note"><strong>Read-only engines</strong> (MongoDB, Clarion DAT) can be browsed and copied
+      <div class="note"><strong>MongoDB</strong>, and <strong>JSON / XML</strong> files, can be browsed and copied
       <em>out of</em>, but not edited or written back to.
-      <strong>Clarion TPS</strong> supports cell edits saved back to the binary file; adding and deleting rows is not supported.</div>
+      <strong>Clarion TPS</strong> supports cell edits saved back to the binary file; adding and deleting rows is not supported.
+      <strong>Clarion DAT</strong> is fully editable, including adding and deleting records.</div>
 
       <h2 id="tree">Tree &amp; the Objects tab</h2>
       <p>The left sidebar shows your connections as a tree. Expand a connection to reach its databases, schemas, and
@@ -174,7 +175,11 @@
       rendered just like in SQL tables.</p>
       <p><strong>TPS editing:</strong> TPS records open in an editable grid — click a cell to change it and press
       <strong>Save</strong>. Changes are written back to the binary <code>.tps</code> file. Adding and deleting rows
-      is not supported (index-file maintenance would be required). <strong>DAT</strong> files remain read-only.</p>
+      is not supported (index-file maintenance would be required).</p>
+      <p><strong>DAT editing:</strong> DAT files are <strong>fully editable</strong> — edit cells, add records and
+      delete records, then <strong>Save</strong> writes straight to the binary <code>.dat</code> file. The record count
+      in the header is updated, free slots are reused for inserts, and deleted slots are marked with the Clarion deleted
+      flag. Rebuild the key/index files in Clarion afterwards, since DataPortStudio does not maintain them.</p>
       <div class="note"><strong>TPS</strong> is the TopSpeed format; <strong>DAT</strong> is the older classic Clarion
       ISAM format (decoded from Clarion Technical Bulletin 117). Key/index files (<code>.K??</code>/<code>.I??</code>)
       and <code>.MEM</code> memos are not read.</div>
@@ -340,11 +345,12 @@
       <p>Connections are saved on your PC and restored each time you start DataPortStudio. Passwords are encrypted with Windows
       data protection (tied to your Windows user account), not stored in plain text.</p>
 
-      <h3>3. Why can't I add or delete rows in a TPS or DAT table?</h3>
+      <h3>3. Why can't I add or delete rows in a TPS table?</h3>
       <p><strong>Clarion TPS</strong> supports cell edits (UPDATE) — click a cell, change the value, and save.
       Adding and deleting rows is not supported because those operations require rebuilding the TPS index files
       (<code>.K??</code>/<code>.I??</code>), which DataPortStudio does not manage.
-      <strong>Clarion DAT</strong> and <strong>MongoDB</strong> remain fully read-only.</p>
+      <strong>Clarion DAT</strong> has no such restriction and is fully editable.
+      <strong>MongoDB</strong>, and <strong>JSON / XML</strong> files, are read-only.</p>
 
       <h3>4. How do I switch between English and Spanish?</h3>
       <p>Open <strong>File ▸ Settings</strong> and choose the language. The interface updates live (no restart), and this

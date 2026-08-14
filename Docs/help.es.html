@@ -114,11 +114,12 @@
         <tr><td><strong>MongoDB</strong> <span class="ro">solo lectura</span></td><td>Una cadena de conexión (<code>mongodb://…</code>)</td><td>Explorar bases y colecciones, ver documentos, filtrar/ordenar/exportar</td></tr>
         <tr><td><strong>Excel / CSV / TSV / JSON / XML</strong></td><td>Una carpeta con archivos <code>.xls</code>, <code>.xlsx</code>, <code>.csv</code>, <code>.tsv</code>, <code>.json</code> o <code>.xml</code></td><td>Explorar, ver filas (editar Excel/CSV/TSV), filtrar/ordenar/exportar, copiar a SQL</td></tr>
         <tr><td><strong>Clarion TPS</strong></td><td>Una carpeta con archivos <code>.tps</code></td><td>Explorar, ver/editar registros, filtrar/ordenar/exportar, copiar a SQL</td></tr>
-        <tr><td><strong>Clarion DAT</strong> <span class="ro">solo lectura</span></td><td>Una carpeta con archivos <code>.dat</code></td><td>Explorar, ver registros, filtrar/ordenar/exportar, copiar a SQL</td></tr>
+        <tr><td><strong>Clarion DAT</strong></td><td>Una carpeta con archivos <code>.dat</code></td><td>Explorar, ver/editar registros, filtrar/ordenar/exportar, copiar a SQL</td></tr>
       </table>
-      <div class="note"><strong>Motores de solo lectura</strong> (MongoDB, Clarion DAT) se pueden explorar y
+      <div class="note"><strong>MongoDB</strong>, y los archivos <strong>JSON / XML</strong>, se pueden explorar y
       copiar <em>hacia afuera</em>, pero no editar ni escribir.
-      <strong>Clarion TPS</strong> admite edición de celdas con escritura de vuelta al archivo binario; agregar y eliminar filas no está soportado.</div>
+      <strong>Clarion TPS</strong> admite edición de celdas con escritura de vuelta al archivo binario; agregar y eliminar filas no está soportado.
+      <strong>Clarion DAT</strong> es totalmente editable, incluyendo agregar y eliminar registros.</div>
 
       <h2 id="tree">Árbol y pestaña Objetos</h2>
       <p>La barra lateral izquierda muestra sus conexiones como un árbol. Expanda una conexión para llegar a sus bases de
@@ -179,8 +180,12 @@
       (<code>LONG</code>) se detectan y se muestran igual que en las tablas SQL.</p>
       <p><strong>Edición TPS:</strong> los registros TPS se abren en una cuadrícula editable — haga clic en una celda
       para modificarla y pulse <strong>Guardar</strong>. Los cambios se escriben de vuelta al archivo <code>.tps</code>
-      binario. No se puede agregar ni eliminar filas (requeriría mantener los archivos de índice). Los archivos
-      <strong>DAT</strong> siguen siendo de solo lectura.</p>
+      binario. No se puede agregar ni eliminar filas (requeriría mantener los archivos de índice).</p>
+      <p><strong>Edición DAT:</strong> los archivos DAT son <strong>totalmente editables</strong> — edite celdas,
+      agregue registros y elimine registros, y <strong>Guardar</strong> escribe directamente en el archivo
+      <code>.dat</code> binario. Se actualiza el conteo de registros del encabezado, las ranuras libres se reutilizan
+      para las inserciones y las ranuras eliminadas se marcan con la bandera de borrado de Clarion. Reconstruya después
+      los archivos de clave/índice en Clarion, ya que DataPortStudio no los mantiene.</p>
       <div class="note"><strong>TPS</strong> es el formato TopSpeed; <strong>DAT</strong> es el formato ISAM clásico de
       Clarion (decodificado a partir del Boletín Técnico 117 de Clarion). Los archivos de clave/índice
       (<code>.K??</code>/<code>.I??</code>) y los memos <code>.MEM</code> no se leen.</div>
@@ -353,11 +358,12 @@
       <p>Las conexiones se guardan en su PC y se restauran cada vez que inicia DataPortStudio. Las contraseñas se cifran con la
       protección de datos de Windows (vinculada a su cuenta de usuario de Windows), no se guardan en texto plano.</p>
 
-      <h3>3. ¿Por qué no puedo agregar o eliminar filas en una tabla TPS o DAT?</h3>
+      <h3>3. ¿Por qué no puedo agregar o eliminar filas en una tabla TPS?</h3>
       <p><strong>Clarion TPS</strong> admite edición de celdas (UPDATE) — haga clic en una celda, cambie el valor y guarde.
       Agregar y eliminar filas no está soportado porque esas operaciones requieren reconstruir los archivos de índice TPS
       (<code>.K??</code>/<code>.I??</code>), que DataPortStudio no gestiona.
-      <strong>Clarion DAT</strong> y <strong>MongoDB</strong> siguen siendo de solo lectura.</p>
+      <strong>Clarion DAT</strong> no tiene esa restricción y es totalmente editable.
+      <strong>MongoDB</strong>, y los archivos <strong>JSON / XML</strong>, son de solo lectura.</p>
 
       <h3>4. ¿Cómo cambio entre inglés y español?</h3>
       <p>Abra <strong>Archivo ▸ Configuración</strong> y elija el idioma. La interfaz se actualiza en vivo (sin
