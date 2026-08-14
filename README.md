@@ -7,14 +7,14 @@ Add connection strings, browse the server tree (databases → schemas → tables
 view & edit its records in place — including adding and deleting rows — with changes pushed back to
 the database.
 
-![Status](https://img.shields.io/badge/status-v1.0.26-blue) ![Platform](https://img.shields.io/badge/platform-Windows-informational) ![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
+![Status](https://img.shields.io/badge/status-v1.0.27-blue) ![Platform](https://img.shields.io/badge/platform-Windows-informational) ![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
 
 ## Download
 
 Grab the latest release from the
 [**Releases**](https://github.com/robertorenz/DataPortStudio/releases/latest) page.
 
-**Option 1 — Installer** (`DataPortStudio-1.0.26-Setup.exe`, ~62 MB)
+**Option 1 — Installer** (`DataPortStudio-1.0.27-Setup.exe`, ~62 MB)
 - Installs to `Program Files`, creates a Start Menu entry, and adds an optional Desktop shortcut.
 - Includes a proper uninstaller (Add/Remove Programs).
 
@@ -277,7 +277,8 @@ Themes/      Theme.xaml (palette + control styles)
 Warm thanks to the contributors who have improved DataPortStudio:
 
 - [**@asantarelli**](https://github.com/asantarelli) — Load / Save SQL scripts to file in the Query window and Routine editor (v1.0.22).
-- [**@jarodav1**](https://github.com/jarodav1) (Victor Montanez) — Schema comparator overhaul: programmable-object comparison, selective object transfer, SQL Server column synchronization, and the apply-summary confirmation (v1.0.23); database-side filter & sort applied before the row limit, and the object-list locator (v1.0.24); the configurable object search (Filter / Locator modes) with sort-criteria persistence and a responsive search box (v1.0.25); docked query tabs, instant Light/Dark theme switching with a ribbon toggle, and the completed dark theme (v1.0.26).
+- [**@jarodav1**](https://github.com/jarodav1) (Victor Montanez) — Schema comparator overhaul: programmable-object comparison, selective object transfer, SQL Server column synchronization, and the apply-summary confirmation (v1.0.23); database-side filter & sort applied before the row limit, and the object-list locator (v1.0.24); the configurable object search (Filter / Locator modes) with sort-criteria persistence and a responsive search box (v1.0.25); docked query tabs, instant Light/Dark theme switching with a ribbon toggle, and the completed dark theme (v1.0.26); database management from the connection tree — create, rename and drop databases across SQL Server, PostgreSQL, MySQL/MariaDB and MongoDB, with SQL Server advanced options (v1.0.27).
+- **Kyle Renz** — the new DataPortStudio logo and application icon (v1.0.27).
 
 DataPortStudio also stands on the shoulders of excellent open-source libraries and public format
 documentation — including [TpsParser](https://github.com/Trinitek/TpsParser),

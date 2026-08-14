@@ -4,6 +4,21 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.27 — 2026-08-14
+
+### Added / Improved
+- **Database management from the connection tree** (contributed by [@jarodav1](https://github.com/jarodav1)) — databases can now be created, renamed and dropped directly from the connection tree, on **SQL Server**, **PostgreSQL**, **MySQL / MariaDB** and **MongoDB**.
+- **Advanced creation options for SQL Server** (contributed by [@jarodav1](https://github.com/jarodav1)) — the new-database dialog exposes recovery model, compatibility level and collation, plus the physical data and log files with their initial size, maximum size and growth increment. Defaults are read from the server's `model` database so they match what the instance would have used.
+- **Safe drop and rename** (contributed by [@jarodav1](https://github.com/jarodav1)) — destructive operations warn first and require confirmation. SQL Server operations that need exclusive access close active sessions in a controlled way and restore `MULTI_USER` if anything fails partway through.
+- **Empty schemas are now visible** (contributed by [@jarodav1](https://github.com/jarodav1)) — `dbo` and other schemas that own no objects yet appear in the tree, so a freshly created database is no longer shown as empty. The tree refreshes and re-expands automatically after each operation.
+
+All new dialogs and messages are available in English and Spanish.
+
+### Changed
+- **New application icon** (designed by **Kyle Renz**) — the app, taskbar, window and installer now use the new DataPortStudio mark. The icon ships as a multi-resolution `.ico` (16/24/32/48/64/128/256) with a transparent background, so it renders cleanly on light and dark taskbars.
+
+---
+
 ## v1.0.26 — 2026-08-13
 
 ### Added / Improved
