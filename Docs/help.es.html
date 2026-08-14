@@ -56,6 +56,7 @@
     <a href="#copy">Copiar y pegar tablas</a>
     <a href="#tps-sql">Clarion → SQL: tipos</a>
     <a href="#insert-import-export">Generar / Importar / Exportar</a>
+    <a href="#backup">Respaldo, restauración y scripts</a>
     <div class="group">Administración</div>
     <a href="#users">Usuarios y roles</a>
     <a href="#settings">Configuración</a>
@@ -193,6 +194,18 @@
       <p>Para <strong>SQL Server</strong> y <strong>SQLite</strong>, haga clic derecho en una carpeta <em>Tablas</em> ▸
       <strong>Nueva tabla</strong>, o en una tabla ▸ <strong>Diseñar</strong>, para definir columnas, tipos, nulabilidad y
       la clave primaria. Editar una tabla SQLite existente usa una reconstrucción segura de la tabla de forma interna.</p>
+      <p>Los <strong>índices</strong> se arman eligiendo columnas en una lista desplegable; cada una se agrega como una
+      <strong>ficha</strong> que puede quitarse. Las fichas conservan el orden en que las eligió —que es el orden que
+      realmente usa el índice—, las columnas ya elegidas desaparecen de la lista y los duplicados se ignoran.</p>
+      <p>Marcar <strong>Identidad</strong> o <strong>Clave primaria</strong> desmarca automáticamente
+      <strong>Nulable</strong>, ya que ambas son intrínsecamente <code>NOT NULL</code>. Solo se permite una columna de
+      identidad por tabla, así que marcar una segunda desmarca la primera.</p>
+      <div class="tip">SQL Server no puede agregar ni quitar <code>IDENTITY</code> con <code>ALTER COLUMN</code>. Cuando lo
+      cambia en una tabla existente, DataPortStudio genera una <strong>reconstrucción completa de la tabla</strong>: se eliminan
+      las claves foráneas dependientes, se crea la nueva tabla y se llena desde la anterior, se sustituye con
+      <code>sp_rename</code> y luego se restauran la clave primaria, los índices y las claves foráneas. Todo se ejecuta en
+      una sola transacción, de modo que si algo falla la tabla original queda exactamente como estaba. Revise el script
+      generado antes de ejecutarlo.</div>
 
       <h2 id="copy">Copiar y pegar tablas</h2>
       <p>Haga clic derecho en una tabla ▸ <strong>Copiar</strong> (o <strong>Ctrl+C</strong> en el árbol), luego
@@ -226,6 +239,51 @@
         HTML, Excel (XLSX / XLS heredado), DBF</strong> o un script <strong>SQL</strong>. Elija el alcance del filtro y el
         formato en el diálogo de exportación, y abra el archivo o su carpeta al terminar.</li>
       </ul>
+
+      <h2 id="backup">Respaldo, restauración y scripts</h2>
+      <h3>Respaldar y restaurar una base de datos</h3>
+      <p>Haga clic derecho en una base de datos ▸ <strong>Respaldar…</strong> para escribir un archivo de respaldo
+      <em>nativo del motor</em>. El formato y la extensión se eligen automáticamente:</p>
+      <table>
+        <tr><th>Motor</th><th>Archivo</th><th>Cómo se ejecuta</th></tr>
+        <tr><td>SQL Server</td><td><code>.bak</code></td><td><code>BACKUP DATABASE … WITH COPY_ONLY, INIT, CHECKSUM</code> en el proceso</td></tr>
+        <tr><td>SQLite</td><td><code>.sqlite</code></td><td>La API de respaldo en línea del controlador — sin herramientas externas</td></tr>
+        <tr><td>PostgreSQL</td><td><code>.backup</code></td><td><code>pg_dump</code> / <code>pg_restore</code> (formato custom)</td></tr>
+        <tr><td>MySQL / MariaDB</td><td><code>.sql</code></td><td><code>mysqldump</code> / <code>mysql</code> (transacción única, con rutinas, eventos y disparadores)</td></tr>
+        <tr><td>MongoDB</td><td><code>.archive.gz</code></td><td><code>mongodump</code> / <code>mongorestore</code> (archivo comprimido)</td></tr>
+        <tr><td>Firebird</td><td><code>.fbk</code></td><td><code>gbak</code></td></tr>
+        <tr><td>Oracle</td><td><code>.dmp</code></td><td><code>exp</code> / <code>imp</code></td></tr>
+      </table>
+      <p><strong>COPY_ONLY</strong> en SQL Server significa que el respaldo no altera una cadena de respaldos existente,
+      así que es seguro tomarlo junto a un plan de mantenimiento programado.</p>
+      <p><strong>Restaurar…</strong> vuelve a cargar un respaldo en la misma base de datos. Como esto
+      <strong>reemplaza el contenido actual y cierra las conexiones activas</strong>, se pregunta dos veces: una
+      advertencia con el nombre de la base de datos y el archivo, y luego un cuadro de confirmación donde debe
+      <strong>escribir exactamente el nombre de la base de datos</strong>. En SQL Server primero se revisa el encabezado
+      del respaldo — un respaldo tomado de una base de datos <em>distinta</em> se rechaza en lugar de restaurarse sobre el
+      destino equivocado — y la base se cambia a <code>SINGLE_USER</code> durante la restauración y vuelve a
+      <code>MULTI_USER</code> al terminar, incluso si la restauración falla a mitad del proceso.</p>
+      <div class="tip">Los motores distintos de SQL Server y SQLite usan sus herramientas cliente estándar. Si alguna no
+      está instalada, el mensaje indica cuál falta — instale las herramientas cliente de ese motor y asegúrese de que
+      esté en su <code>PATH</code>. Su contraseña nunca se coloca en la línea de comandos: se transmite mediante una
+      variable de entorno o un archivo de parámetros temporal que se elimina después.</div>
+
+      <h3>Generar scripts</h3>
+      <p>Haga clic derecho en cualquier <strong>tabla, vista, función o procedimiento</strong> —en el árbol o en la
+      pestaña Objetos— ▸ <strong>Generar script del objeto…</strong> para ver su sentencia <code>CREATE</code> en el visor
+      de scripts, donde puede copiarla o guardarla como <code>.sql</code>. Si la definición no puede leerse (o el objeto
+      está cifrado), el mensaje lo indica con claridad.</p>
+      <p>Haga clic derecho en una <strong>base de datos</strong> ▸ <strong>Generar script de la base de datos…</strong>
+      para obtener un script solo de estructura con <strong>todos los objetos de usuario</strong> que contiene, escrito en
+      un orden que respeta las dependencias —esquemas, luego tablas, funciones, vistas y procedimientos— detrás de un
+      encabezado que registra el motor, la base de datos y la hora de generación. El armado propio de cada motor se hace
+      por usted: separadores <code>GO</code> y guardas <code>CREATE DATABASE</code> / <code>CREATE SCHEMA</code> en SQL
+      Server, <code>CREATE SCHEMA IF NOT EXISTS</code> y una línea <code>\connect</code> en PostgreSQL,
+      <code>CREATE DATABASE IF NOT EXISTS</code> / <code>USE</code> en MySQL/MariaDB, y <code>PRAGMA foreign_keys</code>
+      alrededor del script en SQLite. <strong>MongoDB</strong> produce un script <code>.js</code> en su lugar, con
+      <code>createCollection</code> y <code>createIndexes</code> por cada colección.</p>
+      <div class="tip">Un objeto que no se pueda generar no aborta el proceso: se escribe en el script como un comentario
+      que explica el motivo, de modo que igual obtiene todo lo demás.</div>
 
       <h2 id="users">Usuarios y roles</h2>
       <p>El botón <strong>Usuarios</strong> de la barra de comandos abre el Administrador de usuarios para la conexión
@@ -306,7 +364,9 @@
       el cambio inmediato de tema Claro/Oscuro con un botón en el ribbon y la finalización del tema oscuro; la
       administración de bases de datos desde el árbol de conexiones — crear, renombrar y eliminar bases de datos en
       SQL Server, PostgreSQL, MySQL/MariaDB y MongoDB, con opciones avanzadas de creación para SQL Server y
-      eliminaciones seguras con confirmación).</p>
+      eliminaciones seguras con confirmación; el respaldo y la restauración nativos de la base de datos en los ocho
+      motores, la generación de scripts de objetos y de la base de datos completa, el selector de columnas de índice
+      con fichas y la reconstrucción de tabla para IDENTITY de SQL Server en el diseñador).</p>
       <p>El logotipo y el icono de la aplicación fueron diseñados por <strong>Kyle Renz</strong>. Gracias por la
       nueva imagen.</p>
       <p>DataPortStudio está construido con .NET&nbsp;9 y WPF, y se apoya en estas excelentes bibliotecas de código abierto.

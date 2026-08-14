@@ -56,6 +56,7 @@
     <a href="#copy">Copy &amp; paste tables</a>
     <a href="#tps-sql">Clarion → SQL mapping</a>
     <a href="#insert-import-export">Generate / Import / Export</a>
+    <a href="#backup">Backup, restore &amp; scripts</a>
     <div class="group">Administration</div>
     <a href="#users">Users &amp; roles</a>
     <a href="#settings">Settings</a>
@@ -186,6 +187,17 @@
       <p>For <strong>SQL Server</strong> and <strong>SQLite</strong>, right-click a <em>Tables</em> folder ▸
       <strong>New Table</strong>, or a table ▸ <strong>Design</strong>, to define columns, types, nullability and the
       primary key. Editing an existing SQLite table uses a safe table-rebuild behind the scenes.</p>
+      <p><strong>Indexes</strong> are built by picking columns from a drop-down; each one becomes a removable
+      <strong>chip</strong>. The chips keep the order you picked them in — which is the order the index actually uses —
+      columns already chosen drop out of the list, and duplicates are ignored.</p>
+      <p>Ticking <strong>Identity</strong> or <strong>Primary key</strong> automatically clears <strong>Nullable</strong>,
+      since both are intrinsically <code>NOT NULL</code>. Only one identity column is allowed per table, so ticking a
+      second one clears the first.</p>
+      <div class="tip">SQL Server can't add or remove <code>IDENTITY</code> with <code>ALTER COLUMN</code>. When you change
+      it on an existing table, DataPortStudio generates a full <strong>table rebuild</strong> instead — dependent foreign keys are
+      dropped, the new table is created and filled from the old one, swapped in with <code>sp_rename</code>, and then the
+      primary key, indexes and foreign keys are restored. It runs as a single transaction, so if anything fails the
+      original table is left exactly as it was. Review the generated script before running it.</div>
 
       <h2 id="copy">Copy &amp; paste tables</h2>
       <p>Right-click a table ▸ <strong>Copy</strong> (or <strong>Ctrl+C</strong> in the tree), then <strong>Paste</strong>
@@ -218,6 +230,49 @@
         (XLSX / legacy XLS), DBF</strong> or a <strong>SQL</strong> script. Choose the filter scope and formatting in
         the export dialog, and open the file or its folder when done.</li>
       </ul>
+
+      <h2 id="backup">Backup, restore &amp; scripts</h2>
+      <h3>Backing up and restoring a database</h3>
+      <p>Right-click a database ▸ <strong>Back up…</strong> to write an <em>engine-native</em> backup file. The format and
+      extension are chosen for you:</p>
+      <table>
+        <tr><th>Engine</th><th>File</th><th>How it runs</th></tr>
+        <tr><td>SQL Server</td><td><code>.bak</code></td><td>In-process <code>BACKUP DATABASE … WITH COPY_ONLY, INIT, CHECKSUM</code></td></tr>
+        <tr><td>SQLite</td><td><code>.sqlite</code></td><td>The driver's online backup API — no external tool</td></tr>
+        <tr><td>PostgreSQL</td><td><code>.backup</code></td><td><code>pg_dump</code> / <code>pg_restore</code> (custom format)</td></tr>
+        <tr><td>MySQL / MariaDB</td><td><code>.sql</code></td><td><code>mysqldump</code> / <code>mysql</code> (single transaction, with routines, events and triggers)</td></tr>
+        <tr><td>MongoDB</td><td><code>.archive.gz</code></td><td><code>mongodump</code> / <code>mongorestore</code> (gzipped archive)</td></tr>
+        <tr><td>Firebird</td><td><code>.fbk</code></td><td><code>gbak</code></td></tr>
+        <tr><td>Oracle</td><td><code>.dmp</code></td><td><code>exp</code> / <code>imp</code></td></tr>
+      </table>
+      <p><strong>COPY_ONLY</strong> on SQL Server means the backup won't disturb an existing backup chain, so it's safe to
+      take one alongside a scheduled maintenance plan.</p>
+      <p><strong>Restore…</strong> reloads a backup into the same database. Because this <strong>replaces the current
+      contents and closes active connections</strong>, it asks twice: a warning naming the database and the file, then a
+      confirmation box where you must <strong>type the database name exactly</strong>. On SQL Server the backup header is
+      checked first — a backup taken from a <em>different</em> database is refused rather than restored over the wrong
+      target — and the database is switched to <code>SINGLE_USER</code> for the restore and returned to
+      <code>MULTI_USER</code> afterwards, including when the restore fails partway through.</p>
+      <div class="tip">Engines other than SQL Server and SQLite use their standard client utilities. If one isn't
+      installed, the message names the missing utility — install that engine's client tools and make sure it's on your
+      <code>PATH</code>. Your password is never put on the command line: it's passed through an environment variable or a
+      temporary parameter file that's deleted afterwards.</div>
+
+      <h3>Generating scripts</h3>
+      <p>Right-click any <strong>table, view, function or procedure</strong> — in the tree or in the Objects tab — ▸
+      <strong>Generate object script…</strong> to see its <code>CREATE</code> statement in the script viewer, where you can
+      copy it or save it as <code>.sql</code>. If a definition can't be read (or the object is encrypted), the message says
+      so plainly.</p>
+      <p>Right-click a <strong>database</strong> ▸ <strong>Generate database script…</strong> for a structure-only script of
+      <strong>every user object</strong> in it, written in dependency-friendly order — schemas, then tables, functions,
+      views and procedures — behind a header recording the engine, database and generation time. The per-engine framing is
+      handled for you: <code>GO</code> separators and <code>CREATE DATABASE</code> / <code>CREATE SCHEMA</code> guards on
+      SQL Server, <code>CREATE SCHEMA IF NOT EXISTS</code> and a <code>\connect</code> line on PostgreSQL,
+      <code>CREATE DATABASE IF NOT EXISTS</code> / <code>USE</code> on MySQL/MariaDB, and <code>PRAGMA foreign_keys</code>
+      bracketing on SQLite. <strong>MongoDB</strong> produces a <code>.js</code> script instead, with
+      <code>createCollection</code> and <code>createIndexes</code> for each collection.</p>
+      <div class="tip">A single object that can't be scripted won't abort the run — it's written into the script as a
+      comment explaining why, so you still get everything else.</div>
 
       <h2 id="users">Users &amp; roles</h2>
       <p>The <strong>Users</strong> button on the command bar opens the User Manager for the selected connection (available
@@ -297,7 +352,9 @@
       modes; docked query tabs, instant Light/Dark theme switching with a ribbon toggle, and the completed dark
       theme; database management from the connection tree — creating, renaming and dropping databases on SQL Server,
       PostgreSQL, MySQL/MariaDB and MongoDB, with advanced SQL Server creation options and safe, confirmed
-      drops).</p>
+      drops; engine-native database backup &amp; restore across all eight engines, object and whole-database script
+      generation, the chip-style index column picker, and the SQL Server identity table-rebuild in the table
+      designer).</p>
       <p>The DataPortStudio logo and application icon were designed by <strong>Kyle Renz</strong>. Our thanks for
       the new mark.</p>
       <p>DataPortStudio is built with .NET&nbsp;9 and WPF, and stands on the shoulders of these excellent open-source

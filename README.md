@@ -7,18 +7,18 @@ Add connection strings, browse the server tree (databases → schemas → tables
 view & edit its records in place — including adding and deleting rows — with changes pushed back to
 the database.
 
-![Status](https://img.shields.io/badge/status-v1.0.28-blue) ![Platform](https://img.shields.io/badge/platform-Windows-informational) ![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
+![Status](https://img.shields.io/badge/status-v1.0.29-blue) ![Platform](https://img.shields.io/badge/platform-Windows-informational) ![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
 
 ## Download
 
 Grab the latest release from the
 [**Releases**](https://github.com/robertorenz/DataPortStudio/releases/latest) page.
 
-**Option 1 — Installer** (`DataPortStudio-1.0.28-Setup.exe`, ~62 MB)
+**Option 1 — Installer** (`DataPortStudio-1.0.29-Setup.exe`, ~62 MB)
 - Installs to `Program Files`, creates a Start Menu entry, and adds an optional Desktop shortcut.
 - Includes a proper uninstaller (Add/Remove Programs).
 
-**Option 2 — Portable exe** (`DataPortStudio.exe`, ~85 MB)
+**Option 2 — Portable exe** (`DataPortStudio.exe`, ~213 MB)
 - No install needed. Download and double-click — runs from any folder.
 - Native DLLs are bundled inside the exe and extracted to a temp cache on first run; subsequent launches are fast.
 - If native DLLs are missing (e.g. after some antivirus quarantines them), use the installer instead.
@@ -152,6 +152,31 @@ Both options are **self-contained** — no .NET runtime install required.
   single transaction (all-or-nothing).
 - **Generate INSERT script** — right-click a table to produce a ready-to-run `INSERT` script for
   its rows (wrapped in `SET IDENTITY_INSERT` when needed), viewable, copyable and savable as `.sql`.
+- **Generate object & database scripts** — right-click any **table, view, function or procedure**
+  (in the tree or the Objects tab) → **Generate object script…** for its `CREATE` statement, or a
+  **database** → **Generate database script…** for a structure-only script of *every* user object it
+  contains, ordered schemas → tables → functions → views → procedures with a header recording the
+  engine, database and generation time. Per-engine framing is handled for you — `GO` separators and
+  `CREATE DATABASE` / `CREATE SCHEMA` guards on SQL Server, `CREATE SCHEMA IF NOT EXISTS` and
+  `\connect` on PostgreSQL, `CREATE DATABASE IF NOT EXISTS` / `USE` on MySQL/MariaDB, and
+  `PRAGMA foreign_keys` bracketing on SQLite. **MongoDB** emits a `.js` script instead
+  (`createCollection` + `createIndexes` per collection). An object that can't be scripted becomes a
+  comment in place rather than aborting the run.
+- **Backup & restore** — right-click a database → **Back up…** / **Restore…** to write and reload an
+  *engine-native* backup, with the format chosen automatically: SQL Server `.bak`, PostgreSQL
+  `.backup`, MySQL/MariaDB `.sql`, MongoDB `.archive.gz`, SQLite `.sqlite`, Firebird `.fbk`, Oracle
+  `.dmp`.
+  - **SQL Server** runs in-process — `BACKUP DATABASE … WITH COPY_ONLY, INIT, CHECKSUM` leaves any
+    existing backup chain undisturbed. Restore reads the backup header first and **refuses a backup
+    taken from a different database**, then switches to `SINGLE_USER`, restores with `REPLACE`, and
+    returns the database to `MULTI_USER` even if the restore fails partway through.
+  - **SQLite** uses the driver's online backup API — no external tool, no file locking.
+  - The rest shell out to the standard client utilities (`pg_dump`/`pg_restore`,
+    `mysqldump`/`mysql`, `mongodump`/`mongorestore`, `gbak`, `exp`/`imp`). Credentials travel via
+    environment variables or a temporary parameter file that's deleted afterwards — never on the
+    command line. If a utility isn't installed, the error names it and tells you to put it on `PATH`.
+  - Restore is destructive, so it asks twice: a warning naming the database and file, then a box
+    where you must type the database name exactly.
 - **Copy & paste a table** — right-click a table → **Copy** (or Ctrl+C in the tree), then **Paste**
   (Ctrl+V) onto a Tables folder / database. It asks whether to copy the **structure only** or
   **structure + data**, and auto-names the copy (`name_copy`, `name_copy2`, …) if the name is taken.
@@ -184,6 +209,19 @@ Both options are **self-contained** — no .NET runtime install required.
     users and role membership (per-table grants stay in the query window).
 - **Table designer** — create and alter tables: columns, types, nullability, defaults, primary
   key and indexes, with a copyable generated script.
+  - **Index columns are picked as chips** — choose columns from a drop-down and each becomes a
+    removable chip. Chips keep the order you picked them in (which is the order the index uses),
+    already-chosen columns drop out of the list, and duplicates are ignored.
+  - **Identity / primary-key columns can't be nullable** — ticking either clears **Nullable**, and
+    only one identity column per table is allowed (ticking a second clears the first), matching what
+    SQL Server and SQLite enforce anyway.
+  - **Adding or removing IDENTITY on an existing SQL Server table** is handled by a generated
+    **table rebuild** (`ALTER COLUMN` can't change the identity property): dependent foreign keys are
+    dropped, the new shape is created, rows are copied across with `SET IDENTITY_INSERT` where values
+    must be preserved, the table is swapped in with `sp_rename`, then the primary key, indexes and
+    foreign keys — with their `ON DELETE` / `ON UPDATE` actions and any columns renamed in the same
+    edit — are restored. It all runs in one `SET XACT_ABORT ON` transaction with `TRY`/`CATCH`, so a
+    failure rolls back and leaves the original table untouched.
 - **Edit routines & views** — open and edit **functions, stored procedures and views**; create
   new ones from templates; execute or drop them.
 - **Safe drop** — dropping a table/view/routine first checks `sys.sql_expression_dependencies`
@@ -277,7 +315,7 @@ Themes/      Theme.xaml (palette + control styles)
 Warm thanks to the contributors who have improved DataPortStudio:
 
 - [**@asantarelli**](https://github.com/asantarelli) — Load / Save SQL scripts to file in the Query window and Routine editor (v1.0.22).
-- [**@jarodav1**](https://github.com/jarodav1) (Victor Montanez) — Schema comparator overhaul: programmable-object comparison, selective object transfer, SQL Server column synchronization, and the apply-summary confirmation (v1.0.23); database-side filter & sort applied before the row limit, and the object-list locator (v1.0.24); the configurable object search (Filter / Locator modes) with sort-criteria persistence and a responsive search box (v1.0.25); docked query tabs, instant Light/Dark theme switching with a ribbon toggle, and the completed dark theme (v1.0.26); database management from the connection tree — create, rename and drop databases across SQL Server, PostgreSQL, MySQL/MariaDB and MongoDB, with SQL Server advanced options (v1.0.27).
+- [**@jarodav1**](https://github.com/jarodav1) (Victor Montanez) — Schema comparator overhaul: programmable-object comparison, selective object transfer, SQL Server column synchronization, and the apply-summary confirmation (v1.0.23); database-side filter & sort applied before the row limit, and the object-list locator (v1.0.24); the configurable object search (Filter / Locator modes) with sort-criteria persistence and a responsive search box (v1.0.25); docked query tabs, instant Light/Dark theme switching with a ribbon toggle, and the completed dark theme (v1.0.26); database management from the connection tree — create, rename and drop databases across SQL Server, PostgreSQL, MySQL/MariaDB and MongoDB, with SQL Server advanced options (v1.0.27); engine-native database backup & restore across all eight engines, object and whole-database script generation, the chip-style index column picker, and the SQL Server identity table-rebuild in the designer (v1.0.29).
 - **Kyle Renz** — the new DataPortStudio logo and application icon (v1.0.27), and its refined nine-size revision (v1.0.28).
 
 DataPortStudio also stands on the shoulders of excellent open-source libraries and public format

@@ -4,6 +4,31 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.29 — 2026-08-14
+
+### Added / Improved
+- **Back up and restore databases from the connection tree** (contributed by [@jarodav1](https://github.com/jarodav1)) — right-click a database (or a server node) ▸ **Back up…** / **Restore…** to produce and reload an *engine-native* backup file, with the right format and extension picked automatically per engine: SQL Server `.bak`, PostgreSQL `.backup`, MySQL / MariaDB `.sql`, MongoDB `.archive.gz`, SQLite `.sqlite`, Firebird `.fbk` and Oracle `.dmp`.
+  - **SQL Server** runs entirely in-process — `BACKUP DATABASE … WITH COPY_ONLY, INIT, CHECKSUM` so an existing backup chain is never disturbed. Restore first reads the backup header (`RESTORE HEADERONLY`) and **refuses a backup that came from a different database**, then switches the target to `SINGLE_USER`, restores with `REPLACE`, and returns it to `MULTI_USER` — including when the restore fails partway through.
+  - **SQLite** uses the driver's own online backup API (no external tool, no file locking).
+  - The other engines shell out to their standard client utilities (`pg_dump` / `pg_restore`, `mysqldump` / `mysql`, `mongodump` / `mongorestore`, `gbak`, `exp` / `imp`). Credentials are passed through environment variables or a temporary parameter file that is deleted afterwards — never on the command line, where other users could read them. If the utility isn't installed, the error names it and says to put it on `PATH`.
+  - Restoring is **destructive**, so it asks twice: a warning naming the database and the file, then a confirmation box where you must type the database name exactly.
+- **Generate object script** (contributed by [@jarodav1](https://github.com/jarodav1)) — right-click any **table, view, function or procedure**, in the tree or in the Objects tab, ▸ **Generate object script…** to get its `CREATE` statement in the script viewer, ready to copy or save as `.sql`. Works on SQL Server, PostgreSQL, MySQL / MariaDB, Oracle, SQLite and Firebird (views), and says so plainly when a definition is unavailable or the object is encrypted.
+- **Generate database script** (contributed by [@jarodav1](https://github.com/jarodav1)) — right-click a database ▸ **Generate database script…** for a structure-only script of **every user object** it contains, emitted in dependency-friendly order (schemas → tables → functions → views → procedures) with a header recording the engine, database and generation time.
+  - Per-engine framing is handled for you: `GO` batch separators and `CREATE DATABASE` / `CREATE SCHEMA` guards on SQL Server, `CREATE SCHEMA IF NOT EXISTS` plus a `\connect` line on PostgreSQL, `CREATE DATABASE IF NOT EXISTS` / `USE` on MySQL / MariaDB, and `PRAGMA foreign_keys` bracketing on SQLite.
+  - **MongoDB** produces a `.js` script instead — `createCollection` plus `createIndexes` for every collection, skipping the implicit `_id_` index.
+  - One object that can't be scripted no longer aborts the run: it becomes a comment in place, so you still get the rest of the database.
+
+### Fixed
+- **Identity and primary-key columns are no longer offered as nullable** (contributed by [@jarodav1](https://github.com/jarodav1)) — in the table designer, ticking **Identity** or **Primary key** now clears **Nullable** (and it can't be ticked back on), matching what the engine would enforce anyway. Ticking Identity on a second column clears it from the first, since SQL Server and SQLite allow only one identity/autoincrement column per table.
+- **Adding or removing IDENTITY on an existing SQL Server table now works** (contributed by [@jarodav1](https://github.com/jarodav1)) — `ALTER COLUMN` cannot change a column's identity property, so the designer generates a **table rebuild** instead: drop the dependent foreign keys, create the new shape, copy the rows across (`SET IDENTITY_INSERT` when values must be preserved), swap the table in with `sp_rename`, then restore the primary key, indexes and every foreign key — including their `ON DELETE` / `ON UPDATE` actions and any columns you renamed in the same edit. The whole rebuild runs inside one `SET XACT_ABORT ON` transaction with `TRY`/`CATCH`, so a failure rolls back and leaves the original table untouched.
+
+### Changed
+- **Chip-style index column picker** (contributed by [@jarodav1](https://github.com/jarodav1)) — the table designer's index editor replaces the free-text column list with a drop-down that adds each column as a removable **chip**. Chips keep the order you pick them in (which is what the index actually uses), already-chosen columns drop out of the list, and duplicates are ignored.
+
+All new menu items, dialogs and messages are available in English and Spanish.
+
+---
+
 ## v1.0.28 — 2026-08-14
 
 ### Changed
