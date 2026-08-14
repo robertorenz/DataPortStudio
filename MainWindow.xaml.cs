@@ -255,6 +255,8 @@ public partial class MainWindow : Window
                     rename.ToolTip = T("DbRename_Unsupported");
                 menu.Items.Add(rename);
                 menu.Items.Add(new Separator());
+                AddDatabaseMaintenance(menu, node);
+                menu.Items.Add(new Separator());
                 AddPaste(menu, node);
                 menu.Items.Add(Item("Ctx_Refresh", () => Run(Vm.RefreshNodeCommand, node)));
                 if (node.Connection.Engine.SupportsDatabaseDelete())
@@ -277,6 +279,11 @@ public partial class MainWindow : Window
                 if (!create.IsEnabled)
                     create.ToolTip = T("DbCreate_Unsupported");
                 menu.Items.Add(create);
+                if (Vm.CanMaintainDatabase(node))
+                {
+                    menu.Items.Add(new Separator());
+                    AddDatabaseMaintenance(menu, node);
+                }
                 menu.Items.Add(new Separator());
                 menu.Items.Add(Item("Ctx_Refresh", () => Run(Vm.RefreshNodeCommand, node)));
                 break;
@@ -290,6 +297,23 @@ public partial class MainWindow : Window
                 return null;
         }
         return menu;
+    }
+
+    private void AddDatabaseMaintenance(ContextMenu menu, DbTreeNode node)
+    {
+        if (!Vm.CanMaintainDatabase(node)) return;
+        static string T(string key) => LocalizationManager.Instance[key];
+
+        MenuItem Item(string headerKey, System.Windows.Input.ICommand command)
+        {
+            var item = new MenuItem { Header = T(headerKey) };
+            item.Click += (_, _) => Run(command, node);
+            return item;
+        }
+
+        menu.Items.Add(Item("Ctx_BackupDatabase", Vm.BackupDatabaseCommand));
+        menu.Items.Add(Item("Ctx_RestoreDatabase", Vm.RestoreDatabaseCommand));
+        menu.Items.Add(Item("Ctx_GenerateDatabaseScript", Vm.GenerateDatabaseScriptCommand));
     }
 
     private static void Run(System.Windows.Input.ICommand command, DbTreeNode node)

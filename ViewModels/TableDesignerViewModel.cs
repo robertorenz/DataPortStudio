@@ -21,6 +21,7 @@ public partial class TableDesignerViewModel : ObservableObject
     private string? _pkName;
     private List<string> _originalPk = new();
     private List<string> _originalIndexNames = new();
+    private List<SqlServerService.ForeignKeyDetail> _foreignKeys = new();
 
     private bool IsSqlite => _engine == DatabaseEngine.Sqlite;
 
@@ -87,6 +88,7 @@ public partial class TableDesignerViewModel : ObservableObject
                     OriginalType = c.TypeName,
                     OriginalSize = size,
                     OriginalNullable = c.Nullable,
+                    OriginalIdentity = c.Identity,
                     Name = c.Name,
                     Type = c.TypeName,
                     Size = size,
@@ -121,6 +123,8 @@ public partial class TableDesignerViewModel : ObservableObject
                 Indexes.Add(di);
             }
             _originalIndexNames = Indexes.Where(i => i.OriginalName is not null).Select(i => i.OriginalName!).ToList();
+            _foreignKeys = await SqlServerService.GetForeignKeysAsync(
+                _connection.BuildConnectionString(), _database ?? "", _schema, _table);
 
             Generate();
         }
@@ -384,6 +388,11 @@ public partial class TableDesignerViewModel : ObservableObject
 
     private string GenerateAlter(List<DesignColumn> cols)
     {
+        // SQL Server cannot add or remove IDENTITY with ALTER COLUMN. Rebuild the table while
+        // preserving the existing values and restoring its keys/indexes instead.
+        if (cols.Any(c => c.OriginalName is not null && c.Identity != c.OriginalIdentity))
+            return GenerateIdentityRebuild(cols);
+
         var statements = new List<string>();
         var currentOriginals = cols.Where(c => c.OriginalName is not null)
             .Select(c => c.OriginalName!).ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -465,6 +474,119 @@ public partial class TableDesignerViewModel : ObservableObject
         return string.Join(";\n", statements) + ";";
     }
 
+    private string GenerateIdentityRebuild(List<DesignColumn> cols)
+    {
+        var tempName = $"__DataPortStudio_{_table}_identity";
+        var sourceFq = Qualified(_schema, _table);
+        var tempFq = Qualified(_schema, tempName);
+        var finalFq = Qualified(_schema, TableName);
+        var kept = cols.Where(c => c.OriginalName is not null).ToList();
+        var desiredPk = cols.Where(c => c.PrimaryKey).Select(c => c.Name).ToList();
+        var sb = new StringBuilder();
+
+        sb.AppendLine("SET XACT_ABORT ON;");
+        sb.AppendLine("BEGIN TRY");
+        sb.AppendLine("  BEGIN TRANSACTION;");
+
+        // Both incoming and outgoing foreign keys must be removed before the old table can be dropped.
+        foreach (var fk in _foreignKeys)
+            sb.AppendLine($"  ALTER TABLE {Qualified(fk.ParentSchema, fk.ParentTable)} DROP CONSTRAINT {Quoted(fk.Name)};");
+
+        sb.AppendLine($"  CREATE TABLE {tempFq} (");
+        var definitions = new List<string>();
+        foreach (var c in cols)
+        {
+            var line = new StringBuilder($"    {Quoted(c.Name)} {FullType(c)}");
+            if (c.Identity) line.Append(" IDENTITY(1,1)");
+            line.Append(c.Nullable ? " NULL" : " NOT NULL");
+            if (!string.IsNullOrWhiteSpace(c.DefaultValue)) line.Append($" DEFAULT {c.DefaultValue}");
+            definitions.Add(line.ToString());
+        }
+        sb.AppendLine(string.Join(",\n", definitions));
+        sb.AppendLine("  );");
+
+        if (kept.Count > 0)
+        {
+            var targets = string.Join(", ", kept.Select(c => Quoted(c.Name)));
+            var sources = string.Join(", ", kept.Select(c => Quoted(c.OriginalName!)));
+            var preserveIdentity = kept.Any(c => c.Identity);
+            if (preserveIdentity) sb.AppendLine($"  SET IDENTITY_INSERT {tempFq} ON;");
+            sb.AppendLine($"  INSERT INTO {tempFq} ({targets}) SELECT {sources} FROM {sourceFq};");
+            if (preserveIdentity) sb.AppendLine($"  SET IDENTITY_INSERT {tempFq} OFF;");
+        }
+
+        sb.AppendLine($"  DROP TABLE {sourceFq};");
+        sb.AppendLine($"  EXEC sp_rename N'{SqlLiteral(tempFq)}', N'{SqlLiteral(TableName)}', N'OBJECT';");
+
+        if (desiredPk.Count > 0)
+        {
+            var pkName = _pkName ?? $"PK_{TableName}";
+            sb.AppendLine($"  ALTER TABLE {finalFq} ADD CONSTRAINT {Quoted(pkName)} PRIMARY KEY " +
+                          $"({string.Join(", ", desiredPk.Select(Quoted))});");
+        }
+
+        foreach (var index in Indexes.Where(i =>
+                     !string.IsNullOrWhiteSpace(i.Name) && !string.IsNullOrWhiteSpace(i.Columns)))
+            sb.AppendLine($"  CREATE {(index.Unique ? "UNIQUE " : "")}INDEX {Quoted(index.Name)} " +
+                          $"ON {finalFq} ({BracketCols(index.Columns)});");
+
+        foreach (var fk in _foreignKeys)
+        {
+            var parentIsDesigned = SameTable(fk.ParentSchema, fk.ParentTable);
+            var referencedIsDesigned = SameTable(fk.ReferencedSchema, fk.ReferencedTable);
+            var parentTable = parentIsDesigned ? finalFq : Qualified(fk.ParentSchema, fk.ParentTable);
+            var referencedTable = referencedIsDesigned ? finalFq : Qualified(fk.ReferencedSchema, fk.ReferencedTable);
+            var parentColumns = fk.ParentColumns.Select(name =>
+                Quoted(parentIsDesigned ? CurrentColumnName(name, cols) : name));
+            var referencedColumns = fk.ReferencedColumns.Select(name =>
+                Quoted(referencedIsDesigned ? CurrentColumnName(name, cols) : name));
+
+            sb.AppendLine($"  ALTER TABLE {parentTable} WITH CHECK ADD CONSTRAINT {Quoted(fk.Name)} " +
+                          $"FOREIGN KEY ({string.Join(", ", parentColumns)}) REFERENCES {referencedTable} " +
+                          $"({string.Join(", ", referencedColumns)}){ReferentialAction("DELETE", fk.DeleteAction)}" +
+                          $"{ReferentialAction("UPDATE", fk.UpdateAction)};");
+            sb.AppendLine($"  ALTER TABLE {parentTable} CHECK CONSTRAINT {Quoted(fk.Name)};");
+        }
+
+        sb.AppendLine("  COMMIT TRANSACTION;");
+        sb.AppendLine("END TRY");
+        sb.AppendLine("BEGIN CATCH");
+        sb.AppendLine("  IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;");
+        sb.AppendLine("  THROW;");
+        sb.AppendLine("END CATCH;");
+        return sb.ToString().TrimEnd();
+    }
+
+    private bool SameTable(string schema, string table) =>
+        schema.Equals(_schema, StringComparison.OrdinalIgnoreCase) &&
+        table.Equals(_table, StringComparison.OrdinalIgnoreCase);
+
+    private static string CurrentColumnName(string originalName, IEnumerable<DesignColumn> columns) =>
+        columns.FirstOrDefault(c => string.Equals(c.OriginalName, originalName,
+            StringComparison.OrdinalIgnoreCase))?.Name ?? originalName;
+
+    private static string ReferentialAction(string operation, string action) =>
+        action.Equals("NO_ACTION", StringComparison.OrdinalIgnoreCase)
+            ? ""
+            : $" ON {operation} {action.Replace('_', ' ')}";
+
+    private static string Quoted(string identifier) =>
+        "[" + identifier.Replace("]", "]]") + "]";
+
+    private static string Qualified(string schema, string table) =>
+        $"{Quoted(schema)}.{Quoted(table)}";
+
+    private static string SqlLiteral(string value) => value.Replace("'", "''");
+
     private void OnColumnsChanged(object? sender, NotifyCollectionChangedEventArgs e) => Generate();
-    private void OnColumnChanged(object? sender, PropertyChangedEventArgs e) => Generate();
+    private void OnColumnChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (sender is DesignColumn changed && e.PropertyName == nameof(DesignColumn.Identity) && changed.Identity)
+        {
+            // SQL Server and SQLite permit only one identity/autoincrement column per table.
+            foreach (var other in Columns.Where(c => !ReferenceEquals(c, changed) && c.Identity))
+                other.Identity = false;
+        }
+        Generate();
+    }
 }

@@ -158,6 +158,61 @@ public static class SqlServerService
 
     public record IndexDetail(string Name, bool Unique, List<string> Columns);
 
+    public record ForeignKeyDetail(
+        string Name,
+        string ParentSchema,
+        string ParentTable,
+        List<string> ParentColumns,
+        string ReferencedSchema,
+        string ReferencedTable,
+        List<string> ReferencedColumns,
+        string DeleteAction,
+        string UpdateAction);
+
+    /// <summary>Foreign keys declared by, or referencing, a table.</summary>
+    public static async Task<List<ForeignKeyDetail>> GetForeignKeysAsync(
+        string connectionString, string database, string schema, string table)
+    {
+        await using var conn = new SqlConnection(WithDatabase(connectionString, database));
+        await conn.OpenAsync();
+        const string sql = @"
+            SELECT fk.object_id, fk.name,
+                   ps.name, pt.name, pc.name,
+                   rs.name, rt.name, rc.name,
+                   fk.delete_referential_action_desc, fk.update_referential_action_desc
+            FROM sys.foreign_keys fk
+            JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id = fk.object_id
+            JOIN sys.tables pt ON pt.object_id = fk.parent_object_id
+            JOIN sys.schemas ps ON ps.schema_id = pt.schema_id
+            JOIN sys.columns pc ON pc.object_id = pt.object_id AND pc.column_id = fkc.parent_column_id
+            JOIN sys.tables rt ON rt.object_id = fk.referenced_object_id
+            JOIN sys.schemas rs ON rs.schema_id = rt.schema_id
+            JOIN sys.columns rc ON rc.object_id = rt.object_id AND rc.column_id = fkc.referenced_column_id
+            WHERE fk.parent_object_id = OBJECT_ID(@fq) OR fk.referenced_object_id = OBJECT_ID(@fq)
+            ORDER BY fk.object_id, fkc.constraint_column_id";
+        await using var cmd = new SqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("@fq", Bracketed(schema, table));
+        var map = new Dictionary<int, ForeignKeyDetail>();
+        var order = new List<int>();
+        await using var reader = await cmd.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            var id = reader.GetInt32(0);
+            if (!map.TryGetValue(id, out var fk))
+            {
+                fk = new ForeignKeyDetail(
+                    reader.GetString(1), reader.GetString(2), reader.GetString(3), new(),
+                    reader.GetString(5), reader.GetString(6), new(),
+                    reader.GetString(8), reader.GetString(9));
+                map[id] = fk;
+                order.Add(id);
+            }
+            fk.ParentColumns.Add(reader.GetString(4));
+            fk.ReferencedColumns.Add(reader.GetString(7));
+        }
+        return order.Select(id => map[id]).ToList();
+    }
+
     /// <summary>Secondary indexes (not the primary key or unique constraints).</summary>
     public static async Task<List<IndexDetail>> GetIndexesAsync(
         string connectionString, string database, string schema, string table)

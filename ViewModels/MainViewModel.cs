@@ -1,10 +1,12 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DataPortStudio.Models;
 using DataPortStudio.Services;
 using DataPortStudio.Views;
+using Microsoft.Win32;
 
 namespace DataPortStudio.ViewModels;
 
@@ -759,6 +761,159 @@ public partial class MainViewModel : ObservableObject
 
     private static string PostgreSqlMaintenanceDatabase(string targetDatabase) =>
         string.Equals(targetDatabase, "postgres", StringComparison.OrdinalIgnoreCase) ? "template1" : "postgres";
+
+    /// <summary>Whether a tree node represents a complete database that can be maintained.</summary>
+    public bool CanMaintainDatabase(DbTreeNode? node) =>
+        node is not null && DatabaseMaintenanceService.Supports(node.Connection.Engine)
+            && GetDatabaseTarget(node) is not null;
+
+    private static string? GetDatabaseTarget(DbTreeNode node)
+    {
+        if (node.Type == NodeType.Database) return node.Name;
+        if (node.Type != NodeType.Server) return null;
+
+        var profile = node.Connection;
+        try
+        {
+            return profile.Engine switch
+            {
+                DatabaseEngine.Sqlite or DatabaseEngine.Firebird =>
+                    Path.GetFileNameWithoutExtension(profile.FilePath),
+                DatabaseEngine.Oracle => profile.Database,
+                DatabaseEngine.SqlServer or DatabaseEngine.PostgreSql => profile.Database,
+                _ => null
+            } is { Length: > 0 } database ? database : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    [RelayCommand]
+    private async Task BackupDatabase(DbTreeNode? node)
+    {
+        node ??= SelectedNode;
+        if (node is null || GetDatabaseTarget(node) is not { } database
+            || !DatabaseMaintenanceService.Supports(node.Connection.Engine))
+            return;
+
+        string L(string key) => LocalizationManager.Instance[key];
+        var fileType = DatabaseMaintenanceService.GetFileType(node.Connection.Engine);
+        var dialog = new SaveFileDialog
+        {
+            Title = L("DbBackup_Title"),
+            FileName = $"{SafeFileStem(database)}_{DateTime.Now:yyyyMMdd_HHmmss}{fileType.Extension}",
+            DefaultExt = fileType.Extension,
+            Filter = fileType.Filter + "|All files (*.*)|*.*",
+            AddExtension = true,
+            OverwritePrompt = true
+        };
+        if (dialog.ShowDialog() != true) return;
+
+        try
+        {
+            IsBusy = true;
+            StatusText = string.Format(L("DbBackup_Progress"), database);
+            await DatabaseMaintenanceService.BackupAsync(
+                node.Connection, database, dialog.FileName);
+            StatusText = string.Format(L("DbBackup_Success"), database);
+            Dialogs.ShowSuccess(L("DbBackup_Title"),
+                string.Format(L("DbBackup_SuccessPath"), database, dialog.FileName));
+        }
+        catch (Exception ex)
+        {
+            Dialogs.ShowError(L("DbBackup_Failed"), ex.Message);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task RestoreDatabase(DbTreeNode? node)
+    {
+        node ??= SelectedNode;
+        if (node is null || GetDatabaseTarget(node) is not { } database
+            || !DatabaseMaintenanceService.Supports(node.Connection.Engine))
+            return;
+
+        string L(string key) => LocalizationManager.Instance[key];
+        var fileType = DatabaseMaintenanceService.GetFileType(node.Connection.Engine);
+        var dialog = new OpenFileDialog
+        {
+            Title = L("DbRestore_Title"),
+            DefaultExt = fileType.Extension,
+            Filter = fileType.Filter + "|All files (*.*)|*.*",
+            CheckFileExists = true
+        };
+        if (dialog.ShowDialog() != true) return;
+
+        if (!ModalDialog.ConfirmText(
+                L("DbRestore_Title"),
+                string.Format(L("DbRestore_Warning"), database, dialog.FileName),
+                string.Format(L("DbRestore_Confirmation"), database),
+                database,
+                L("DbRestore_Restore"),
+                L("Btn_Cancel")))
+            return;
+
+        try
+        {
+            IsBusy = true;
+            StatusText = string.Format(L("DbRestore_Progress"), database);
+            await DatabaseMaintenanceService.RestoreAsync(
+                node.Connection, database, dialog.FileName);
+            await RefreshNode(node);
+            StatusText = string.Format(L("DbRestore_Success"), database);
+            Dialogs.ShowSuccess(L("DbRestore_Title"),
+                string.Format(L("DbRestore_Success"), database));
+        }
+        catch (Exception ex)
+        {
+            Dialogs.ShowError(L("DbRestore_Failed"), ex.Message);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task GenerateDatabaseScript(DbTreeNode? node)
+    {
+        node ??= SelectedNode;
+        if (node is null || GetDatabaseTarget(node) is not { } database
+            || !DatabaseMaintenanceService.Supports(node.Connection.Engine))
+            return;
+
+        string L(string key) => LocalizationManager.Instance[key];
+        try
+        {
+            IsBusy = true;
+            StatusText = string.Format(L("DbScript_Progress"), database);
+            var result = await ScriptService.GenerateDatabaseScriptAsync(node.Connection, database);
+            new ScriptViewerWindow(
+                string.Format(L("DbScript_Title"), database), result.Text,
+                $"{SafeFileStem(database)}_database", result.Extension).Show();
+            StatusText = string.Format(L("DbScript_Success"), database);
+        }
+        catch (Exception ex)
+        {
+            Dialogs.ShowError(L("DbScript_Failed"), ex.Message);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private static string SafeFileStem(string value)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        return new string(value.Select(c => invalid.Contains(c) ? '_' : c).ToArray());
+    }
 
     private static void UpdateLastDatabase(DbTreeNode node, string? newName)
     {
