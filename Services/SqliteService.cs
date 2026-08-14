@@ -32,6 +32,16 @@ public static class SqliteService
         return result;
     }
 
+    public static async Task<string?> GetObjectDefinitionAsync(string connectionString, string name)
+    {
+        await using var conn = new SqliteConnection(connectionString);
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT sql FROM sqlite_master WHERE name = $name AND type IN ('table','view')";
+        cmd.Parameters.AddWithValue("$name", name);
+        return await cmd.ExecuteScalarAsync() as string;
+    }
+
     public static async Task<List<string>> GetColumnNamesAsync(string connectionString, string table)
     {
         var result = new List<string>();

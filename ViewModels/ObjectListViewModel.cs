@@ -18,6 +18,8 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
     private readonly Action<DbTreeNode> _new;
     private readonly Action<DbTreeNode, ObjectListItem> _copy;
     private readonly Action<DbTreeNode> _paste;
+    private readonly Action<DbTreeNode, ObjectListItem> _generateObjectScript;
+    private readonly Action<DbTreeNode, ObjectListItem> _generateInserts;
 
     private DbTreeNode? _container;
 
@@ -35,6 +37,8 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
     [ObservableProperty] private bool canDelete = true;
     [ObservableProperty] private bool canPaste = true;
     [ObservableProperty] private bool isTables = true;
+    [ObservableProperty] private bool canGenerateObjectScript;
+    [ObservableProperty] private bool canGenerateInserts;
     [ObservableProperty] private string locatorText = "";
     [ObservableProperty] private string locatorStatus = "";
     [ObservableProperty] private string searchPlaceholder = "";
@@ -59,7 +63,9 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
     public ObjectListViewModel(
         Action<DbTreeNode, ObjectListItem> open, Action<DbTreeNode, ObjectListItem> design,
         Action<DbTreeNode, ObjectListItem> rename, Action<DbTreeNode, ObjectListItem> delete,
-        Action<DbTreeNode> @new, Action<DbTreeNode, ObjectListItem> copy, Action<DbTreeNode> paste)
+        Action<DbTreeNode> @new, Action<DbTreeNode, ObjectListItem> copy, Action<DbTreeNode> paste,
+        Action<DbTreeNode, ObjectListItem> generateObjectScript,
+        Action<DbTreeNode, ObjectListItem> generateInserts)
     {
         _open = open;
         _design = design;
@@ -68,6 +74,8 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
         _new = @new;
         _copy = copy;
         _paste = paste;
+        _generateObjectScript = generateObjectScript;
+        _generateInserts = generateInserts;
         FilteredItems = CollectionViewSource.GetDefaultView(Items);
         FilteredItems.Filter = MatchesLocator;
         ApplySearchMode();
@@ -91,6 +99,10 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
                     or DatabaseEngine.MySql or DatabaseEngine.MariaDb or DatabaseEngine.Oracle);
         CanDelete = !engine.IsReadOnly() && !isFolderEngine;
         CanPaste = IsTables && !engine.IsReadOnly() && !isFolderEngine;
+        CanGenerateObjectScript = TableCopyService.IsRelational(engine) &&
+            ChildType is NodeType.Table or NodeType.View or NodeType.Function or NodeType.Procedure;
+        CanGenerateInserts = engine == DatabaseEngine.SqlServer &&
+            ChildType is NodeType.Table or NodeType.View;
 
         var loc = LocalizationManager.Instance;
         var kindWord = ChildType switch
@@ -175,6 +187,20 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
     private void Paste()
     {
         if (_container is not null) _paste(_container);
+    }
+
+    [RelayCommand]
+    private void GenerateObjectScript()
+    {
+        if (_container is not null && SelectedItem is not null)
+            _generateObjectScript(_container, SelectedItem);
+    }
+
+    [RelayCommand]
+    private void GenerateInserts()
+    {
+        if (_container is not null && SelectedItem is not null)
+            _generateInserts(_container, SelectedItem);
     }
 
     [RelayCommand]

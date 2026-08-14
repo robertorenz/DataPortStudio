@@ -1,6 +1,8 @@
 using System.Data;
 using System.Globalization;
 using System.Text;
+using DataPortStudio.Models;
+using DataPortStudio.ViewModels;
 using Microsoft.Data.SqlClient;
 
 namespace DataPortStudio.Services;
@@ -48,6 +50,48 @@ public static class ScriptService
             sb.AppendLine($"-- Note: limited to {limit} row(s).");
 
         return sb.ToString();
+    }
+
+    public static async Task<string> GenerateObjectScriptAsync(DbTreeNode node)
+    {
+        var connection = node.Connection;
+        var cs = connection.BuildConnectionString();
+        var database = node.Database ?? "";
+        var schema = node.Schema ?? "dbo";
+
+        if (node.Type == NodeType.Table)
+        {
+            var structure = await TableMetadataService.GetAsync(
+                connection.Engine, cs, database, schema, node.Name, connection.Name);
+            return EnsureTerminated(structure.Ddl);
+        }
+
+        string? definition = connection.Engine switch
+        {
+            DatabaseEngine.SqlServer => await SqlServerService.GetObjectDefinitionAsync(
+                cs, database, schema, node.Name),
+            DatabaseEngine.Sqlite => await SqliteService.GetObjectDefinitionAsync(cs, node.Name),
+            DatabaseEngine.Firebird when node.Type == NodeType.View =>
+                await FirebirdService.GetViewDefinitionAsync(cs, node.Name),
+            DatabaseEngine.MySql or DatabaseEngine.MariaDb =>
+                await MySqlService.GetObjectDefinitionAsync(cs, database, node.Type, node.Name),
+            DatabaseEngine.PostgreSql =>
+                await PostgresService.GetObjectDefinitionAsync(cs, database, schema, node.Type, node.Name),
+            DatabaseEngine.Oracle =>
+                await OracleService.GetObjectDefinitionAsync(cs, node.Type, node.Name),
+            _ => null
+        };
+
+        if (string.IsNullOrWhiteSpace(definition))
+            throw new InvalidOperationException(
+                LocalizationManager.Instance["Script_DefinitionUnavailable"]);
+        return EnsureTerminated(definition);
+    }
+
+    private static string EnsureTerminated(string script)
+    {
+        script = script.Trim();
+        return script.EndsWith(';') ? script : script + ";";
     }
 
     private static string Literal(object? value) => value switch

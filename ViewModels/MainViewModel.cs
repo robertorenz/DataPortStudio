@@ -77,7 +77,11 @@ public partial class MainViewModel : ObservableObject
             delete: DeleteFromListAsync,
             @new: c => NewTableCommand.Execute(c),
             copy: CopyFromList,
-            paste: PasteFromListAsync);
+            paste: PasteFromListAsync,
+            generateObjectScript: (c, item) =>
+                GenerateObjectScriptCommand.Execute(NodeForItem(c, item)),
+            generateInserts: (c, item) =>
+                GenerateInsertsCommand.Execute(NodeForItem(c, item)));
 
         if (!Tabs.Contains(_objectsTab))
         {
@@ -961,6 +965,33 @@ public partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             Dialogs.ShowError("Generate INSERT failed", ex.Message);
+        }
+    }
+
+    [RelayCommand]
+    private async Task GenerateObjectScript(DbTreeNode? node)
+    {
+        node ??= SelectedNode;
+        if (node is not { Type: NodeType.Table or NodeType.View or NodeType.Function or NodeType.Procedure })
+            return;
+
+        string L(string key) => LocalizationManager.Instance[key];
+        StatusText = string.Format(L("Script_Generating"), node.Name);
+        try
+        {
+            IsBusy = true;
+            var script = await ScriptService.GenerateObjectScriptAsync(node);
+            var title = string.Format(L("Script_Title"), node.Name);
+            new ScriptViewerWindow(title, script, $"{node.Name}_create").Show();
+            StatusText = string.Format(L("Script_Generated"), node.Name);
+        }
+        catch (Exception ex)
+        {
+            Dialogs.ShowError(L("Script_Failed"), ex.Message);
+        }
+        finally
+        {
+            IsBusy = false;
         }
     }
 

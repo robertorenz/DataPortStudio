@@ -1,4 +1,5 @@
 using Npgsql;
+using DataPortStudio.ViewModels;
 
 namespace DataPortStudio.Services;
 
@@ -284,6 +285,43 @@ public static class PostgresService
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = sql;
         await cmd.ExecuteNonQueryAsync();
+    }
+
+    public static async Task<string?> GetObjectDefinitionAsync(
+        string cs, string db, string schema, NodeType type, string name)
+    {
+        await using var conn = new NpgsqlConnection(WithDatabase(cs, db));
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        if (type == NodeType.View)
+        {
+            cmd.CommandText = @"
+                SELECT pg_get_viewdef(c.oid, true)
+                FROM pg_class c
+                JOIN pg_namespace n ON n.oid = c.relnamespace
+                WHERE n.nspname = @schema AND c.relname = @name
+                  AND c.relkind IN ('v', 'm')";
+            cmd.Parameters.AddWithValue("schema", schema);
+            cmd.Parameters.AddWithValue("name", name);
+            var body = (await cmd.ExecuteScalarAsync())?.ToString();
+            return string.IsNullOrWhiteSpace(body)
+                ? null
+                : $"CREATE OR REPLACE VIEW {Quote(schema)}.{Quote(name)} AS\n{body}";
+        }
+
+        cmd.CommandText = @"
+            SELECT pg_get_functiondef(p.oid)
+            FROM pg_proc p
+            JOIN pg_namespace n ON n.oid = p.pronamespace
+            WHERE n.nspname = @schema AND p.proname = @name
+            ORDER BY p.oid";
+        cmd.Parameters.AddWithValue("schema", schema);
+        cmd.Parameters.AddWithValue("name", name);
+        var definitions = new List<string>();
+        await using var reader = await cmd.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+            if (!reader.IsDBNull(0)) definitions.Add(reader.GetString(0).Trim());
+        return definitions.Count == 0 ? null : string.Join("\n\n", definitions);
     }
 
     public static Task CreateDatabaseAsync(

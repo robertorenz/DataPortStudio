@@ -226,6 +226,7 @@ public static class Strings
         ["Ctx_CopyTable"] = "Copy",
         ["Ctx_PasteTable"] = "Paste",
         ["Ctx_GenerateInsert"] = "Generate INSERT script…",
+        ["Ctx_GenerateScript"] = "Generate object script…",
         ["Ctx_ImportData"] = "Import data…",
         ["Ctx_Drop"] = "Drop…",
         ["Ctx_DeleteDatabase"] = "Delete database…",
@@ -236,6 +237,11 @@ public static class Strings
         ["Ctx_NewView"] = "New View…",
         ["Ctx_NewFunction"] = "New Function…",
         ["Ctx_NewProcedure"] = "New Procedure…",
+        ["Script_Title"] = "Object script — {0}",
+        ["Script_Generating"] = "Generating script for '{0}'…",
+        ["Script_Generated"] = "Generated script for '{0}'.",
+        ["Script_Failed"] = "Script generation failed",
+        ["Script_DefinitionUnavailable"] = "The object definition is not available or the object is encrypted.",
 
         // Import dialog
         ["Import_Title"] = "Import data",
@@ -518,6 +524,7 @@ public static class Strings
         ["Ctx_CopyTable"] = "Copiar",
         ["Ctx_PasteTable"] = "Pegar",
         ["Ctx_GenerateInsert"] = "Generar script INSERT…",
+        ["Ctx_GenerateScript"] = "Generar script del objeto…",
         ["Ctx_ImportData"] = "Importar datos…",
         ["Ctx_Drop"] = "Eliminar…",
         ["Ctx_DeleteDatabase"] = "Eliminar base de datos…",
@@ -528,6 +535,11 @@ public static class Strings
         ["Ctx_NewView"] = "Nueva vista…",
         ["Ctx_NewFunction"] = "Nueva función…",
         ["Ctx_NewProcedure"] = "Nuevo procedimiento…",
+        ["Script_Title"] = "Script del objeto — {0}",
+        ["Script_Generating"] = "Generando script para '{0}'…",
+        ["Script_Generated"] = "Se generó el script para '{0}'.",
+        ["Script_Failed"] = "No se pudo generar el script",
+        ["Script_DefinitionUnavailable"] = "La definición del objeto no está disponible o el objeto está cifrado.",
 
         // Importar
         ["Import_Title"] = "Importar datos",

@@ -1,5 +1,7 @@
 using System.Data;
 using Oracle.ManagedDataAccess.Client;
+using Oracle.ManagedDataAccess.Types;
+using DataPortStudio.ViewModels;
 
 namespace DataPortStudio.Services;
 
@@ -177,5 +179,31 @@ public static class OracleService
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = sql;
         await cmd.ExecuteNonQueryAsync();
+    }
+
+    public static async Task<string?> GetObjectDefinitionAsync(
+        string cs, NodeType type, string name)
+    {
+        var objectType = type switch
+        {
+            NodeType.View => "VIEW",
+            NodeType.Function => "FUNCTION",
+            NodeType.Procedure => "PROCEDURE",
+            _ => "TABLE"
+        };
+        await using var conn = new OracleConnection(cs);
+        await conn.OpenAsync();
+        await using var cmd = (OracleCommand)conn.CreateCommand();
+        cmd.BindByName = true;
+        cmd.CommandText = "SELECT DBMS_METADATA.GET_DDL(:objectType, :name, USER) FROM dual";
+        cmd.Parameters.Add(new OracleParameter("objectType", objectType));
+        cmd.Parameters.Add(new OracleParameter("name", name));
+        var value = await cmd.ExecuteScalarAsync();
+        return value switch
+        {
+            OracleClob clob => clob.Value,
+            null or DBNull => null,
+            _ => value.ToString()
+        };
     }
 }
