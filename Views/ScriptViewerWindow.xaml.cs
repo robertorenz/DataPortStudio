@@ -8,8 +8,9 @@ namespace DataPortStudio.Views;
 public partial class ScriptViewerWindow : Window
 {
     private readonly string _suggestedName;
+    private readonly string _extension;
 
-    public ScriptViewerWindow(string title, string script, string suggestedName)
+    public ScriptViewerWindow(string title, string script, string suggestedName, string extension = ".sql")
     {
         InitializeComponent();
         Owner = Application.Current?.MainWindow is { IsLoaded: true } w ? w : null;
@@ -17,6 +18,7 @@ public partial class ScriptViewerWindow : Window
         TitleLabel.Text = title;
         Editor.Text = script;
         _suggestedName = suggestedName;
+        _extension = extension.StartsWith('.') ? extension : "." + extension;
         Status.Text = $"{script.Split('\n').Length:N0} line(s).";
     }
 
@@ -30,9 +32,11 @@ public partial class ScriptViewerWindow : Window
     {
         var dlg = new SaveFileDialog
         {
-            FileName = _suggestedName + ".sql",
-            DefaultExt = "sql",
-            Filter = "SQL script (*.sql)|*.sql|All files (*.*)|*.*"
+            FileName = _suggestedName + _extension,
+            DefaultExt = _extension.TrimStart('.'),
+            Filter = _extension.Equals(".js", StringComparison.OrdinalIgnoreCase)
+                ? "JavaScript (*.js)|*.js|All files (*.*)|*.*"
+                : "SQL script (*.sql)|*.sql|All files (*.*)|*.*"
         };
         if (dlg.ShowDialog(this) != true) return;
         try

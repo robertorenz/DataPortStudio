@@ -10,6 +10,7 @@ public partial class DesignColumn : ObservableObject
     public string? OriginalType { get; set; }
     public string? OriginalSize { get; set; }
     public bool OriginalNullable { get; set; }
+    public bool OriginalIdentity { get; set; }
 
     [ObservableProperty] private string name = "";
     [ObservableProperty] private string type = "int";
@@ -18,6 +19,22 @@ public partial class DesignColumn : ObservableObject
     [ObservableProperty] private bool identity;
     [ObservableProperty] private string? defaultValue;
     [ObservableProperty] private bool primaryKey;
+
+    partial void OnIdentityChanged(bool value)
+    {
+        if (value) Nullable = false;
+    }
+
+    partial void OnPrimaryKeyChanged(bool value)
+    {
+        if (value) Nullable = false;
+    }
+
+    partial void OnNullableChanged(bool value)
+    {
+        // Identity and primary-key columns are intrinsically NOT NULL.
+        if (value && (Identity || PrimaryKey)) Nullable = false;
+    }
 
     public bool OriginalPrimaryKey { get; set; }
     public string? OriginalDefault { get; set; }

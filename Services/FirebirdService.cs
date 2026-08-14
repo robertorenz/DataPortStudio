@@ -33,6 +33,20 @@ public static class FirebirdService
         return result;
     }
 
+    public static async Task<string?> GetViewDefinitionAsync(string connectionString, string view)
+    {
+        await using var conn = new FbConnection(connectionString);
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText =
+            "SELECT RDB$VIEW_SOURCE FROM RDB$RELATIONS WHERE RDB$RELATION_NAME = @name";
+        cmd.Parameters.AddWithValue("@name", view);
+        var source = (await cmd.ExecuteScalarAsync())?.ToString()?.Trim();
+        return string.IsNullOrWhiteSpace(source)
+            ? null
+            : $"CREATE VIEW {Quote(view)} AS\n{source}";
+    }
+
     public static async Task<List<string>> GetColumnNamesAsync(string connectionString, string table)
     {
         var result = new List<string>();

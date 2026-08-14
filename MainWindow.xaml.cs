@@ -161,25 +161,32 @@ public partial class MainWindow : Window
             case NodeType.View when node.Connection.Engine is DatabaseEngine.Sqlite or DatabaseEngine.Firebird
                                      or DatabaseEngine.Oracle or DatabaseEngine.PostgreSql:
                 menu.Items.Add(Item("Ctx_Open", () => Run(Vm.OpenTableCommand, node)));
+                menu.Items.Add(Item("Ctx_GenerateScript", () => Run(Vm.GenerateObjectScriptCommand, node)));
                 break;
 
             case NodeType.View when node.Connection.Engine.IsMySql():
                 menu.Items.Add(Item("Ctx_Open", () => Run(Vm.OpenTableCommand, node)));
+                menu.Items.Add(Item("Ctx_GenerateScript", () => Run(Vm.GenerateObjectScriptCommand, node)));
                 menu.Items.Add(new Separator());
                 menu.Items.Add(Item("Ctx_Drop", () => Run(Vm.DropRoutineCommand, node)));
                 break;
 
             case NodeType.Function or NodeType.Procedure when node.Connection.Engine.IsMySql():
+                menu.Items.Add(Item("Ctx_GenerateScript", () => Run(Vm.GenerateObjectScriptCommand, node)));
+                menu.Items.Add(new Separator());
                 menu.Items.Add(Item("Ctx_Drop", () => Run(Vm.DropRoutineCommand, node)));
                 break;
 
             case NodeType.Function or NodeType.Procedure when node.Connection.Engine == DatabaseEngine.PostgreSql:
+                menu.Items.Add(Item("Ctx_GenerateScript", () => Run(Vm.GenerateObjectScriptCommand, node)));
+                menu.Items.Add(new Separator());
                 menu.Items.Add(Item("Ctx_Drop", () => Run(Vm.DropRoutineCommand, node)));
                 break;
 
             case NodeType.View:
                 menu.Items.Add(Item("Ctx_Open", () => Run(Vm.OpenTableCommand, node)));
                 menu.Items.Add(Item("Ctx_Edit", () => Run(Vm.EditRoutineCommand, node)));
+                menu.Items.Add(Item("Ctx_GenerateScript", () => Run(Vm.GenerateObjectScriptCommand, node)));
                 menu.Items.Add(new Separator());
                 menu.Items.Add(Item("Ctx_Drop", () => Run(Vm.DropRoutineCommand, node)));
                 break;
@@ -187,6 +194,7 @@ public partial class MainWindow : Window
             case NodeType.Function or NodeType.Procedure:
                 menu.Items.Add(Item("Ctx_Edit", () => Run(Vm.EditRoutineCommand, node)));
                 menu.Items.Add(Item("Ctx_Execute", () => Run(Vm.ExecuteRoutineCommand, node)));
+                menu.Items.Add(Item("Ctx_GenerateScript", () => Run(Vm.GenerateObjectScriptCommand, node)));
                 menu.Items.Add(new Separator());
                 menu.Items.Add(Item("Ctx_Drop", () => Run(Vm.DropRoutineCommand, node)));
                 break;
@@ -247,6 +255,8 @@ public partial class MainWindow : Window
                     rename.ToolTip = T("DbRename_Unsupported");
                 menu.Items.Add(rename);
                 menu.Items.Add(new Separator());
+                AddDatabaseMaintenance(menu, node);
+                menu.Items.Add(new Separator());
                 AddPaste(menu, node);
                 menu.Items.Add(Item("Ctx_Refresh", () => Run(Vm.RefreshNodeCommand, node)));
                 if (node.Connection.Engine.SupportsDatabaseDelete())
@@ -269,6 +279,11 @@ public partial class MainWindow : Window
                 if (!create.IsEnabled)
                     create.ToolTip = T("DbCreate_Unsupported");
                 menu.Items.Add(create);
+                if (Vm.CanMaintainDatabase(node))
+                {
+                    menu.Items.Add(new Separator());
+                    AddDatabaseMaintenance(menu, node);
+                }
                 menu.Items.Add(new Separator());
                 menu.Items.Add(Item("Ctx_Refresh", () => Run(Vm.RefreshNodeCommand, node)));
                 break;
@@ -282,6 +297,23 @@ public partial class MainWindow : Window
                 return null;
         }
         return menu;
+    }
+
+    private void AddDatabaseMaintenance(ContextMenu menu, DbTreeNode node)
+    {
+        if (!Vm.CanMaintainDatabase(node)) return;
+        static string T(string key) => LocalizationManager.Instance[key];
+
+        MenuItem Item(string headerKey, System.Windows.Input.ICommand command)
+        {
+            var item = new MenuItem { Header = T(headerKey) };
+            item.Click += (_, _) => Run(command, node);
+            return item;
+        }
+
+        menu.Items.Add(Item("Ctx_BackupDatabase", Vm.BackupDatabaseCommand));
+        menu.Items.Add(Item("Ctx_RestoreDatabase", Vm.RestoreDatabaseCommand));
+        menu.Items.Add(Item("Ctx_GenerateDatabaseScript", Vm.GenerateDatabaseScriptCommand));
     }
 
     private static void Run(System.Windows.Input.ICommand command, DbTreeNode node)
@@ -307,6 +339,7 @@ public partial class MainWindow : Window
             menu.Items.Add(Item("Ctx_Design", () => Run(Vm.DesignTableCommand, node)));
         if (canRename)
             menu.Items.Add(Item("Ctx_Rename", () => Run(Vm.RenameTableCommand, node)));
+        menu.Items.Add(Item("Ctx_GenerateScript", () => Run(Vm.GenerateObjectScriptCommand, node)));
 
         if (sqlServerExtras)
         {

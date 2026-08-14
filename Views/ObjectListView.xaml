@@ -139,6 +139,11 @@
                               Visibility="{Binding CanDesign, Converter={StaticResource BoolToVis}}"/>
                     <MenuItem Header="{loc:Tr Ctx_Rename}" Command="{Binding RenameCommand}"
                               Visibility="{Binding CanRename, Converter={StaticResource BoolToVis}}"/>
+                    <Separator Visibility="{Binding CanGenerateObjectScript, Converter={StaticResource BoolToVis}}"/>
+                    <MenuItem Header="{loc:Tr Ctx_GenerateScript}" Command="{Binding GenerateObjectScriptCommand}"
+                              Visibility="{Binding CanGenerateObjectScript, Converter={StaticResource BoolToVis}}"/>
+                    <MenuItem Header="{loc:Tr Ctx_GenerateInsert}" Command="{Binding GenerateInsertsCommand}"
+                              Visibility="{Binding CanGenerateInserts, Converter={StaticResource BoolToVis}}"/>
                     <Separator Visibility="{Binding IsTables, Converter={StaticResource BoolToVis}}"/>
                     <MenuItem Header="{loc:Tr Ctx_CopyTable}" Command="{Binding CopyCommand}"
                               Visibility="{Binding IsTables, Converter={StaticResource BoolToVis}}"/>

@@ -1,4 +1,5 @@
 using MySqlConnector;
+using DataPortStudio.ViewModels;
 
 namespace DataPortStudio.Services;
 
@@ -189,6 +190,29 @@ public static class MySqlService
         cmd.CommandText = $"SHOW CREATE TABLE {Quote(table)}";
         await using var r = await cmd.ExecuteReaderAsync();
         return await r.ReadAsync() && r.FieldCount > 1 ? r.GetString(1) : null;
+    }
+
+    public static async Task<string?> GetObjectDefinitionAsync(
+        string cs, string db, NodeType type, string name)
+    {
+        var keyword = type switch
+        {
+            NodeType.View => "VIEW",
+            NodeType.Function => "FUNCTION",
+            NodeType.Procedure => "PROCEDURE",
+            _ => "TABLE"
+        };
+        await using var conn = new MySqlConnection(WithDatabase(cs, db));
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"SHOW CREATE {keyword} {Quote(name)}";
+        await using var reader = await cmd.ExecuteReaderAsync();
+        if (!await reader.ReadAsync()) return null;
+        for (var i = 0; i < reader.FieldCount; i++)
+            if (reader.GetName(i).StartsWith("Create ", StringComparison.OrdinalIgnoreCase)
+                && !reader.IsDBNull(i))
+                return reader.GetValue(i)?.ToString();
+        return null;
     }
 
     public static async Task<long> GetRowCountAsync(string cs, string db, string table)
