@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.IO;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
@@ -7,8 +8,42 @@ using DataPortStudio.Models;
 
 namespace DataPortStudio.Services;
 
-/// <summary>One row in the Navicat-style object list.</summary>
-public sealed record ObjectListItem(string Name, long? Rows, DateTime? Modified, string? Comment, string? Schema = null);
+/// <summary>
+/// One row in the Navicat-style object list. <see cref="Comment"/> is settable and raises change
+/// notification, so a detail that costs a file open (an Excel workbook's sheet count) can be filled
+/// in after the row is already on screen instead of holding up the whole list.
+/// </summary>
+public sealed class ObjectListItem : INotifyPropertyChanged
+{
+    public ObjectListItem(
+        string name, long? rows, DateTime? modified, string? comment, string? schema = null)
+    {
+        Name = name;
+        Rows = rows;
+        Modified = modified;
+        _comment = comment;
+        Schema = schema;
+    }
+
+    public string Name { get; }
+    public long? Rows { get; }
+    public DateTime? Modified { get; }
+    public string? Schema { get; }
+
+    private string? _comment;
+    public string? Comment
+    {
+        get => _comment;
+        set
+        {
+            if (_comment == value) return;
+            _comment = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Comment)));
+        }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+}
 
 /// <summary>Loads the tables/collections of a container with row counts (and dates/comments where available).</summary>
 public static class ObjectListService
@@ -43,8 +78,10 @@ public static class ObjectListService
     }
 
     /// <summary>
-    /// Folder connection: one item per file. Excel workbooks report their sheet count; the
-    /// single-table text formats report the format instead, since "1 sheet" says nothing useful.
+    /// Folder connection: one item per file, built from directory metadata only so the list appears
+    /// immediately even for a folder of hundreds of files. Counting an Excel workbook's sheets means
+    /// opening the file, so that is deferred to <see cref="DescribeFolderFile"/>; the single-table
+    /// text formats are fully described here, since "1 sheet" would say nothing useful anyway.
     /// </summary>
     private static Task<List<ObjectListItem>> LoadExcelSheetsAsync(ConnectionProfile p)
     {
@@ -60,23 +97,42 @@ public static class ObjectListService
                 if (fi.Exists)
                 {
                     modified = fi.LastWriteTime;
+                    comment = FormatSize(fi.Length);
                     var format = TabularFileService.FormatOf(f);
-                    if (format is { } value && TabularFileService.HasWorksheets(value))
-                    {
-                        var sheetCount = TabularFileService.ListSheetsForFile(folder!, f).Count;
-                        comment = $"{FormatSize(fi.Length)} — {sheetCount} sheet{(sheetCount == 1 ? "" : "s")}";
-                    }
-                    else
-                    {
-                        var name = format is null ? "File" : TabularFileService.FormatName(format.Value);
-                        comment = $"{FormatSize(fi.Length)} — {name}";
-                    }
+                    if (format is { } value && !TabularFileService.HasWorksheets(value))
+                        comment += $" — {TabularFileService.FormatName(value)}";
                 }
             }
             catch { /* best effort */ }
             return new ObjectListItem(f, null, modified, comment);
         }).ToList();
         return Task.FromResult(result);
+    }
+
+    /// <summary>True when the file's listing entry still needs a detail that costs a file open.</summary>
+    public static bool NeedsFolderDescription(string fileName) =>
+        TabularFileService.FormatOf(fileName) is { } format &&
+        TabularFileService.HasWorksheets(format);
+
+    /// <summary>
+    /// The expensive half of a folder listing: opens one Excel workbook to count its sheets.
+    /// Returns null when the file needs no second pass or could not be read. Call it off the UI
+    /// thread, one file at a time, so the list stays responsive while it fills in.
+    /// </summary>
+    public static string? DescribeFolderFile(ConnectionProfile p, string fileName)
+    {
+        if (!NeedsFolderDescription(fileName)) return null;
+        var folder = p.FilePath;
+        if (string.IsNullOrWhiteSpace(folder)) return null;
+
+        try
+        {
+            var fi = new FileInfo(Path.Combine(folder, fileName));
+            if (!fi.Exists) return null;
+            var sheetCount = TabularFileService.ListSheetsForFile(folder, fileName).Count;
+            return $"{FormatSize(fi.Length)} — {sheetCount} sheet{(sheetCount == 1 ? "" : "s")}";
+        }
+        catch { return null; }
     }
 
     /// <summary>Clarion flat files: each file in the connection's folder, with its size as a comment.</summary>

@@ -4,6 +4,17 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## v1.0.31 — 2026-08-14
+
+### Fixed
+- **A folder of Excel workbooks no longer stalls the Objects tab.** Listing a folder connection used to open *every* workbook up front — just to count its sheets — before a single row appeared, so a folder of large `.xlsx` files could freeze the tab for a long time. Two changes fix it:
+  - **Sheet names are now read straight from the workbook part inside the `.xlsx` zip** instead of parsing the whole file. Opening a workbook with ClosedXML reads every cell of every sheet; reading `xl/workbook.xml` reads only the sheet list. On a test folder of 40 modest workbooks (9.6 MB total, 120 sheets) this took listing from **4,065 ms to 8 ms** — the same 120 sheet names, in the same order. Bigger workbooks gain proportionally more. Anything the shortcut can't read (a corrupt file, an unusual layout) silently falls back to the old ClosedXML path, so nothing that used to open stops opening.
+  - **The list now appears first and fills in behind you.** Rows show up immediately with their name, size, format and modified date, and the sheet count is added to each workbook's comment one file at a time in the background. The status line counts progress (`reading files… (12/40)`) and clears when it finishes. Selecting a different folder cancels the pass in flight instead of letting it write into the new list.
+- **Test Connection stops at the first readable table** rather than scanning the entire folder, so testing a folder of large workbooks returns immediately.
+- **Folder enumeration moved off the UI thread** for Excel and Clarion TPS/DAT connections, so expanding a connection pointed at a big or networked folder no longer blocks the window while the directory is read.
+
+---
+
 ## v1.0.30 — 2026-08-14
 
 ### Added / Improved

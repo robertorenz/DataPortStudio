@@ -153,9 +153,13 @@ public partial class DbTreeNode : ObservableObject
                 DatabaseEngine.Sqlite => await LoadSqliteChildrenAsync(connStr),
                 DatabaseEngine.Firebird => await LoadFirebirdChildrenAsync(connStr),
                 DatabaseEngine.MongoDb => await LoadMongoChildrenAsync(connStr),
-                DatabaseEngine.Tps => LoadClarionFileChildren(TpsService.ListTables(Connection.FilePath)),
-                DatabaseEngine.ClarionDat => LoadClarionFileChildren(DatService.ListTables(Connection.FilePath)),
-                DatabaseEngine.Excel => LoadExcelFileChildren(TabularFileService.ListFiles(Connection.FilePath)),
+                // Enumerating a large or networked folder can take a moment — keep it off the UI thread.
+                DatabaseEngine.Tps => LoadClarionFileChildren(
+                    await Task.Run(() => TpsService.ListTables(Connection.FilePath))),
+                DatabaseEngine.ClarionDat => LoadClarionFileChildren(
+                    await Task.Run(() => DatService.ListTables(Connection.FilePath))),
+                DatabaseEngine.Excel => LoadExcelFileChildren(
+                    await Task.Run(() => TabularFileService.ListFiles(Connection.FilePath))),
                 DatabaseEngine.MySql or DatabaseEngine.MariaDb => await LoadMySqlChildrenAsync(connStr),
                 DatabaseEngine.Oracle => await LoadOracleChildrenAsync(connStr),
                 DatabaseEngine.PostgreSql => await LoadPostgresChildrenAsync(connStr),

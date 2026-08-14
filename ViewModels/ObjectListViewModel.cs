@@ -23,6 +23,9 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
 
     private DbTreeNode? _container;
 
+    /// <summary>Cancels the background detail pass when a different container is selected.</summary>
+    private CancellationTokenSource? _detailCts;
+
     public ObservableCollection<ObjectListItem> Items { get; } = new();
     /// <summary>The name-filtered view bound to the Objects grid.</summary>
     public ICollectionView FilteredItems { get; }
@@ -122,7 +125,14 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
     public async Task LoadAsync()
     {
         if (_container is null) return;
+
+        // Abandon any detail pass still running for the previously selected container.
+        _detailCts?.Cancel();
+        _detailCts?.Dispose();
+        _detailCts = null;
+
         IsLoading = true;
+        var loaded = false;
         try
         {
             var db = _container.Database ?? _container.Name;
@@ -136,6 +146,7 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
             CountText = string.Format(LocalizationManager.Instance["OL_Count"], Items.Count);
             FilteredItems.Refresh();
             if (!string.IsNullOrWhiteSpace(LocatorText)) Locate(reset: true);
+            loaded = true;
         }
         catch (Exception ex)
         {
@@ -144,6 +155,58 @@ public partial class ObjectListViewModel : ObservableObject, ITabItem
         finally
         {
             IsLoading = false;
+        }
+
+        // Deliberately not awaited: the list is already usable, and the remaining details trickle
+        // in behind it rather than holding up whoever is waiting on the load.
+        if (loaded)
+        {
+            var cts = new CancellationTokenSource();
+            _detailCts = cts;
+            _ = FillFolderDetailsAsync(cts.Token);
+        }
+    }
+
+    /// <summary>
+    /// Fills in the details that cost a file open — an Excel workbook's sheet count — one file at a
+    /// time, after the rows are already on screen. Awaiting each file hands the UI thread back
+    /// between them, so a folder of large workbooks fills in progressively instead of freezing the
+    /// tab while every workbook is opened up front.
+    /// </summary>
+    private async Task FillFolderDetailsAsync(CancellationToken token)
+    {
+        if (_container is null || _container.Connection.Engine != DatabaseEngine.Excel) return;
+
+        var profile = _container.Connection;
+        var pending = Items.Where(i => ObjectListService.NeedsFolderDescription(i.Name)).ToList();
+        if (pending.Count == 0) return;
+
+        var loc = LocalizationManager.Instance;
+        var baseCount = CountText;
+        var done = 0;
+
+        try
+        {
+            foreach (var item in pending)
+            {
+                token.ThrowIfCancellationRequested();
+                var detail = await Task.Run(
+                    () => ObjectListService.DescribeFolderFile(profile, item.Name), token);
+                token.ThrowIfCancellationRequested();
+
+                if (detail is not null) item.Comment = detail;
+                done++;
+                CountText = $"{baseCount} — {string.Format(loc["OL_ReadingFiles"], done, pending.Count)}";
+            }
+            CountText = baseCount;
+        }
+        catch (OperationCanceledException)
+        {
+            // A different container was selected; its own load owns the status line now.
+        }
+        catch
+        {
+            CountText = baseCount;
         }
     }
 

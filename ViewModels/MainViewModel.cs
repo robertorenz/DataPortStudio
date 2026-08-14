@@ -947,7 +947,7 @@ public partial class MainViewModel : ObservableObject
             var fileName = string.IsNullOrEmpty(node.Database) ? node.Name : node.Database;
             var format = TabularFileService.FormatOf(fileName);
             var singleTable = format is { } f && !TabularFileService.HasWorksheets(f);
-            var sheets = TabularFileService.ListSheetsForFile(folder, fileName);
+            var sheets = await Task.Run(() => TabularFileService.ListSheetsForFile(folder, fileName));
             foreach (var sheetName in sheets)
             {
                 var displayName = singleTable ? fileName : $"{fileName} — {sheetName}";

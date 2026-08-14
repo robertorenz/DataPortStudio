@@ -3,7 +3,9 @@ using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using System.Data;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
+using System.Xml.Linq;
 
 namespace DataPortStudio.Services;
 
@@ -31,6 +33,8 @@ public static class ExcelService
         {
             if (IsXlsx(ext))
             {
+                var fast = TryListXlsxSheetNames(path);
+                if (fast is not null) return fast;
                 using var wb = new XLWorkbook(path);
                 return wb.Worksheets.Select(ws => ws.Name).ToList();
             }
@@ -43,6 +47,36 @@ public static class ExcelService
         }
         catch { /* corrupt / locked file */ }
         return [];
+    }
+
+    /// <summary>
+    /// Reads sheet names straight out of the workbook part inside the .xlsx zip. Opening the file
+    /// with ClosedXML parses every cell of every sheet, which is far too slow when all we want is
+    /// the list of sheet names for a folder full of workbooks. Returns null if the shortcut does
+    /// not apply, so the caller can fall back to ClosedXML.
+    /// </summary>
+    private static List<string>? TryListXlsxSheetNames(string path)
+    {
+        try
+        {
+            using var zip = ZipFile.OpenRead(path);
+            var entry = zip.GetEntry("xl/workbook.xml")
+                        ?? zip.Entries.FirstOrDefault(e =>
+                            e.FullName.EndsWith("workbook.xml", StringComparison.OrdinalIgnoreCase));
+            if (entry is null) return null;
+
+            using var stream = entry.Open();
+            var document = XDocument.Load(stream);
+            var names = document.Descendants()
+                .Where(e => e.Name.LocalName == "sheets")
+                .Elements()
+                .Where(e => e.Name.LocalName == "sheet")
+                .Select(e => e.Attribute("name")?.Value)
+                .OfType<string>()
+                .ToList();
+            return names.Count > 0 ? names : null;
+        }
+        catch { return null; }
     }
 
     /// <summary>Reads one worksheet into a DataTable. First row = column headers. All values are strings.</summary>

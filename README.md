@@ -8,14 +8,14 @@ Add connection strings, browse the server tree (databases → schemas → tables
 view & edit its records in place — including adding and deleting rows — with changes pushed back to
 the database.
 
-![Status](https://img.shields.io/badge/status-v1.0.30-blue) ![Platform](https://img.shields.io/badge/platform-Windows-informational) ![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
+![Status](https://img.shields.io/badge/status-v1.0.31-blue) ![Platform](https://img.shields.io/badge/platform-Windows-informational) ![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
 
 ## Download
 
 Grab the latest release from the
 [**Releases**](https://github.com/robertorenz/DataPortStudio/releases/latest) page.
 
-**Option 1 — Installer** (`DataPortStudio-1.0.30-Setup.exe`, ~62 MB)
+**Option 1 — Installer** (`DataPortStudio-1.0.31-Setup.exe`, ~62 MB)
 - Installs to `Program Files`, creates a Start Menu entry, and adds an optional Desktop shortcut.
 - Includes a proper uninstaller (Add/Remove Programs).
 
@@ -94,6 +94,10 @@ Both options are **self-contained** — no .NET runtime install required.
     - **JSON and XML open read-only.** Their values can nest, and the grid flattens nested values to
       text — writing the file back would destroy that structure, so editing is disabled rather than
       quietly lossy. Filter, sort, Cell View, Export and Copy all work as usual.
+    - **Big folders stay responsive.** The file list appears immediately — name, size, format and
+      date — and each workbook's sheet count is filled in behind it, one file at a time, with the
+      status line showing progress. Sheet names are read straight from the `.xlsx` zip rather than
+      by parsing the whole workbook, which is *hundreds of times* faster on a folder of large files.
   - **Clarion DAT**: the *classic* Clarion ISAM format (pre-TopSpeed, `.dat`). Same folder model —
     point at a folder and each `.dat` file is a table. DataPortStudio decodes the format from its public
     spec (Clarion Technical Bulletin 117): header, field descriptors and fixed-length records,

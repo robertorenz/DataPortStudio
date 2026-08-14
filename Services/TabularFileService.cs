@@ -117,7 +117,10 @@ public static class TabularFileService
         return result;
     }
 
-    /// <summary>Confirms the folder exists and holds at least one readable table.</summary>
+    /// <summary>
+    /// Confirms the folder exists and holds at least one readable table. Stops at the first one
+    /// found rather than scanning the whole folder, so testing a folder of large workbooks is quick.
+    /// </summary>
     public static void TestConnection(string? folder)
     {
         if (string.IsNullOrWhiteSpace(folder))
@@ -125,9 +128,18 @@ public static class TabularFileService
                 "Choose a folder that contains Excel, CSV, TSV, JSON or XML files.");
         if (!Directory.Exists(folder))
             throw new DirectoryNotFoundException($"Folder not found: {folder}");
-        if (ListSheets(folder).Count == 0)
-            throw new FileNotFoundException(
-                $"No Excel (.xls / .xlsx), CSV, TSV, JSON or XML files were found in {folder}.");
+
+        foreach (var fileName in ListFiles(folder))
+        {
+            var format = FormatOf(fileName);
+            if (format is null) continue;
+            // A text file is a table in its own right; a workbook only counts if it has a sheet.
+            if (!HasWorksheets(format.Value)) return;
+            if (ExcelService.ListSheetsForFile(folder!, fileName).Count > 0) return;
+        }
+
+        throw new FileNotFoundException(
+            $"No Excel (.xls / .xlsx), CSV, TSV, JSON or XML files were found in {folder}.");
     }
 
     /// <summary>Reads one table into a DataTable. First row / object keys become columns; values are strings.</summary>

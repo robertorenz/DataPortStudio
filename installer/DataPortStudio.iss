@@ -1,5 +1,5 @@
 #define AppName "DataPortStudio"
-#define AppVersion "1.0.30"
+#define AppVersion "1.0.31"
 #define AppPublisher "Reddin Assessments"
 #define AppURL "https://github.com/robertorenz/DataPortStudio"
 #define AppExeName "DataPortStudio.exe"
