@@ -560,6 +560,217 @@ public partial class MainViewModel : ObservableObject
         StatusText = $"Refreshed '{node.Name}'.";
     }
 
+    [RelayCommand]
+    private async Task CreateDatabase(DbTreeNode? node)
+    {
+        node ??= SelectedNode;
+        if (node is not { Type: NodeType.Server }
+            || !node.Connection.Engine.SupportsDatabaseCreate())
+            return;
+
+        var dialog = new CreateDatabaseDialog(node.Connection);
+        if (dialog.ShowDialog() != true) return;
+
+        string L(string key) => LocalizationManager.Instance[key];
+        try
+        {
+            IsBusy = true;
+            await ExecuteCreateDatabaseAsync(node.Connection, dialog.Options);
+            await RefreshNode(node);
+            var created = node.Children.FirstOrDefault(child =>
+                child.Type == NodeType.Database
+                && string.Equals(child.Name, dialog.Options.Name, StringComparison.OrdinalIgnoreCase));
+            if (created is not null)
+            {
+                await created.LoadChildrenAsync();
+                created.IsExpanded = true;
+                var defaultSchema = created.Children.FirstOrDefault(child =>
+                    child.Type == NodeType.Schema
+                    && (string.Equals(child.Name, "dbo", StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(child.Name, "public", StringComparison.OrdinalIgnoreCase)));
+                if (defaultSchema is not null)
+                {
+                    await defaultSchema.LoadChildrenAsync();
+                    defaultSchema.IsExpanded = true;
+                    SelectedNode = defaultSchema;
+                }
+                else
+                {
+                    SelectedNode = created;
+                }
+            }
+            StatusText = string.Format(L("DbCreate_Success"), dialog.Options.Name);
+        }
+        catch (Exception ex)
+        {
+            Dialogs.ShowError(L("DbCreate_Failed"), ex.Message);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private static Task ExecuteCreateDatabaseAsync(
+        ConnectionProfile connection, DatabaseCreationOptions options)
+    {
+        var cs = connection.BuildConnectionString();
+        return connection.Engine switch
+        {
+            DatabaseEngine.SqlServer => SqlServerService.CreateDatabaseAsync(cs, options),
+            DatabaseEngine.PostgreSql => PostgresService.CreateDatabaseAsync(
+                cs,
+                string.IsNullOrWhiteSpace(connection.Database) ? "postgres" : connection.Database,
+                options.Name,
+                options.PostgresOwner,
+                options.PostgresEncoding),
+            DatabaseEngine.MySql or DatabaseEngine.MariaDb => MySqlService.CreateDatabaseAsync(
+                cs, options.Name, options.MySqlCharacterSet, options.MySqlCollation),
+            DatabaseEngine.MongoDb => MongoService.CreateDatabaseAsync(
+                cs, options.Name, options.MongoInitialCollection!),
+            _ => throw new NotSupportedException(LocalizationManager.Instance["DbCreate_Unsupported"])
+        };
+    }
+
+    [RelayCommand]
+    private async Task RenameDatabase(DbTreeNode? node)
+    {
+        node ??= SelectedNode;
+        if (node is not { Type: NodeType.Database }) return;
+
+        string L(string key) => LocalizationManager.Instance[key];
+        if (!node.Connection.Engine.SupportsDatabaseRename())
+        {
+            Dialogs.ShowError(L("DbRename_Title"), L("DbRename_Unsupported"));
+            return;
+        }
+
+        var newName = ModalDialog.PromptText(
+            L("DbRename_Title"),
+            string.Format(L("DbRename_Message"), node.Name),
+            node.Name,
+            L("Btn_Accept"),
+            L("Btn_Cancel"));
+        if (newName is null) return;
+
+        newName = newName.Trim();
+        if (newName == node.Name) return;
+        if (string.IsNullOrEmpty(newName))
+        {
+            Dialogs.ShowError(L("DbRename_Title"), L("Rename_InvalidName"));
+            return;
+        }
+
+        try
+        {
+            IsBusy = true;
+            await ExecuteRenameDatabaseAsync(node, newName);
+            UpdateLastDatabase(node, newName);
+            var parent = node.Parent;
+            if (parent is not null)
+            {
+                SelectedNode = parent;
+                await RefreshNode(parent);
+            }
+            StatusText = string.Format(L("DbRename_Success"), node.Name, newName);
+        }
+        catch (Exception ex)
+        {
+            Dialogs.ShowError(L("DbRename_Failed"), ex.Message);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task DeleteDatabase(DbTreeNode? node)
+    {
+        node ??= SelectedNode;
+        if (node is not { Type: NodeType.Database } || !node.Connection.Engine.SupportsDatabaseDelete())
+            return;
+
+        string L(string key) => LocalizationManager.Instance[key];
+        if (!ModalDialog.ConfirmText(
+                L("DbDelete_Title"),
+                string.Format(L("DbDelete_Warning"), node.Name),
+                string.Format(L("DbDelete_Confirmation"), node.Name),
+                node.Name,
+                L("Btn_Delete"),
+                L("Btn_Cancel")))
+            return;
+
+        try
+        {
+            IsBusy = true;
+            await ExecuteDeleteDatabaseAsync(node);
+            UpdateLastDatabase(node, null);
+            var parent = node.Parent;
+            if (parent is not null)
+            {
+                SelectedNode = parent;
+                await RefreshNode(parent);
+            }
+            StatusText = string.Format(L("DbDelete_Success"), node.Name);
+        }
+        catch (Exception ex)
+        {
+            Dialogs.ShowError(L("DbDelete_Failed"), ex.Message);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private static Task ExecuteRenameDatabaseAsync(DbTreeNode node, string newName)
+    {
+        var cs = node.Connection.BuildConnectionString();
+        return node.Connection.Engine switch
+        {
+            DatabaseEngine.SqlServer => SqlServerService.RenameDatabaseAsync(cs, node.Name, newName),
+            DatabaseEngine.PostgreSql => PostgresService.ExecuteAsync(cs,
+                PostgreSqlMaintenanceDatabase(node.Name),
+                $"ALTER DATABASE {PostgresService.Quote(node.Name)} RENAME TO {PostgresService.Quote(newName)}"),
+            _ => throw new NotSupportedException(LocalizationManager.Instance["DbRename_Unsupported"])
+        };
+    }
+
+    private static Task ExecuteDeleteDatabaseAsync(DbTreeNode node)
+    {
+        var cs = node.Connection.BuildConnectionString();
+        return node.Connection.Engine switch
+        {
+            DatabaseEngine.SqlServer => SqlServerService.DropDatabaseAsync(cs, node.Name),
+            DatabaseEngine.PostgreSql => PostgresService.ExecuteAsync(cs,
+                PostgreSqlMaintenanceDatabase(node.Name),
+                $"DROP DATABASE {PostgresService.Quote(node.Name)}"),
+            DatabaseEngine.MySql or DatabaseEngine.MariaDb => MySqlService.ExecuteAsync(
+                MySqlService.WithoutDatabase(cs), "", $"DROP DATABASE {MySqlService.Quote(node.Name)}"),
+            DatabaseEngine.MongoDb => MongoService.DropDatabaseAsync(cs, node.Name),
+            _ => throw new NotSupportedException()
+        };
+    }
+
+    private static string PostgreSqlMaintenanceDatabase(string targetDatabase) =>
+        string.Equals(targetDatabase, "postgres", StringComparison.OrdinalIgnoreCase) ? "template1" : "postgres";
+
+    private static void UpdateLastDatabase(DbTreeNode node, string? newName)
+    {
+        var settings = SettingsStore.Current;
+        var key = node.Connection.Id.ToString();
+        if (!settings.LastDatabases.TryGetValue(key, out var current)
+            || !string.Equals(current, node.Name, StringComparison.Ordinal))
+            return;
+
+        if (newName is null)
+            settings.LastDatabases.Remove(key);
+        else
+            settings.LastDatabases[key] = newName;
+        SettingsStore.Save(settings);
+    }
+
     // ---- tabbed data viewing / editing ----------------------------------
 
     [RelayCommand]

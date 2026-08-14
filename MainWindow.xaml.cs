@@ -239,12 +239,42 @@ public partial class MainWindow : Window
                 menu.Items.Add(Item("Ctx_Refresh", () => Run(Vm.RefreshNodeCommand, node)));
                 break;
 
-            case NodeType.Database or NodeType.Schema:
+            case NodeType.Database:
+            {
+                var rename = Item("Ctx_RenameDatabase", () => Run(Vm.RenameDatabaseCommand, node));
+                rename.IsEnabled = node.Connection.Engine.SupportsDatabaseRename();
+                if (!rename.IsEnabled)
+                    rename.ToolTip = T("DbRename_Unsupported");
+                menu.Items.Add(rename);
+                menu.Items.Add(new Separator());
+                AddPaste(menu, node);
+                menu.Items.Add(Item("Ctx_Refresh", () => Run(Vm.RefreshNodeCommand, node)));
+                if (node.Connection.Engine.SupportsDatabaseDelete())
+                {
+                    menu.Items.Add(new Separator());
+                    menu.Items.Add(Item("Ctx_DeleteDatabase", () => Run(Vm.DeleteDatabaseCommand, node)));
+                }
+                break;
+            }
+
+            case NodeType.Schema:
                 AddPaste(menu, node);
                 menu.Items.Add(Item("Ctx_Refresh", () => Run(Vm.RefreshNodeCommand, node)));
                 break;
 
-            case NodeType.Server or NodeType.Category:
+            case NodeType.Server:
+            {
+                var create = Item("Ctx_CreateDatabase", () => Run(Vm.CreateDatabaseCommand, node));
+                create.IsEnabled = node.Connection.Engine.SupportsDatabaseCreate();
+                if (!create.IsEnabled)
+                    create.ToolTip = T("DbCreate_Unsupported");
+                menu.Items.Add(create);
+                menu.Items.Add(new Separator());
+                menu.Items.Add(Item("Ctx_Refresh", () => Run(Vm.RefreshNodeCommand, node)));
+                break;
+            }
+
+            case NodeType.Category:
                 menu.Items.Add(Item("Ctx_Refresh", () => Run(Vm.RefreshNodeCommand, node)));
                 break;
 
