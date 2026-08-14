@@ -208,4 +208,13 @@ public static class MySqlService
         cmd.CommandText = sql;
         await cmd.ExecuteNonQueryAsync();
     }
+
+    public static Task CreateDatabaseAsync(
+        string cs, string name, string characterSet, string? collation)
+    {
+        var sql = $"CREATE DATABASE {Quote(name)} CHARACTER SET {Quote(characterSet)}";
+        if (!string.IsNullOrWhiteSpace(collation))
+            sql += $" COLLATE {Quote(collation)}";
+        return ExecuteAsync(WithoutDatabase(cs), "", sql);
+    }
 }

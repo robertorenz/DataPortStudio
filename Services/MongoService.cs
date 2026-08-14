@@ -35,6 +35,12 @@ public static class MongoService
         return names;
     }
 
+    public static Task DropDatabaseAsync(string uri, string database) =>
+        Client(uri).DropDatabaseAsync(database);
+
+    public static Task CreateDatabaseAsync(string uri, string database, string initialCollection) =>
+        Client(uri).GetDatabase(database).CreateCollectionAsync(initialCollection);
+
     public static async Task<DataTable> LoadCollectionAsync(string uri, string database, string collection, int limit)
     {
         var coll = Client(uri).GetDatabase(database).GetCollection<BsonDocument>(collection);

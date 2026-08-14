@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -115,7 +116,8 @@ public partial class ModalDialog : Window
     /// <summary>
     /// Shows a text-input prompt. Returns the entered string, or null if cancelled.
     /// </summary>
-    public static string? PromptText(string title, string message, string defaultValue = "")
+    public static string? PromptText(string title, string message, string defaultValue = "",
+        string? primaryText = null, string? cancelText = null)
     {
         string? result = null;
         var dlg = new Window
@@ -147,8 +149,8 @@ public partial class ModalDialog : Window
         };
         dlg.Loaded += (_, _) => { textBox.Focus(); textBox.SelectAll(); };
 
-        var ok = new Button { Content = "OK", IsDefault = true, Width = 90, Margin = new Thickness(0, 0, 8, 0), Padding = new Thickness(0, 6, 0, 6) };
-        var cancel = new Button { Content = "Cancel", IsCancel = true, Width = 90, Padding = new Thickness(0, 6, 0, 6) };
+        var ok = new Button { Content = primaryText ?? "OK", IsDefault = true, Width = 90, Margin = new Thickness(0, 0, 8, 0), Padding = new Thickness(0, 6, 0, 6) };
+        var cancel = new Button { Content = cancelText ?? "Cancel", IsCancel = true, Width = 90, Padding = new Thickness(0, 6, 0, 6) };
         ok.Click += (_, _) => { result = textBox.Text; dlg.DialogResult = true; };
         cancel.Click += (_, _) => { dlg.DialogResult = false; };
 
@@ -168,6 +170,97 @@ public partial class ModalDialog : Window
         dlg.Content = root;
         dlg.ShowDialog();
         return result;
+    }
+
+    /// <summary>
+    /// Destructive confirmation that enables its primary button only after the expected text is
+    /// entered exactly. This prevents an accidental click from deleting a named resource.
+    /// </summary>
+    public static bool ConfirmText(string title, string message, string prompt, string expectedText,
+        string primaryText, string cancelText)
+    {
+        var dlg = new Window
+        {
+            Title = title,
+            Width = 460,
+            SizeToContent = SizeToContent.Height,
+            WindowStyle = WindowStyle.ToolWindow,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Owner = Application.Current?.MainWindow is { IsLoaded: true } w ? w : null,
+            ResizeMode = ResizeMode.NoResize,
+            ShowInTaskbar = false
+        };
+        if (Application.Current?.Resources["B.Bg"] is Brush bg) dlg.Background = bg;
+
+        var warning = new TextBlock
+        {
+            Text = message,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(20, 18, 20, 12),
+            FontWeight = FontWeights.SemiBold
+        };
+        if (Application.Current?.Resources["B.Danger"] is Brush danger)
+            warning.Foreground = danger;
+        else if (Application.Current?.Resources["B.Text"] is Brush fg)
+            warning.Foreground = fg;
+
+        var promptBlock = new TextBlock
+        {
+            Text = prompt,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(20, 0, 20, 8)
+        };
+        if (Application.Current?.Resources["B.Text"] is Brush promptFg) promptBlock.Foreground = promptFg;
+
+        var textBox = new TextBox
+        {
+            Margin = new Thickness(20, 0, 20, 0),
+            Padding = new Thickness(8, 5, 8, 5),
+            FontSize = 13
+        };
+        AutomationProperties.SetName(textBox, prompt);
+
+        var delete = new Button
+        {
+            Content = primaryText,
+            IsDefault = true,
+            IsEnabled = false,
+            MinWidth = 90,
+            Margin = new Thickness(0, 0, 8, 0),
+            Padding = new Thickness(12, 6, 12, 6)
+        };
+        if (Application.Current?.Resources["DangerButton"] is Style dangerStyle)
+            delete.Style = dangerStyle;
+        var cancel = new Button
+        {
+            Content = cancelText,
+            IsCancel = true,
+            MinWidth = 90,
+            Padding = new Thickness(12, 6, 12, 6)
+        };
+
+        textBox.TextChanged += (_, _) =>
+            delete.IsEnabled = string.Equals(textBox.Text, expectedText, StringComparison.Ordinal);
+        delete.Click += (_, _) => dlg.DialogResult = true;
+        cancel.Click += (_, _) => dlg.DialogResult = false;
+        dlg.Loaded += (_, _) => textBox.Focus();
+
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(20, 14, 20, 18)
+        };
+        buttons.Children.Add(delete);
+        buttons.Children.Add(cancel);
+
+        var root = new StackPanel();
+        root.Children.Add(warning);
+        root.Children.Add(promptBlock);
+        root.Children.Add(textBox);
+        root.Children.Add(buttons);
+        dlg.Content = root;
+        return dlg.ShowDialog() == true;
     }
 
     /// <summary>

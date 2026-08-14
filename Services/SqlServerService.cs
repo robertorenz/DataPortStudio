@@ -1,4 +1,5 @@
 using System.Data;
+using DataPortStudio.Models;
 using Microsoft.Data.SqlClient;
 
 namespace DataPortStudio.Services;
@@ -29,18 +30,25 @@ public static class SqlServerService
         return result;
     }
 
-    /// <summary>Schemas in the given database that own any user object.</summary>
+    /// <summary>
+    /// User-facing schemas in the database, including empty schemas such as dbo in a newly
+    /// created database. Fixed-role and system schemas are intentionally hidden.
+    /// </summary>
     public static async Task<List<string>> GetSchemasAsync(string connectionString, string database)
     {
         var result = new List<string>();
         await using var conn = new SqlConnection(WithDatabase(connectionString, database));
         await conn.OpenAsync();
         await using var cmd = new SqlCommand(
-            @"SELECT DISTINCT s.name
+            @"SELECT s.name
               FROM sys.schemas s
-              JOIN sys.objects o ON o.schema_id = s.schema_id
-              WHERE o.type IN ('U','V','P','FN','IF','TF','FS','FT')
-              ORDER BY s.name", conn);
+              WHERE s.name NOT IN (
+                  N'sys', N'INFORMATION_SCHEMA', N'guest',
+                  N'db_owner', N'db_accessadmin', N'db_securityadmin', N'db_ddladmin',
+                  N'db_backupoperator', N'db_datareader', N'db_datawriter',
+                  N'db_denydatareader', N'db_denydatawriter'
+              )
+              ORDER BY CASE WHEN s.name = N'dbo' THEN 0 ELSE 1 END, s.name", conn);
         await using var reader = await cmd.ExecuteReaderAsync();
         while (await reader.ReadAsync())
             result.Add(reader.GetString(0));
@@ -220,6 +228,266 @@ public static class SqlServerService
         await conn.OpenAsync();
         await using var cmd = new SqlCommand(sql, conn) { CommandTimeout = 0 };
         return await cmd.ExecuteNonQueryAsync();
+    }
+
+    /// <summary>
+    /// Renames a database from master. SQL Server requires exclusive access, so active sessions
+    /// are rolled back first. If the rename fails after switching modes, MULTI_USER is restored.
+    /// </summary>
+    public static async Task RenameDatabaseAsync(string connectionString, string oldName, string newName)
+    {
+        SqlConnection.ClearAllPools();
+        await using var conn = new SqlConnection(WithDatabase(connectionString, "master"));
+        await conn.OpenAsync();
+
+        var oldIdentifier = QuoteIdentifier(oldName);
+        var newIdentifier = QuoteIdentifier(newName);
+        var singleUserSet = false;
+        var activeName = oldName;
+        Exception? operationError = null;
+        try
+        {
+            await ExecuteCommandAsync(conn,
+                $"ALTER DATABASE {oldIdentifier} SET SINGLE_USER WITH ROLLBACK IMMEDIATE");
+            singleUserSet = true;
+            await ExecuteCommandAsync(conn,
+                $"ALTER DATABASE {oldIdentifier} MODIFY NAME = {newIdentifier}");
+            activeName = newName;
+        }
+        catch (Exception ex)
+        {
+            operationError = ex;
+            throw;
+        }
+        finally
+        {
+            try
+            {
+                if (singleUserSet)
+                    await RestoreMultiUserAsync(conn, activeName);
+            }
+            catch (Exception restoreError)
+            {
+                throw MultiUserRestoreException(activeName, operationError, restoreError);
+            }
+            finally
+            {
+                SqlConnection.ClearAllPools();
+            }
+        }
+    }
+
+    /// <summary>Drops a database after disconnecting active sessions from it.</summary>
+    public static async Task DropDatabaseAsync(string connectionString, string database)
+    {
+        SqlConnection.ClearAllPools();
+        await using var conn = new SqlConnection(WithDatabase(connectionString, "master"));
+        await conn.OpenAsync();
+
+        var identifier = QuoteIdentifier(database);
+        var singleUserSet = false;
+        Exception? operationError = null;
+        try
+        {
+            await ExecuteCommandAsync(conn,
+                $"ALTER DATABASE {identifier} SET SINGLE_USER WITH ROLLBACK IMMEDIATE");
+            singleUserSet = true;
+            await ExecuteCommandAsync(conn, $"DROP DATABASE {identifier}");
+            singleUserSet = false;
+        }
+        catch (Exception ex)
+        {
+            operationError = ex;
+            throw;
+        }
+        finally
+        {
+            try
+            {
+                if (singleUserSet)
+                    await RestoreMultiUserAsync(conn, database);
+            }
+            catch (Exception restoreError)
+            {
+                throw MultiUserRestoreException(database, operationError, restoreError);
+            }
+            finally
+            {
+                SqlConnection.ClearAllPools();
+            }
+        }
+    }
+
+    public sealed record DatabaseCreationDefaults(
+        int ProductMajorVersion,
+        string RecoveryModel,
+        int CompatibilityLevel,
+        string DataDirectory,
+        string LogDirectory,
+        int DataInitialSizeMb,
+        int? DataMaxSizeMb,
+        int DataGrowthMb,
+        int LogInitialSizeMb,
+        int? LogMaxSizeMb,
+        int LogGrowthMb);
+
+    public static async Task<DatabaseCreationDefaults> GetDatabaseCreationDefaultsAsync(
+        string connectionString)
+    {
+        await using var conn = new SqlConnection(WithDatabase(connectionString, "master"));
+        await conn.OpenAsync();
+        const string sql = @"
+            SELECT
+                CONVERT(int, SERVERPROPERTY('ProductMajorVersion')),
+                CONVERT(nvarchar(4000), SERVERPROPERTY('InstanceDefaultDataPath')),
+                CONVERT(nvarchar(4000), SERVERPROPERTY('InstanceDefaultLogPath')),
+                d.recovery_model_desc,
+                d.compatibility_level,
+                fd.physical_name,
+                CONVERT(int, CEILING(fd.size * 8.0 / 1024)),
+                CASE WHEN fd.max_size = -1 THEN NULL
+                     ELSE CONVERT(int, CEILING(fd.max_size * 8.0 / 1024)) END,
+                CASE WHEN fd.is_percent_growth = 1 THEN 64
+                     ELSE CONVERT(int, CEILING(fd.growth * 8.0 / 1024)) END,
+                fl.physical_name,
+                CONVERT(int, CEILING(fl.size * 8.0 / 1024)),
+                CASE WHEN fl.max_size = -1 THEN NULL
+                     ELSE CONVERT(int, CEILING(fl.max_size * 8.0 / 1024)) END,
+                CASE WHEN fl.is_percent_growth = 1 THEN 64
+                     ELSE CONVERT(int, CEILING(fl.growth * 8.0 / 1024)) END
+            FROM sys.databases d
+            OUTER APPLY (
+                SELECT TOP (1) physical_name, size, max_size, growth, is_percent_growth
+                FROM sys.master_files
+                WHERE database_id = d.database_id AND type = 0
+                ORDER BY file_id
+            ) fd
+            OUTER APPLY (
+                SELECT TOP (1) physical_name, size, max_size, growth, is_percent_growth
+                FROM sys.master_files
+                WHERE database_id = d.database_id AND type = 1
+                ORDER BY file_id
+            ) fl
+            WHERE d.name = N'model'";
+        await using var cmd = new SqlCommand(sql, conn);
+        await using var reader = await cmd.ExecuteReaderAsync();
+        if (!await reader.ReadAsync())
+            throw new InvalidOperationException("SQL Server did not return defaults from the model database.");
+
+        var dataPhysicalPath = reader.IsDBNull(5) ? "" : reader.GetString(5);
+        var logPhysicalPath = reader.IsDBNull(9) ? "" : reader.GetString(9);
+        return new DatabaseCreationDefaults(
+            reader.IsDBNull(0) ? 16 : reader.GetInt32(0),
+            reader.IsDBNull(3) ? "FULL" : reader.GetString(3),
+            reader.IsDBNull(4) ? 160 : reader.GetByte(4),
+            reader.IsDBNull(1) ? ServerDirectory(dataPhysicalPath) : reader.GetString(1),
+            reader.IsDBNull(2) ? ServerDirectory(logPhysicalPath) : reader.GetString(2),
+            PositiveOrDefault(reader, 6, 8),
+            reader.IsDBNull(7) ? null : reader.GetInt32(7),
+            PositiveOrDefault(reader, 8, 64),
+            PositiveOrDefault(reader, 10, 8),
+            reader.IsDBNull(11) ? null : reader.GetInt32(11),
+            PositiveOrDefault(reader, 12, 64));
+    }
+
+    public static async Task CreateDatabaseAsync(
+        string connectionString, DatabaseCreationOptions options)
+    {
+        var database = options.Name;
+        var sql = $"CREATE DATABASE {QuoteIdentifier(database)}";
+        var hasDataFile = !string.IsNullOrWhiteSpace(options.SqlServerDataFilePath);
+        var hasLogFile = !string.IsNullOrWhiteSpace(options.SqlServerLogFilePath);
+        if (hasDataFile != hasLogFile)
+            throw new ArgumentException("Both the data and log physical paths are required.");
+
+        if (hasDataFile)
+        {
+            sql += $@"
+                ON PRIMARY (
+                    NAME = N'{SqlLiteral(options.SqlServerDataLogicalName ?? database)}',
+                    FILENAME = N'{SqlLiteral(options.SqlServerDataFilePath!)}',
+                    SIZE = {Positive(options.SqlServerDataInitialSizeMb, "data initial size")}MB,
+                    MAXSIZE = {MaxSize(options.SqlServerDataMaxSizeMb)},
+                    FILEGROWTH = {Positive(options.SqlServerDataGrowthMb, "data growth")}MB
+                )
+                LOG ON (
+                    NAME = N'{SqlLiteral(options.SqlServerLogLogicalName ?? database + "_log")}',
+                    FILENAME = N'{SqlLiteral(options.SqlServerLogFilePath!)}',
+                    SIZE = {Positive(options.SqlServerLogInitialSizeMb, "log initial size")}MB,
+                    MAXSIZE = {MaxSize(options.SqlServerLogMaxSizeMb)},
+                    FILEGROWTH = {Positive(options.SqlServerLogGrowthMb, "log growth")}MB
+                )";
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.SqlServerCollation))
+        {
+            if (options.SqlServerCollation.Any(c => !char.IsLetterOrDigit(c) && c != '_'))
+                throw new ArgumentException("The SQL Server collation name contains invalid characters.");
+            sql += $" COLLATE {options.SqlServerCollation}";
+        }
+
+        await using var conn = new SqlConnection(WithDatabase(connectionString, "master"));
+        await conn.OpenAsync();
+        await ExecuteCommandAsync(conn, sql);
+        var recoveryModel = options.SqlServerRecoveryModel.ToUpperInvariant();
+        if (recoveryModel is not ("FULL" or "SIMPLE" or "BULK_LOGGED"))
+            throw new ArgumentException("Invalid recovery model.");
+        await ExecuteCommandAsync(conn,
+            $"ALTER DATABASE {QuoteIdentifier(database)} SET RECOVERY {recoveryModel}");
+        if (options.SqlServerCompatibilityLevel is < 80 or > 200
+            || options.SqlServerCompatibilityLevel % 10 != 0)
+            throw new ArgumentException("Invalid SQL Server compatibility level.");
+        await ExecuteCommandAsync(conn,
+            $"ALTER DATABASE {QuoteIdentifier(database)} SET COMPATIBILITY_LEVEL = " +
+            options.SqlServerCompatibilityLevel);
+        SqlConnection.ClearAllPools();
+    }
+
+    private static int Positive(int value, string field) =>
+        value > 0 ? value : throw new ArgumentOutOfRangeException(field, "Value must be greater than zero.");
+
+    private static string MaxSize(int? value) =>
+        value is > 0 ? $"{value.Value}MB" : "UNLIMITED";
+
+    private static string SqlLiteral(string value) => value.Replace("'", "''");
+
+    private static int PositiveOrDefault(SqlDataReader reader, int ordinal, int fallback) =>
+        reader.IsDBNull(ordinal) || reader.GetInt32(ordinal) <= 0 ? fallback : reader.GetInt32(ordinal);
+
+    private static string ServerDirectory(string path)
+    {
+        var index = Math.Max(path.LastIndexOf('\\'), path.LastIndexOf('/'));
+        return index < 0 ? "" : path[..(index + 1)];
+    }
+
+    private static string QuoteIdentifier(string name) => $"[{name.Replace("]", "]]")}]";
+
+    private static async Task ExecuteCommandAsync(SqlConnection connection, string sql)
+    {
+        await using var cmd = new SqlCommand(sql, connection) { CommandTimeout = 0 };
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private static async Task RestoreMultiUserAsync(SqlConnection connection, string database)
+    {
+        await using var cmd = new SqlCommand(
+            $"IF DB_ID(@database) IS NOT NULL " +
+            $"ALTER DATABASE {QuoteIdentifier(database)} SET MULTI_USER WITH ROLLBACK IMMEDIATE",
+            connection) { CommandTimeout = 0 };
+        cmd.Parameters.AddWithValue("@database", database);
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private static InvalidOperationException MultiUserRestoreException(
+        string database, Exception? operationError, Exception restoreError)
+    {
+        var inner = operationError is null
+            ? restoreError
+            : new AggregateException(operationError, restoreError);
+        return new InvalidOperationException(
+            $"Database '{database}' could not be restored to MULTI_USER mode. " +
+            "Restore it manually before continuing to use it.",
+            inner);
     }
 
     public static async Task<List<string>> GetColumnNamesAsync(string connectionString, string database, string schema, string table)

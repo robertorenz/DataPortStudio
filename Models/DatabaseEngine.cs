@@ -59,4 +59,18 @@ public static class DatabaseEngineInfo
     /// <summary>Clarion flat-file engines: a connection is a folder and each file is a table.</summary>
     public static bool IsClarionFile(this DatabaseEngine e) =>
         e is DatabaseEngine.Tps or DatabaseEngine.ClarionDat;
+
+    /// <summary>Database engines that expose server-level database nodes and support atomic renaming.</summary>
+    public static bool SupportsDatabaseRename(this DatabaseEngine e) =>
+        e is DatabaseEngine.SqlServer or DatabaseEngine.PostgreSql;
+
+    /// <summary>Database engines whose server-level database nodes can be deleted.</summary>
+    public static bool SupportsDatabaseDelete(this DatabaseEngine e) =>
+        e is DatabaseEngine.SqlServer or DatabaseEngine.PostgreSql
+            or DatabaseEngine.MySql or DatabaseEngine.MariaDb or DatabaseEngine.MongoDb;
+
+    /// <summary>Database engines that support creating server-level database nodes.</summary>
+    public static bool SupportsDatabaseCreate(this DatabaseEngine e) =>
+        e is DatabaseEngine.SqlServer or DatabaseEngine.PostgreSql
+            or DatabaseEngine.MySql or DatabaseEngine.MariaDb or DatabaseEngine.MongoDb;
 }

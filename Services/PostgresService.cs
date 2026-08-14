@@ -285,4 +285,14 @@ public static class PostgresService
         cmd.CommandText = sql;
         await cmd.ExecuteNonQueryAsync();
     }
+
+    public static Task CreateDatabaseAsync(
+        string cs, string maintenanceDatabase, string name, string? owner, string encoding)
+    {
+        var sql = $"CREATE DATABASE {Quote(name)} WITH";
+        if (!string.IsNullOrWhiteSpace(owner))
+            sql += $" OWNER = {Quote(owner)}";
+        sql += $" ENCODING = '{encoding.Replace("'", "''")}' TEMPLATE = template0";
+        return ExecuteAsync(cs, maintenanceDatabase, sql);
+    }
 }
