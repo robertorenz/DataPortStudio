@@ -1,0 +1,99 @@
+<Window x:Class="DataPortStudio.Views.MultiDatabaseBackupDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:DataPortStudio.Services"
+        Title="{loc:Tr DbBackupMulti_Title}"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" SizeToContent="Height"
+        ShowInTaskbar="False" Width="560">
+    <Border Background="{DynamicResource B.Surface}" CornerRadius="12" Margin="16"
+            BorderBrush="{DynamicResource B.Border}" BorderThickness="1">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="28" ShadowDepth="4" Opacity="0.25" Color="#FF1F2933"/>
+        </Border.Effect>
+        <StackPanel>
+            <Border Background="{DynamicResource B.Sidebar}" CornerRadius="12,12,0,0"
+                    Padding="20,16" MouseLeftButtonDown="Header_MouseDown">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="M2,3 H14 V6.5 H2 Z M2,9.5 H14 V13 H2 Z M8,1 V15 M5,8 H11"
+                          Width="18" Height="18" Stretch="Uniform" Stroke="#FF2D7FE0"
+                          StrokeThickness="1.4" VerticalAlignment="Center"/>
+                    <TextBlock Text="{loc:Tr DbBackupMulti_Title}" Margin="12,0,0,0"
+                               FontSize="16" FontWeight="SemiBold" Foreground="White"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <StackPanel Margin="22,18,22,18">
+                <Border Background="{DynamicResource B.SurfaceAlt}" CornerRadius="8"
+                        BorderBrush="{DynamicResource B.Border}" BorderThickness="1"
+                        Padding="12,10" Margin="0,0,0,14">
+                    <StackPanel>
+                        <TextBlock x:Name="ConnectionText" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource B.Text}"/>
+                        <TextBlock Text="{loc:Tr DbBackupMulti_Description}" Margin="0,4,0,0"
+                                   TextWrapping="Wrap" Foreground="{DynamicResource B.TextMuted}"/>
+                        <TextBlock x:Name="SqlServerHint" Margin="0,5,0,0"
+                                   Text="{loc:Tr DbBackupMulti_SqlServerHint}"
+                                   TextWrapping="Wrap" FontStyle="Italic" FontSize="11"
+                                   Foreground="{DynamicResource B.TextMuted}" Visibility="Collapsed"/>
+                    </StackPanel>
+                </Border>
+
+                <Grid Margin="0,0,0,6">
+                    <TextBlock Text="{loc:Tr DbBackupMulti_Select}" FontWeight="SemiBold"
+                               Foreground="{DynamicResource B.Text}" VerticalAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="{loc:Tr DbBackupMulti_All}" Click="SelectAll_Click" Padding="10,3"/>
+                        <Button Content="{loc:Tr DbBackupMulti_None}" Margin="6,0,0,0"
+                                Click="SelectNone_Click" Padding="10,3"/>
+                    </StackPanel>
+                </Grid>
+
+                <Border BorderBrush="{DynamicResource B.Border}" BorderThickness="1"
+                        CornerRadius="6" Margin="0,0,0,6">
+                    <ScrollViewer MaxHeight="250" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl x:Name="DatabaseList" Margin="8">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked}"
+                                              Margin="4,4" Checked="DatabaseCheck_Changed"
+                                              Unchecked="DatabaseCheck_Changed"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
+                <TextBlock x:Name="SelectionText" HorizontalAlignment="Right"
+                           FontSize="11" Foreground="{DynamicResource B.TextMuted}"
+                           Margin="0,0,0,14"/>
+
+                <Label Content="{loc:Tr DbBackupMulti_Destination}"
+                       Target="{Binding ElementName=DestinationBox}"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="DestinationBox" Grid.Column="0"
+                             VerticalContentAlignment="Center"/>
+                    <Button Grid.Column="1" Content="{loc:Tr Btn_Browse}" MinWidth="90"
+                            Margin="8,0,0,0" Click="Browse_Click"/>
+                </Grid>
+            </StackPanel>
+
+            <Border Background="{DynamicResource B.SurfaceAlt}" CornerRadius="0,0,12,12"
+                    BorderBrush="{DynamicResource B.Border}" BorderThickness="0,1,0,0"
+                    Padding="16,14">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="{loc:Tr Btn_Cancel}" MinWidth="90" Margin="0,0,10,0"
+                            Click="Cancel_Click" IsCancel="True"/>
+                    <Button x:Name="BackupButton" Content="{loc:Tr DbBackupMulti_Backup}"
+                            MinWidth="110" Style="{StaticResource AccentButton}"
+                            Click="Backup_Click" IsDefault="True"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </Border>
+</Window>

@@ -284,6 +284,11 @@ public partial class MainWindow : Window
                     menu.Items.Add(new Separator());
                     AddDatabaseMaintenance(menu, node);
                 }
+                else if (Vm.CanBackupMultipleDatabases(node))
+                {
+                    menu.Items.Add(new Separator());
+                    AddMultipleDatabaseBackup(menu, node);
+                }
                 menu.Items.Add(new Separator());
                 menu.Items.Add(Item("Ctx_Refresh", () => Run(Vm.RefreshNodeCommand, node)));
                 break;
@@ -312,8 +317,17 @@ public partial class MainWindow : Window
         }
 
         menu.Items.Add(Item("Ctx_BackupDatabase", Vm.BackupDatabaseCommand));
+        AddMultipleDatabaseBackup(menu, node);
         menu.Items.Add(Item("Ctx_RestoreDatabase", Vm.RestoreDatabaseCommand));
         menu.Items.Add(Item("Ctx_GenerateDatabaseScript", Vm.GenerateDatabaseScriptCommand));
+    }
+
+    private void AddMultipleDatabaseBackup(ContextMenu menu, DbTreeNode node)
+    {
+        if (!Vm.CanBackupMultipleDatabases(node)) return;
+        var item = new MenuItem { Header = LocalizationManager.Instance["Ctx_BackupDatabases"] };
+        item.Click += (_, _) => Run(Vm.BackupMultipleDatabasesCommand, node);
+        menu.Items.Add(item);
     }
 
     private static void Run(System.Windows.Input.ICommand command, DbTreeNode node)

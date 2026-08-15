@@ -767,6 +767,11 @@ public partial class MainViewModel : ObservableObject
         node is not null && DatabaseMaintenanceService.Supports(node.Connection.Engine)
             && GetDatabaseTarget(node) is not null;
 
+    /// <summary>Whether a connection can back up a user-selected set of databases.</summary>
+    public bool CanBackupMultipleDatabases(DbTreeNode? node) =>
+        node is not null && DatabaseMaintenanceService.SupportsMultiple(node.Connection.Engine)
+            && node.Type is NodeType.Server or NodeType.Database;
+
     private static string? GetDatabaseTarget(DbTreeNode node)
     {
         if (node.Type == NodeType.Database) return node.Name;
@@ -824,6 +829,99 @@ public partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             Dialogs.ShowError(L("DbBackup_Failed"), ex.Message);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task BackupMultipleDatabases(DbTreeNode? node)
+    {
+        node ??= SelectedNode;
+        if (!CanBackupMultipleDatabases(node)) return;
+
+        string L(string key) => LocalizationManager.Instance[key];
+        var previousStatus = StatusText;
+        List<string> databases;
+        try
+        {
+            IsBusy = true;
+            StatusText = L("DbBackupMulti_Loading");
+            databases = await DatabaseMaintenanceService.GetDatabasesAsync(node!.Connection);
+        }
+        catch (Exception ex)
+        {
+            Dialogs.ShowError(L("DbBackupMulti_Failed"), ex.Message);
+            return;
+        }
+        finally
+        {
+            IsBusy = false;
+            StatusText = previousStatus;
+        }
+
+        if (databases.Count == 0)
+        {
+            Dialogs.ShowError(L("DbBackupMulti_Title"), L("DbBackupMulti_NoneAvailable"));
+            return;
+        }
+
+        var preferredDatabase = node!.Type == NodeType.Database
+            ? node.Name
+            : node.Connection.Database;
+        var dialog = new MultiDatabaseBackupDialog(
+            node.Connection, databases, preferredDatabase);
+        if (dialog.ShowDialog() != true) return;
+
+        var selected = dialog.SelectedDatabases;
+        var destination = dialog.DestinationFolder;
+        var fileType = DatabaseMaintenanceService.GetFileType(node.Connection.Engine);
+        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff");
+        var failures = new List<string>();
+        var usedFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var completed = 0;
+
+        try
+        {
+            IsBusy = true;
+            for (var index = 0; index < selected.Count; index++)
+            {
+                var database = selected[index];
+                StatusText = string.Format(
+                    L("DbBackupMulti_Progress"), index + 1, selected.Count, database);
+                var baseFileName = $"{SafeFileStem(database)}_{timestamp}";
+                var fileName = baseFileName + fileType.Extension;
+                for (var suffix = 2; !usedFileNames.Add(fileName); suffix++)
+                    fileName = $"{baseFileName}_{suffix}{fileType.Extension}";
+                var path = Path.Combine(destination, fileName);
+                try
+                {
+                    await DatabaseMaintenanceService.BackupAsync(
+                        node.Connection, database, path);
+                    completed++;
+                }
+                catch (Exception ex)
+                {
+                    failures.Add($"{database}: {ex.Message}");
+                }
+            }
+
+            if (failures.Count == 0)
+            {
+                StatusText = string.Format(L("DbBackupMulti_SuccessStatus"), completed);
+                Dialogs.ShowSuccess(L("DbBackupMulti_Title"),
+                    string.Format(L("DbBackupMulti_Success"), completed, destination));
+            }
+            else
+            {
+                StatusText = string.Format(
+                    L("DbBackupMulti_PartialStatus"), completed, failures.Count);
+                var details = string.Join(Environment.NewLine, failures.Select(failure => "• " + failure));
+                Dialogs.ShowError(L("DbBackupMulti_Failed"),
+                    string.Format(L("DbBackupMulti_Partial"), completed, selected.Count, details));
+            }
         }
         finally
         {

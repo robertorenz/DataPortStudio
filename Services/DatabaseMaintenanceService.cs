@@ -19,6 +19,35 @@ public static class DatabaseMaintenanceService
             or DatabaseEngine.MongoDb or DatabaseEngine.Firebird or DatabaseEngine.MySql
             or DatabaseEngine.MariaDb or DatabaseEngine.Oracle;
 
+    /// <summary>Engines whose server connection can expose more than one database.</summary>
+    public static bool SupportsMultiple(DatabaseEngine engine) =>
+        engine is DatabaseEngine.SqlServer or DatabaseEngine.PostgreSql
+            or DatabaseEngine.MySql or DatabaseEngine.MariaDb or DatabaseEngine.MongoDb;
+
+    /// <summary>Lists the databases available for a multi-database backup.</summary>
+    public static async Task<List<string>> GetDatabasesAsync(ConnectionProfile connection)
+    {
+        var connectionString = connection.BuildConnectionString();
+        var databases = connection.Engine switch
+        {
+            DatabaseEngine.SqlServer => await SqlServerService.GetDatabasesAsync(connectionString),
+            DatabaseEngine.PostgreSql => await PostgresService.GetDatabasesAsync(connectionString),
+            DatabaseEngine.MySql or DatabaseEngine.MariaDb =>
+                await MySqlService.GetDatabasesAsync(connectionString),
+            DatabaseEngine.MongoDb => await MongoService.ListDatabasesAsync(connectionString),
+            _ => throw new NotSupportedException()
+        };
+
+        // tempdb is recreated whenever SQL Server starts and cannot be backed up.
+        if (connection.Engine == DatabaseEngine.SqlServer)
+            databases.RemoveAll(database =>
+                string.Equals(database, "tempdb", StringComparison.OrdinalIgnoreCase));
+
+        return databases.Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(database => database, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
     public static BackupFileType GetFileType(DatabaseEngine engine) => engine switch
     {
         DatabaseEngine.SqlServer => new(".bak", "SQL Server backup (*.bak)|*.bak"),

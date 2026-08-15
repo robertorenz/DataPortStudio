@@ -4,6 +4,13 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## Unreleased
+
+### Added
+- **Multi-database backup** — from a supported server connection or database node, select multiple databases from the same engine and back each one up to a separate native file in a chosen destination folder. Supported for SQL Server, PostgreSQL, MySQL/MariaDB, and MongoDB; failures are reported per database without stopping the remaining backups.
+
+---
+
 ## v1.0.22 — 2026-06-29
 
 ### Added
