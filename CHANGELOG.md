@@ -4,6 +4,15 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## Unreleased
+
+### Added
+- **Back up several databases at once** (contributed by [@jarodav1](https://github.com/jarodav1)) — right-click a server or database node ▸ **Back up databases…** to pick any number of databases on that connection and write each one to its own engine-native backup file in a destination folder you choose. The picker offers **Select all** / **Select none**, and every file is named `<database>_<timestamp>` with the engine's own extension, so a folder of backups stays self-describing. Backups run **one after another** rather than in parallel, to avoid loading the server, and a failure on one database is recorded and skipped rather than stopping the rest — the final summary lists what succeeded and what didn't. `tempdb` is left out on SQL Server, since it is recreated at every restart and can't be backed up. Supported on **SQL Server**, **PostgreSQL**, **MySQL / MariaDB** and **MongoDB**; the existing single-database **Back up…** is unchanged.
+
+All new menu items, dialogs and messages are available in English and Spanish.
+
+---
+
 ## v1.0.31 — 2026-08-14
 
 ### Fixed

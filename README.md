@@ -199,6 +199,12 @@ Both options are **self-contained** — no .NET runtime install required.
     command line. If a utility isn't installed, the error names it and tells you to put it on `PATH`.
   - Restore is destructive, so it asks twice: a warning naming the database and file, then a box
     where you must type the database name exactly.
+  - **Back up several databases at once** — right-click a server or database node → **Back up
+    databases…**, tick any number of databases on that connection (**Select all** / **Select none**),
+    pick a destination folder, and each one is written to its own native file named
+    `<database>_<timestamp>`. Backups run sequentially so the server isn't loaded, a failure on one
+    database doesn't stop the rest, and the summary names what succeeded and what didn't. `tempdb`
+    is excluded on SQL Server. Supported on SQL Server, PostgreSQL, MySQL/MariaDB and MongoDB.
 - **Copy & paste a table** — right-click a table → **Copy** (or Ctrl+C in the tree), then **Paste**
   (Ctrl+V) onto a Tables folder / database. It asks whether to copy the **structure only** or
   **structure + data**, and auto-names the copy (`name_copy`, `name_copy2`, …) if the name is taken.
@@ -337,7 +343,7 @@ Themes/      Theme.xaml (palette + control styles)
 Warm thanks to the contributors who have improved DataPortStudio:
 
 - [**@asantarelli**](https://github.com/asantarelli) — Load / Save SQL scripts to file in the Query window and Routine editor (v1.0.22).
-- [**@jarodav1**](https://github.com/jarodav1) (Victor Montanez) — Schema comparator overhaul: programmable-object comparison, selective object transfer, SQL Server column synchronization, and the apply-summary confirmation (v1.0.23); database-side filter & sort applied before the row limit, and the object-list locator (v1.0.24); the configurable object search (Filter / Locator modes) with sort-criteria persistence and a responsive search box (v1.0.25); docked query tabs, instant Light/Dark theme switching with a ribbon toggle, and the completed dark theme (v1.0.26); database management from the connection tree — create, rename and drop databases across SQL Server, PostgreSQL, MySQL/MariaDB and MongoDB, with SQL Server advanced options (v1.0.27); engine-native database backup & restore across all eight engines, object and whole-database script generation, the chip-style index column picker, and the SQL Server identity table-rebuild in the designer (v1.0.29).
+- [**@jarodav1**](https://github.com/jarodav1) (Victor Montanez) — Schema comparator overhaul: programmable-object comparison, selective object transfer, SQL Server column synchronization, and the apply-summary confirmation (v1.0.23); database-side filter & sort applied before the row limit, and the object-list locator (v1.0.24); the configurable object search (Filter / Locator modes) with sort-criteria persistence and a responsive search box (v1.0.25); docked query tabs, instant Light/Dark theme switching with a ribbon toggle, and the completed dark theme (v1.0.26); database management from the connection tree — create, rename and drop databases across SQL Server, PostgreSQL, MySQL/MariaDB and MongoDB, with SQL Server advanced options (v1.0.27); engine-native database backup & restore across all eight engines, object and whole-database script generation, the chip-style index column picker, and the SQL Server identity table-rebuild in the designer (v1.0.29); multi-database backup — select any number of databases on a connection and back each one up to its own native file, sequentially and with per-database failure reporting (unreleased).
 - **Kyle Renz** — the new DataPortStudio logo and application icon (v1.0.27), and its refined nine-size revision (v1.0.28).
 
 DataPortStudio also stands on the shoulders of excellent open-source libraries and public format

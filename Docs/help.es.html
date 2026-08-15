@@ -298,6 +298,18 @@
       </table>
       <p><strong>COPY_ONLY</strong> en SQL Server significa que el respaldo no altera una cadena de respaldos existente,
       así que es seguro tomarlo junto a un plan de mantenimiento programado.</p>
+      <h3>Respaldar varias bases de datos a la vez</h3>
+      <p>Haga clic derecho en un nodo de servidor o de base de datos ▸ <strong>Respaldar bases de datos…</strong> para
+      respaldar más de una base de datos de la misma conexión en una sola pasada. Marque las bases que quiera
+      (<strong>Seleccionar todas</strong> / <strong>Ninguna</strong> están ahí para listas largas), elija una carpeta de
+      destino, y cada base se escribe en su propio archivo nativo del motor con el nombre
+      <code>&lt;base&gt;_&lt;marca de tiempo&gt;</code> y la extensión de la tabla anterior.</p>
+      <p>Los respaldos se ejecutan <strong>uno tras otro</strong>, no en paralelo, de modo que el servidor no se carga más
+      de lo que lo haría un respaldo individual. Si una base falla, se registra y las demás continúan: el resumen final
+      indica cuántas se lograron y nombra cada una que no, con su error. En SQL Server se excluye <code>tempdb</code> de
+      la lista: se vuelve a crear cada vez que arranca la instancia y no se puede respaldar.</p>
+      <p>Disponible en <strong>SQL Server</strong>, <strong>PostgreSQL</strong>, <strong>MySQL / MariaDB</strong> y
+      <strong>MongoDB</strong>. El respaldo individual <strong>Respaldar…</strong> anterior no cambia.</p>
       <p><strong>Restaurar…</strong> vuelve a cargar un respaldo en la misma base de datos. Como esto
       <strong>reemplaza el contenido actual y cierra las conexiones activas</strong>, se pregunta dos veces: una
       advertencia con el nombre de la base de datos y el archivo, y luego un cuadro de confirmación donde debe
@@ -409,7 +421,8 @@
       SQL Server, PostgreSQL, MySQL/MariaDB y MongoDB, con opciones avanzadas de creación para SQL Server y
       eliminaciones seguras con confirmación; el respaldo y la restauración nativos de la base de datos en los ocho
       motores, la generación de scripts de objetos y de la base de datos completa, el selector de columnas de índice
-      con fichas y la reconstrucción de tabla para IDENTITY de SQL Server en el diseñador).</p>
+      con fichas y la reconstrucción de tabla para IDENTITY de SQL Server en el diseñador; y el respaldo de varias bases
+      de datos — seleccionar cualquier cantidad de bases de una conexión y respaldar cada una en su propio archivo).</p>
       <p>El logotipo y el icono de la aplicación fueron diseñados por <strong>Kyle Renz</strong>. Gracias por la
       nueva imagen.</p>
       <p>DataPortStudio está construido con .NET&nbsp;9 y WPF, y se apoya en estas excelentes bibliotecas de código abierto.

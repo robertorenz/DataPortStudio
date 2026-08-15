@@ -287,6 +287,17 @@
       </table>
       <p><strong>COPY_ONLY</strong> on SQL Server means the backup won't disturb an existing backup chain, so it's safe to
       take one alongside a scheduled maintenance plan.</p>
+      <h3>Backing up several databases at once</h3>
+      <p>Right-click a server or database node ▸ <strong>Back up databases…</strong> to back up more than one database on
+      the same connection in a single pass. Tick the databases you want (<strong>Select all</strong> / <strong>Select
+      none</strong> are there for long lists), choose a destination folder, and each database is written to its own
+      engine-native file named <code>&lt;database&gt;_&lt;timestamp&gt;</code> with the extension from the table above.</p>
+      <p>The backups run <strong>one after another</strong>, not in parallel, so the server isn't loaded any harder than a
+      single backup would load it. If one database fails, it's recorded and the rest continue — the summary at the end
+      lists how many succeeded and names each one that didn't, with its error. On SQL Server, <code>tempdb</code> is left
+      out of the list: it's recreated every time the instance starts and can't be backed up.</p>
+      <p>Available on <strong>SQL Server</strong>, <strong>PostgreSQL</strong>, <strong>MySQL / MariaDB</strong> and
+      <strong>MongoDB</strong>. The single-database <strong>Back up…</strong> above is unchanged.</p>
       <p><strong>Restore…</strong> reloads a backup into the same database. Because this <strong>replaces the current
       contents and closes active connections</strong>, it asks twice: a warning naming the database and the file, then a
       confirmation box where you must <strong>type the database name exactly</strong>. On SQL Server the backup header is
@@ -395,7 +406,8 @@
       PostgreSQL, MySQL/MariaDB and MongoDB, with advanced SQL Server creation options and safe, confirmed
       drops; engine-native database backup &amp; restore across all eight engines, object and whole-database script
       generation, the chip-style index column picker, and the SQL Server identity table-rebuild in the table
-      designer).</p>
+      designer; and multi-database backup — selecting any number of databases on a connection and backing each one up
+      to its own file).</p>
       <p>The DataPortStudio logo and application icon were designed by <strong>Kyle Renz</strong>. Our thanks for
       the new mark.</p>
       <p>DataPortStudio is built with .NET&nbsp;9 and WPF, and stands on the shoulders of these excellent open-source
