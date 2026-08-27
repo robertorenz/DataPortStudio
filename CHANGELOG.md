@@ -4,7 +4,7 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
-## Unreleased
+## v1.0.33 — 2026-08-26
 
 ### Added
 - **Freeze a column from its header.** Right-click any column header in a table grid ▸ **Freeze
