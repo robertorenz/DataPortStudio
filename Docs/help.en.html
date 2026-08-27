@@ -147,6 +147,13 @@
         For SQL engines the filter and sort run <em>on the database</em> (<code>WHERE</code> / <code>ORDER BY</code>
         before the row limit), so they consider the whole table — not just the rows already loaded. Save or reload
         pending edits first. File-based sources (TPS / DAT / Excel) and MongoDB filter the loaded rows locally.</li>
+        <li>Click a <strong>column header</strong> to sort by it, click again to reverse. The sorted header is
+        tinted and shows <strong>&#9650;</strong> for ascending or <strong>&#9660;</strong> for descending, so the
+        order in force is always visible. Sorting from the toolbar marks the headers the same way.</li>
+        <li><strong>Freeze a column</strong> from its header right-click menu: it moves to the front of the grid,
+        gets a <strong>&#128204;</strong> in its header and stays put while the rest scrolls sideways. The same menu
+        unfreezes it (and offers <strong>Unfreeze all columns</strong>), and it returns to the place it came from.
+        Frozen columns are remembered per tab, so a sort, a filter, a reload or switching tabs keeps them pinned.</li>
         <li>The <strong>Cell detail</strong> panel shows the full content of large cells; the <strong>Structure</strong>
         panel shows the table's columns, DDL and indexes.</li>
       </ul>

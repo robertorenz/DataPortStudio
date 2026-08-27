@@ -4,6 +4,28 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## Unreleased
+
+### Added
+- **Freeze a column from its header.** Right-click any column header in a table grid ▸ **Freeze
+  column**: the column moves to the front of the grid, takes a **📌** in its header and stays put
+  while the rest of the table scrolls sideways. Right-click it again for **Unfreeze column** — it
+  goes back to the position it was in before it was frozen — and **Unfreeze all columns** clears
+  the lot at once. Freeze several columns and they queue up left to right in the order pinned.
+  Frozen columns are remembered per tab, so sorting, filtering, reloading, or switching to another
+  tab and back keeps them pinned. The query results grid gets the same menu.
+
+### Changed
+- **Column headers now show the sort in force.** Clicking a header has always sorted the grid, but
+  nothing on the header said so. The sorted header is now tinted and carries a **▲** (ascending) or
+  **▼** (descending) arrow. The toolbar's Sort builder marks the headers the same way, so a
+  database-side `ORDER BY` is as visible as a click-sort — and clearing the sort clears the marks.
+- **The grid's right-click menus are translated.** Copy / Copy with headers / Paste and the Clarion
+  display options on the header menu were English-only; they now follow the app language, along
+  with the new freeze commands.
+
+---
+
 ## v1.0.32 — 2026-08-15
 
 ### Added

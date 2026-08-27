@@ -8,6 +8,7 @@ using FirebirdSql.Data.FirebirdClient;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using MySqlConnector;
+using DataPortStudio.Behaviors;
 using DataPortStudio.Models;
 using DataPortStudio.Services;
 
@@ -156,6 +157,9 @@ public partial class QueryView : UserControl
             CanUserAddRows       = false,
             BorderThickness      = new Thickness(0),
         };
+        // Same header affordances as the table grid: freeze from the right-click menu, sort arrows.
+        DataGridFreeze.SetEnabled(grid, true);
+        DataGridSortIndicator.Attach(grid);
         return grid;
     }
 

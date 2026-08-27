@@ -328,6 +328,19 @@ public static class Strings
         ["Rel_ReferencedBy"] = "← Referenced by",
         ["Clarion_Fields"] = "Clarion fields",
 
+        // Grid context menus (cell menu + column header menu)
+        ["Grid_Copy"] = "Copy",
+        ["Grid_CopyWithHeaders"] = "Copy with headers",
+        ["Grid_Paste"] = "Paste",
+        ["Grid_FreezeColumn"] = "Freeze column",
+        ["Grid_UnfreezeColumn"] = "Unfreeze column",
+        ["Grid_UnfreezeAll"] = "Unfreeze all columns",
+        ["Grid_ShowAsDate"] = "Show as date",
+        ["Grid_ShowAsTime"] = "Show as time",
+        ["Grid_ShowAsTimestamp"] = "Show as timestamp (epoch ms)",
+        ["Grid_ShowAsNumber"] = "Show as number",
+        ["Grid_AutoDetect"] = "Auto-detect",
+
         // SQL preview pane
         ["Sql_PreviewTitle"] = "SQL preview",
         ["Sql_PreviewSubtitle"] = "— statements that Save will run for pending changes",
@@ -669,6 +682,19 @@ public static class Strings
         ["Rel_References"] = "Esta tabla referencia →",
         ["Rel_ReferencedBy"] = "← Referenciada por",
         ["Clarion_Fields"] = "Campos Clarion",
+
+        // Menús contextuales de la cuadrícula (celda + encabezado de columna)
+        ["Grid_Copy"] = "Copiar",
+        ["Grid_CopyWithHeaders"] = "Copiar con encabezados",
+        ["Grid_Paste"] = "Pegar",
+        ["Grid_FreezeColumn"] = "Congelar columna",
+        ["Grid_UnfreezeColumn"] = "Descongelar columna",
+        ["Grid_UnfreezeAll"] = "Descongelar todas las columnas",
+        ["Grid_ShowAsDate"] = "Mostrar como fecha",
+        ["Grid_ShowAsTime"] = "Mostrar como hora",
+        ["Grid_ShowAsTimestamp"] = "Mostrar como marca de tiempo (ms epoch)",
+        ["Grid_ShowAsNumber"] = "Mostrar como número",
+        ["Grid_AutoDetect"] = "Detección automática",
 
         // Panel de vista previa SQL
         ["Sql_PreviewTitle"] = "Vista previa SQL",

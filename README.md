@@ -125,6 +125,14 @@ Both options are **self-contained** — no .NET runtime install required.
     filter and sort are sent to the **database** (`WHERE` / `ORDER BY` **before the row limit**),
     so they apply to the *whole table* — not just the rows already loaded. File-based sources
     (TPS / DAT / Excel) and MongoDB filter the loaded rows locally as before.
+  - **Sort at a glance** — click a column header to sort by it, click again to reverse. The sorted
+    header is tinted and carries a **▲ / ▼** arrow, so the order in force is always visible; the
+    toolbar Sort builder marks the headers the same way.
+  - **Freeze columns** — right-click a column header ▸ **Freeze column**: it moves to the front of
+    the grid, gets a **📌** in its header and stays put while the rest scrolls sideways. The same
+    menu unfreezes it (or **Unfreeze all columns**) and it returns to where it came from. Frozen
+    columns are remembered per tab, so sorting, filtering, reloading or switching tabs keeps them
+    pinned. Also available in the query results grid.
   - **Spreadsheet-friendly copy & paste** — select rows/cells and **Ctrl+C** (or right-click →
     Copy / Copy with headers); pastes cleanly into Excel/Sheets with each value in its own cell.
     **Ctrl+V** pastes a block back into the grid from the top-left of the selection (adding rows

@@ -49,6 +49,7 @@
     <SolidColorBrush x:Key="B.RowHover"      Color="#FF2F3F50"/>
     <SolidColorBrush x:Key="B.RowSelected"   Color="#FF1B3A5C"/>
     <SolidColorBrush x:Key="B.GridLines"     Color="#FF3C3C3C"/>
+    <SolidColorBrush x:Key="B.GridHeaderSorted" Color="#FF33414E"/>
     <SolidColorBrush x:Key="B.TabCloseHover" Color="#FF4E4E52"/>
 
     <!-- Icon glyph (Segoe Fluent / MDL2) used inside toolbar buttons. -->
@@ -662,6 +663,22 @@
         <Setter Property="SelectionUnit" Value="CellOrRowHeader"/>
     </Style>
 
+    <!-- Drag handle between headers (kept from the stock template so columns still resize). -->
+    <Style x:Key="ColumnHeaderGripper" TargetType="Thumb">
+        <Setter Property="Width" Value="8"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Cursor" Value="SizeWE"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Border Background="{TemplateBinding Background}"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Column header: tinted, with a ▲ / ▼ arrow while the grid is sorted by it. A frozen
+         column gets its 📌 from DataGridFreeze, which prefixes the header text. -->
     <Style TargetType="DataGridColumnHeader">
         <Setter Property="Background" Value="{DynamicResource B.GridHeader}"/>
         <Setter Property="Foreground" Value="{DynamicResource B.Text}"/>
@@ -671,6 +688,59 @@
         <Setter Property="BorderBrush" Value="{DynamicResource B.GridLines}"/>
         <Setter Property="BorderThickness" Value="0,0,1,1"/>
         <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridColumnHeader">
+                    <Grid>
+                        <Border x:Name="HeaderBack"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <ContentPresenter Grid.Column="0" Margin="{TemplateBinding Padding}"
+                                                  VerticalAlignment="Center"
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  SnapsToDevicePixels="True"/>
+
+                                <TextBlock x:Name="SortArrow" Grid.Column="1" Text="▲"
+                                           FontSize="10" FontWeight="Bold" Visibility="Collapsed"
+                                           VerticalAlignment="Center" Margin="0,0,8,0"
+                                           Foreground="{DynamicResource B.Accent}"/>
+                            </Grid>
+                        </Border>
+
+                        <Thumb x:Name="PART_LeftHeaderGripper" HorizontalAlignment="Left"
+                               Style="{StaticResource ColumnHeaderGripper}"/>
+                        <Thumb x:Name="PART_RightHeaderGripper" HorizontalAlignment="Right"
+                               Style="{StaticResource ColumnHeaderGripper}"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="HeaderBack" Property="Background"
+                                    Value="{DynamicResource B.RowHover}"/>
+                        </Trigger>
+                        <Trigger Property="SortDirection" Value="Ascending">
+                            <Setter TargetName="SortArrow" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="HeaderBack" Property="Background"
+                                    Value="{DynamicResource B.GridHeaderSorted}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource B.Accent}"/>
+                        </Trigger>
+                        <Trigger Property="SortDirection" Value="Descending">
+                            <Setter TargetName="SortArrow" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="SortArrow" Property="Text" Value="▼"/>
+                            <Setter TargetName="HeaderBack" Property="Background"
+                                    Value="{DynamicResource B.GridHeaderSorted}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource B.Accent}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style TargetType="DataGridRowHeader">

@@ -177,6 +177,12 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
     public Dictionary<string, ClarionKind?> ClarionOverrides { get; } =
         new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Columns frozen from the grid's header right-click menu, in the order they were pinned.
+    /// Kept on the tab so the pins survive a refresh, a sort/filter, or switching tabs.
+    /// </summary>
+    public List<string> FrozenColumns { get; } = new();
+
     public bool HasClarionTypes => ClarionColumns.Count > 0;
 
     /// <summary>Resolves how a column should be displayed: date, time, or plain (null).</summary>
