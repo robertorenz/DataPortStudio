@@ -4,7 +4,7 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
-## Unreleased
+## v1.0.34 — 2026-09-20
 
 ### Changed
 - **The row limit is a picker.** The toolbar's **Row limit** box is now a drop-down offering
