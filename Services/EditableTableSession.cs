@@ -113,19 +113,21 @@ public sealed class EditableTableSession : IDisposable
 
     /// <summary>
     /// Builds the browser SELECT with WHERE and ORDER BY before the engine-specific row limit.
+    /// A <paramref name="rowLimit"/> of 0 or less means every row: no TOP / LIMIT / FETCH FIRST at all.
     /// Values are parameters; identifiers are quoted for the active database engine.
     /// </summary>
     private static string BuildSelect(
         DbCommand command, DatabaseEngine engine, string fqTable, int rowLimit, TableQuery? query)
     {
         query ??= TableQuery.Empty;
-        var limit = Math.Max(1, rowLimit);
-        var prefix = engine switch
-        {
-            DatabaseEngine.SqlServer => $"TOP ({limit}) ",
-            DatabaseEngine.Firebird => $"FIRST {limit} ",
-            _ => ""
-        };
+        var prefix = rowLimit > 0
+            ? engine switch
+            {
+                DatabaseEngine.SqlServer => $"TOP ({rowLimit}) ",
+                DatabaseEngine.Firebird => $"FIRST {rowLimit} ",
+                _ => ""
+            }
+            : "";
         var sql = new StringBuilder($"SELECT {prefix}* FROM {fqTable}");
 
         if (query.Filters.Count > 0)
@@ -179,13 +181,16 @@ public sealed class EditableTableSession : IDisposable
                 $"{Quote(engine, sort.Column)} {(sort.Descending ? "DESC" : "ASC")}")));
         }
 
-        sql.Append(engine switch
+        if (rowLimit > 0)
         {
-            DatabaseEngine.Sqlite or DatabaseEngine.MySql or DatabaseEngine.MariaDb or DatabaseEngine.PostgreSql
-                => $" LIMIT {limit}",
-            DatabaseEngine.Oracle => $" FETCH FIRST {limit} ROWS ONLY",
-            _ => ""
-        });
+            sql.Append(engine switch
+            {
+                DatabaseEngine.Sqlite or DatabaseEngine.MySql or DatabaseEngine.MariaDb or DatabaseEngine.PostgreSql
+                    => $" LIMIT {rowLimit}",
+                DatabaseEngine.Oracle => $" FETCH FIRST {rowLimit} ROWS ONLY",
+                _ => ""
+            });
+        }
         return sql.ToString();
     }
 

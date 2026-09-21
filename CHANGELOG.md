@@ -4,6 +4,19 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## Unreleased
+
+### Changed
+- **The row limit is a picker.** The toolbar's **Row limit** box is now a drop-down offering
+  **All, 10, 50, 100, 300, 600, 1,000** and **5,000** rows. Picking a value reloads the table on
+  the spot — no trip to **Reload** — and the tab asks first if there are edits you have not saved.
+  **All** drops the `TOP` / `LIMIT` / `FETCH FIRST` clause entirely, so the whole table comes
+  down; the status bar and the tab's tooltip say *limit All* instead of a number. A default row
+  limit from **Settings** that is not one of the standard choices (2,000, say) is slotted into
+  the list, so it stays selectable.
+
+---
+
 ## v1.0.33 — 2026-08-26
 
 ### Added

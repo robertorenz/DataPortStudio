@@ -60,6 +60,8 @@ public static class Strings
         ["Btn_Structure"] = "Structure",
         ["Tip_Structure"] = "Show the table structure: Info, DDL and Indexes",
         ["Lbl_RowLimit"] = "Row limit",
+        ["Tip_RowLimit"] = "How many rows to load — picking a value reloads the table",
+        ["RowLimit_All"] = "All",
         ["Btn_Export"] = "Export",
         ["Tip_Export"] = "Export the current rows to CSV, JSON, XML, HTML or Excel",
         ["Btn_Reload"] = "Reload",
@@ -93,8 +95,8 @@ public static class Strings
         ["Empty_NoTable"] = "No table open",
         ["Empty_Hint"] = "Double-click a table in the tree to open it in a new tab.",
         ["Tab_Objects"] = "Objects",
-        ["Tip_RowsLoaded"] = "Rows loaded: {0:N0}  (limit {1:N0})",
-        ["Tip_DocsLoaded"] = "Documents loaded: {0:N0}  (limit {1:N0})",
+        ["Tip_RowsLoaded"] = "Rows loaded: {0:N0}  (limit {1})",
+        ["Tip_DocsLoaded"] = "Documents loaded: {0:N0}  (limit {1})",
         ["Tip_Key"] = "Key: {0}",
 
         // Object list (Objects tab)
@@ -415,6 +417,8 @@ public static class Strings
         ["Btn_Structure"] = "Estructura",
         ["Tip_Structure"] = "Mostrar la estructura de la tabla: Info, DDL e Índices",
         ["Lbl_RowLimit"] = "Límite de filas",
+        ["Tip_RowLimit"] = "Cuántas filas cargar — al elegir un valor se recarga la tabla",
+        ["RowLimit_All"] = "Todas",
         ["Btn_Export"] = "Exportar",
         ["Tip_Export"] = "Exportar las filas actuales a CSV, JSON, XML, HTML o Excel",
         ["Btn_Reload"] = "Recargar",
@@ -448,8 +452,8 @@ public static class Strings
         ["Empty_NoTable"] = "Ninguna tabla abierta",
         ["Empty_Hint"] = "Haga doble clic en una tabla del árbol para abrirla en una nueva pestaña.",
         ["Tab_Objects"] = "Objetos",
-        ["Tip_RowsLoaded"] = "Filas cargadas: {0:N0}  (límite {1:N0})",
-        ["Tip_DocsLoaded"] = "Documentos cargados: {0:N0}  (límite {1:N0})",
+        ["Tip_RowsLoaded"] = "Filas cargadas: {0:N0}  (límite {1})",
+        ["Tip_DocsLoaded"] = "Documentos cargados: {0:N0}  (límite {1})",
         ["Tip_Key"] = "Clave: {0}",
 
         // Lista de objetos

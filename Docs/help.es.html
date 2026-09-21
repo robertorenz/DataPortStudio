@@ -166,7 +166,10 @@
       <div class="note"><strong>Tablas sin clave primaria:</strong> DataPortStudio pregunta qué columna(s) identifican de forma
       única una fila (se usan en la cláusula <code>WHERE</code> al editar/eliminar). Elija con cuidado, o mantenga la
       opción predeterminada "todas las columnas".</div>
-      <p>Un límite de filas (configurable en Configuración) limita cuántas filas se cargan a la vez, para abrir tablas grandes con rapidez.</p>
+      <p>El desplegable <strong>Límite de filas</strong> de la barra de herramientas limita cuántas filas se cargan a la vez,
+      para abrir tablas grandes con rapidez: elija <strong>Todas</strong>, 10, 50, 100, 300, 600, 1.000 o 5.000. Al elegir
+      un valor la tabla se recarga de inmediato (se le pregunta antes si hay cambios sin guardar). El valor predeterminado
+      para las pestañas nuevas se define en Configuración.</p>
 
       <h2 id="clarion-dates">Fechas y horas Clarion</h2>
       <p>Las aplicaciones Clarion guardan fechas y horas como números enteros (una <em>Fecha estándar</em> son los días
@@ -391,8 +394,10 @@
       reiniciar), y esta Guía del usuario se abre en el idioma que tenga seleccionado.</p>
 
       <h3>5. Mi tabla solo muestra parte de las filas — ¿por qué?</h3>
-      <p>Las tablas se abren con un <strong>límite de filas</strong> para que las tablas grandes carguen rápido. Aumente
-      el límite predeterminado en <strong>Archivo ▸ Configuración</strong>, o aplique un filtro para reducir a las filas que necesita.</p>
+      <p>Las tablas se abren con un <strong>límite de filas</strong> para que las tablas grandes carguen rápido. Elija un
+      valor mayor — o <strong>Todas</strong> — en el desplegable <strong>Límite de filas</strong> de la barra de herramientas,
+      aumente el límite predeterminado en <strong>Archivo ▸ Configuración</strong>, o aplique un filtro para reducir a las
+      filas que necesita.</p>
 
       <h3>6. ¿Cómo paso un archivo Clarion TPS/DAT a SQL Server?</h3>
       <p>Cree una conexión Clarion apuntando a la carpeta, haga clic derecho en el archivo ▸ <strong>Copiar</strong>, y

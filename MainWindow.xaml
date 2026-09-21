@@ -547,8 +547,11 @@
                                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
                                                         <TextBlock Text="{loc:Tr Lbl_RowLimit}" VerticalAlignment="Center" FontSize="12"
                                                                    Foreground="{DynamicResource B.TextMuted}" Margin="0,0,8,0"/>
-                                                        <TextBox Width="72" VerticalAlignment="Center"
-                                                                 Text="{Binding RowLimit, UpdateSourceTrigger=LostFocus}"/>
+                                                        <ComboBox Width="86" VerticalAlignment="Center"
+                                                                  ItemsSource="{Binding RowLimitOptions}"
+                                                                  DisplayMemberPath="Label" SelectedValuePath="Value"
+                                                                  SelectedValue="{Binding RowLimit}"
+                                                                  ToolTip="{loc:Tr Tip_RowLimit}"/>
                                                     </StackPanel>
 
                                                     <Button Margin="0,0,6,0" Command="{Binding ExportCommand}"

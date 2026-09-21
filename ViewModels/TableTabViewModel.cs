@@ -38,13 +38,13 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
             if (_session is not null)
             {
                 sb.AppendLine();
-                sb.AppendLine(string.Format(loc["Tip_RowsLoaded"], _session.Data.Rows.Count, RowLimit));
+                sb.AppendLine(string.Format(loc["Tip_RowsLoaded"], _session.Data.Rows.Count, RowLimitLabel));
                 sb.Append(string.Format(loc["Tip_Key"], _session.KeyDescription));
             }
             else if (_sourceData is not null)
             {
                 sb.AppendLine();
-                sb.Append(string.Format(loc["Tip_DocsLoaded"], _sourceData.Rows.Count, RowLimit));
+                sb.Append(string.Format(loc["Tip_DocsLoaded"], _sourceData.Rows.Count, RowLimitLabel));
             }
             return sb.ToString();
         }
@@ -83,7 +83,41 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
     [ObservableProperty] private bool gridCanModifyRows = true;
     /// <summary>True when the toolbar is too narrow for labels — buttons collapse to icons.</summary>
     [ObservableProperty] private bool isToolbarCompact;
+    /// <summary>Rows fetched per load; 0 means every row ("All" in the toolbar picker).</summary>
     [ObservableProperty] private int rowLimit;
+    /// <summary>Choices offered by the toolbar's row-limit picker. Built once per tab so a default
+    /// limit that is not a standard choice (say 2000 from Settings) still appears and stays selectable.</summary>
+    public IReadOnlyList<RowLimitOption> RowLimitOptions { get; }
+    /// <summary>The limit as the file and document readers expect it — they treat 0 as "structure only".</summary>
+    private int EffectiveRowLimit => RowLimit > 0 ? RowLimit : int.MaxValue;
+    /// <summary>The limit as status text and tooltips show it: a number, or "All".</summary>
+    public string RowLimitLabel => RowLimit > 0
+        ? RowLimit.ToString("N0", CultureInfo.CurrentCulture)
+        : LocalizationManager.Instance["RowLimit_All"];
+    private bool _revertingRowLimit;
+
+    /// <summary>Picking a new limit reloads straight away, like pressing Reload — but never before the
+    /// first load, and never over unsaved edits without asking first.</summary>
+    partial void OnRowLimitChanged(int oldValue, int newValue)
+    {
+        OnPropertyChanged(nameof(RowLimitLabel));
+        if (_revertingRowLimit || (_session is null && _sourceData is null)) return;
+
+        if (HasUnsavedChanges && !Dialogs.Confirm("Discard unsaved changes?",
+                $"Changing the row limit reloads {Identifier} and discards the edits you have not saved.\n\nReload anyway?"))
+        {
+            // Put the old choice back once the binding that delivered the new one has finished;
+            // reverting inside the same update would not reach the ComboBox.
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                _revertingRowLimit = true;
+                try { RowLimit = oldValue; } finally { _revertingRowLimit = false; }
+            });
+            return;
+        }
+        _ = LoadAsync();
+    }
+
     [ObservableProperty] private bool showClarionTypes = true;
 
     [ObservableProperty] private bool showDetailPanel;
@@ -570,7 +604,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
                 if (!await ApplyDatabaseQueryAsync(candidate)) return;
                 HasActiveFilter = filters.Count > 0;
                 _setStatus(HasActiveFilter
-                    ? $"Filter applied to the full table — {GridData?.Count ?? 0} row(s) loaded (limit {RowLimit})."
+                    ? $"Filter applied to the full table — {GridData?.Count ?? 0} row(s) loaded (limit {RowLimitLabel})."
                     : "Filter cleared.");
             }
             catch (Exception ex)
@@ -755,6 +789,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
     {
         Node = node;
         this.rowLimit = rowLimit;
+        RowLimitOptions = RowLimitOption.Standard(rowLimit);
         _setStatus = setStatus;
         _setBusy = setBusy;
         Key = MakeKey(node);
@@ -838,7 +873,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
             var keyNote = _session.HasReliableKey
                 ? ""
                 : $"  ⚠ No primary key — edits/deletes match on {_session.KeyDescription} (one row at a time).";
-            _setStatus($"Loaded {_session.Data.Rows.Count} row(s) from {Identifier} (limit {RowLimit}).{keyNote}");
+            _setStatus($"Loaded {_session.Data.Rows.Count} row(s) from {Identifier} (limit {RowLimitLabel}).{keyNote}");
             return true;
         }
         catch (Exception ex)
@@ -860,7 +895,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
         try
         {
             _sourceData = await Task.Run(() =>
-                TpsService.ReadTable(folder, Node.Name, RowLimit));
+                TpsService.ReadTable(folder, Node.Name, EffectiveRowLimit));
 
             (_tpsDef, _tpsTableNumber) = TpsService.GetTableDef(folder, Node.Name);
             _tpsPath = System.IO.Path.Combine(folder, Node.Name + ".tps");
@@ -891,7 +926,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
             ApplyDefaults();
             OnPropertyChanged(nameof(TabToolTip));
 
-            _setStatus($"Loaded {_sourceData.Rows.Count} record(s) from {Identifier} (limit {RowLimit}). " +
+            _setStatus($"Loaded {_sourceData.Rows.Count} record(s) from {Identifier} (limit {RowLimitLabel}). " +
                        "TPS: cell edits only — no add/delete.");
             return true;
         }
@@ -914,7 +949,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
         try
         {
             _sourceData = await Task.Run(() =>
-                DatService.ReadTable(folder, Node.Name, RowLimit));
+                DatService.ReadTable(folder, Node.Name, EffectiveRowLimit));
 
             _isDat = true;
             _datPath = System.IO.Path.Combine(folder, Node.Name + ".dat");
@@ -944,7 +979,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
             ApplyDefaults();
             OnPropertyChanged(nameof(TabToolTip));
 
-            _setStatus($"Loaded {_sourceData.Rows.Count} record(s) from {Identifier} (limit {RowLimit}). " +
+            _setStatus($"Loaded {_sourceData.Rows.Count} record(s) from {Identifier} (limit {RowLimitLabel}). " +
                        "DAT: edit cells, add rows, delete rows — Save writes back to file.");
             return true;
         }
@@ -969,7 +1004,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
             _sourceData.RowChanged -= OnDataChanged;
             _sourceData.RowDeleted -= OnDataChanged;
         }
-        _sourceData = await Task.Run(() => DatService.ReadTable(folder, Node.Name, RowLimit));
+        _sourceData = await Task.Run(() => DatService.ReadTable(folder, Node.Name, EffectiveRowLimit));
         _sourceData.RowChanged += OnDataChanged;
         _sourceData.RowDeleted += OnDataChanged;
         ProjectView();
@@ -1007,7 +1042,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
         try
         {
             var uri = Node.Connection.BuildConnectionString();
-            _sourceData = await MongoService.LoadCollectionAsync(uri, Node.Database!, Node.Name, RowLimit);
+            _sourceData = await MongoService.LoadCollectionAsync(uri, Node.Database!, Node.Name, EffectiveRowLimit);
 
             GridReadOnly = true;
             ClarionColumns = new(StringComparer.OrdinalIgnoreCase);
@@ -1022,7 +1057,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
             ApplyDefaults();
             OnPropertyChanged(nameof(TabToolTip));
 
-            _setStatus($"Loaded {_sourceData.Rows.Count} document(s) from {Identifier} (limit {RowLimit}). " +
+            _setStatus($"Loaded {_sourceData.Rows.Count} document(s) from {Identifier} (limit {RowLimitLabel}). " +
                        LocalizationManager.Instance["Mongo_ReadOnly"]);
             return true;
         }
@@ -1060,7 +1095,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
             ApplyDefaults();
             OnPropertyChanged(nameof(TabToolTip));
 
-            _setStatus($"Loaded {_sourceData.Rows.Count} record(s) from {Identifier} (limit {RowLimit}). Read-only {noun}.");
+            _setStatus($"Loaded {_sourceData.Rows.Count} record(s) from {Identifier} (limit {RowLimitLabel}). Read-only {noun}.");
             return true;
         }
         catch (Exception ex)
@@ -1087,7 +1122,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
         try
         {
             _sourceData = await Task.Run(() =>
-                TabularFileService.ReadTable(folder, fileName, sheetName, RowLimit));
+                TabularFileService.ReadTable(folder, fileName, sheetName, EffectiveRowLimit));
 
             var editable = TabularFileService.IsEditableFile(fileName);
             _isExcel = true;
@@ -1105,7 +1140,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
             ApplyDefaults();
             OnPropertyChanged(nameof(TabToolTip));
 
-            _setStatus($"Loaded {_sourceData.Rows.Count} row(s) from {Identifier} (limit {RowLimit}).");
+            _setStatus($"Loaded {_sourceData.Rows.Count} row(s) from {Identifier} (limit {RowLimitLabel}).");
             return true;
         }
         catch (Exception ex)
@@ -1240,7 +1275,7 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
             _sourceData.RowChanged -= OnDataChanged;
             _sourceData.RowDeleted -= OnDataChanged;
         }
-        _sourceData = await Task.Run(() => TpsService.ReadTable(folder, Node.Name, RowLimit));
+        _sourceData = await Task.Run(() => TpsService.ReadTable(folder, Node.Name, EffectiveRowLimit));
         _sourceData.RowChanged += OnDataChanged;
         _sourceData.RowDeleted += OnDataChanged;
         ProjectView();
@@ -1353,4 +1388,23 @@ public partial class TableTabViewModel : ObservableObject, IDisposable, ITabItem
     }
 
     public void Dispose() => Detach();
+}
+
+/// <summary>One entry in the toolbar's row-limit picker: a caption and the limit it stands for (0 = all rows).</summary>
+public sealed record RowLimitOption(string Label, int Value)
+{
+    private static readonly int[] StandardValues = { 0, 10, 50, 100, 300, 600, 1000, 5000 };
+
+    /// <summary>The standard choices, with <paramref name="current"/> slotted in if it is not one of them.</summary>
+    public static IReadOnlyList<RowLimitOption> Standard(int current)
+    {
+        var values = StandardValues.ToList();
+        if (current > 0 && !values.Contains(current))
+        {
+            values.Add(current);
+            values.Sort();
+        }
+        return values.Select(v => new RowLimitOption(
+            v > 0 ? v.ToString("N0", CultureInfo.CurrentCulture) : LocalizationManager.Instance["RowLimit_All"], v)).ToList();
+    }
 }

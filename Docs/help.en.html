@@ -159,7 +159,9 @@
       </ul>
       <div class="note"><strong>Tables without a primary key:</strong> DataPortStudio asks which column(s) uniquely identify a
       row (used in the <code>WHERE</code> clause for edits/deletes). Choose carefully, or keep the default "all columns".</div>
-      <p>A row limit (configurable in Settings) caps how many rows load at once, so large tables open quickly.</p>
+      <p>The toolbar's <strong>Row limit</strong> drop-down caps how many rows load at once, so large tables open
+      quickly: choose <strong>All</strong>, 10, 50, 100, 300, 600, 1,000 or 5,000. Picking a value reloads the table
+      straight away (you are asked first if there are unsaved edits). The default for new tabs is set in Settings.</p>
 
       <h2 id="clarion-dates">Clarion dates &amp; times</h2>
       <p>Clarion applications store dates and times as plain integers (a <em>Standard Date</em> is days since
@@ -375,7 +377,8 @@
       User Guide opens in whichever language you've selected.</p>
 
       <h3>5. My table only shows part of the rows — why?</h3>
-      <p>Tables open with a <strong>row limit</strong> so large tables load quickly. Raise the default limit in
+      <p>Tables open with a <strong>row limit</strong> so large tables load quickly. Pick a larger value — or
+      <strong>All</strong> — from the toolbar's <strong>Row limit</strong> drop-down, raise the default limit in
       <strong>File ▸ Settings</strong>, or apply a filter to narrow down to the rows you need.</p>
 
       <h3>6. How do I move a Clarion TPS/DAT file into SQL Server?</h3>

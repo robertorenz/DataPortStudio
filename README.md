@@ -114,9 +114,11 @@ Both options are **self-contained** — no .NET runtime install required.
   - Connections are saved to `%AppData%\DataPortStudio\connections.json`; passwords are
     encrypted at rest with **Windows DPAPI** (current-user scope).
 - **Object tree** — lazily loads databases, schemas, and tables, color-coded by type.
-- **Tabbed data view** — double-click a table to open it in its own tab (configurable row
-  limit). Re-opening a table just switches to its existing tab. Tabs flag unsaved changes
-  and can be closed individually.
+- **Tabbed data view** — double-click a table to open it in its own tab. Re-opening a table just
+  switches to its existing tab. Tabs flag unsaved changes and can be closed individually.
+  - **Row limit picker** — the toolbar's **Row limit** drop-down offers **All, 10, 50, 100, 300,
+    600, 1,000** and **5,000** rows; picking one reloads the table on the spot (asking first if
+    there are unsaved edits). The default for new tabs comes from **Settings**.
   - **In-place editing** of cells.
   - **Add** new rows and **delete** rows.
   - **Save changes** writes everything back. Tables **without a primary key** are supported too —
