@@ -4,6 +4,20 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## Unreleased
+
+### Added
+- **Safety check before destructive SQL.** The query window now looks at a script before it runs
+  it. An `UPDATE` or `DELETE` with no `WHERE`, a `TRUNCATE`, a `DROP`, or an `ALTER TABLE … DROP
+  COLUMN` brings up a red popup listing each one, with the number of rows the table holds where it
+  can be counted, and nothing runs until you choose **Run anyway**. Keywords inside comments and
+  string literals don't trip it, nor do `SELECT … FOR UPDATE`, `ON DELETE CASCADE`, upserts,
+  `GRANT … DELETE`, or the bodies of procedures, functions and triggers being created. T-SQL
+  scripts that run statements on without semicolons are checked statement by statement. On by
+  default; switch it off in **Settings**.
+
+---
+
 ## v1.0.34 — 2026-09-20
 
 ### Changed

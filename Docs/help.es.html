@@ -241,6 +241,13 @@
       <p><strong>Archivo ▸ Nueva consulta</strong> abre un editor SQL para la conexión seleccionada. Escriba SQL,
       ejecútelo y explore la cuadrícula de resultados; los resultados se pueden exportar. (La ventana de consultas no
       aplica a MongoDB ni a los archivos Clarion.)</p>
+      <p><strong>Verificación de seguridad.</strong> Antes de ejecutar, la ventana de consultas busca sentencias que no
+      se pueden deshacer: un <code>UPDATE</code> o <code>DELETE</code> sin <code>WHERE</code>, <code>TRUNCATE</code>,
+      un <code>DROP</code> o <code>ALTER TABLE … DROP COLUMN</code>. Si encuentra alguna, una ventana las enumera con
+      el número de filas de cada tabla, y no se ejecuta nada hasta que elija <strong>Ejecutar de todos modos</strong>.
+      Se ignora el texto dentro de comentarios y cadenas, así como el cuerpo de los procedimientos, funciones y
+      disparadores que esté creando. Desactívela en <strong>Configuración</strong> (<em>Preguntar antes de ejecutar
+      UPDATE / DELETE sin WHERE…</em>).</p>
       <p><strong>Archivo ▸ Diseñador de consultas</strong> abre un diseñador visual: elija tablas, columnas, agregue
       uniones y condiciones, y DataPortStudio genera el SQL por usted. Funciona con SQL Server, SQLite, MySQL/MariaDB y Firebird.</p>
 

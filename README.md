@@ -170,6 +170,10 @@ Both options are **self-contained** — no .NET runtime install required.
   indexes + foreign keys), and **Relationships**.
 - **SQL query window** — **New Query** opens a window to run arbitrary SQL (Run / F5) with a
   results grid, row counts and timing.
+  - **Safety check** — before running, the window looks for `UPDATE` / `DELETE` with no `WHERE`,
+    `TRUNCATE`, `DROP` and `ALTER TABLE … DROP COLUMN`. If it finds any, a popup lists them with the
+    row count each table holds, and nothing runs until you choose **Run anyway**. Comments, strings
+    and routine bodies being created are ignored. Can be turned off in **Settings**.
 - **Visual query designer** — compose SELECTs visually (tables, columns, joins with FK
   auto-detect, filters, sort) with live SQL. Works with SQL Server, SQLite, MySQL/MariaDB and
   Firebird; open it from the **Visual Designer** button on the command bar.
@@ -344,9 +348,13 @@ Themes/      Theme.xaml (palette + control styles)
 
 ## Roadmap ideas
 
-- Ad-hoc SQL query editor with results grid
-- Filtering / sorting / paging on large tables
-- Export (CSV / JSON), and view table structure (columns, indexes, keys)
+- **Data compare & sync** — compare the rows of two tables and generate the INSERT / UPDATE /
+  DELETE script that makes the target match the source
+- **Execution plans** — an *Explain* button in the query window, with the costly steps highlighted
+- **Manual transaction mode** — Commit / Rollback in the query window instead of auto-commit
+- **SSH tunnel & SSL** options on server connections
+- **Colour-coded connections** (e.g. red for production) carried through to tabs and query windows
+- Saved snippets, run-statement-at-cursor, follow foreign keys from the grid, database-wide search
 
 ## Acknowledgments
 

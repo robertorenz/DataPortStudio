@@ -229,6 +229,12 @@
       <h2 id="query">Query window &amp; visual builder</h2>
       <p><strong>File ▸ New Query</strong> opens a SQL editor for the selected connection. Type SQL, run it, and browse
       the results grid; results can be exported. (The query window doesn't apply to MongoDB or Clarion files.)</p>
+      <p><strong>Safety check.</strong> Before running, the query window looks for statements that can't be undone —
+      an <code>UPDATE</code> or <code>DELETE</code> with no <code>WHERE</code>, <code>TRUNCATE</code>, a
+      <code>DROP</code>, or <code>ALTER TABLE … DROP COLUMN</code>. If it finds any, a popup lists them with the
+      number of rows each table holds, and nothing runs until you choose <strong>Run anyway</strong>. Text inside
+      comments and strings is ignored, and so are the bodies of procedures, functions and triggers you are
+      creating. Turn it off in <strong>Settings</strong> (<em>Ask before running UPDATE / DELETE without WHERE…</em>).</p>
       <p><strong>File ▸ Query Builder</strong> opens a visual designer: pick tables, choose columns, add joins and
       conditions, and DataPortStudio generates the SQL for you. It works with SQL Server, SQLite, MySQL/MariaDB and Firebird.</p>
 

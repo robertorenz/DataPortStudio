@@ -27,6 +27,9 @@ public class AppSettings
     /// <summary>Where SQL query editors open.</summary>
     public QueryOpenMode QueryOpenMode { get; set; } = QueryOpenMode.Window;
 
+    /// <summary>Confirm before the query window runs UPDATE/DELETE without WHERE, TRUNCATE or DROP.</summary>
+    public bool ConfirmDangerousStatements { get; set; } = true;
+
     /// <summary>Last active database per connection (connectionId → databaseName).</summary>
     public Dictionary<string, string> LastDatabases { get; set; } = new();
 

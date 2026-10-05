@@ -76,6 +76,13 @@ public partial class QueryView : UserControl
         if (string.IsNullOrWhiteSpace(sql)) return;
 
         RunButton.IsEnabled = false;
+        if (SettingsStore.Current.ConfirmDangerousStatements && !await ConfirmDangerousAsync(sql))
+        {
+            Messages.Text = L("Safety_Cancelled");
+            RunButton.IsEnabled = true;
+            return;
+        }
+
         ExportButton.IsEnabled = false;
         Messages.Text = "Running…";
         try
@@ -145,6 +152,62 @@ public partial class QueryView : UserControl
         {
             RunButton.IsEnabled = true;
         }
+    }
+
+    private static string L(string key) => LocalizationManager.Instance[key];
+
+    /// <summary>
+    /// Lists any UPDATE/DELETE without WHERE, TRUNCATE or DROP in <paramref name="sql"/>, with the
+    /// row counts at stake where they can be read, and asks before running. True = go ahead.
+    /// </summary>
+    private async Task<bool> ConfirmDangerousAsync(string sql)
+    {
+        var found = SqlSafetyAnalyzer.Analyze(sql);
+        if (found.Count == 0) return true;
+
+        Messages.Text = "Checking…";
+        var counts = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+        var targets = found.Where(f => f.Kind != DangerKind.Drop && f.Target != null)
+                           .Select(f => f.Target!).Distinct(StringComparer.OrdinalIgnoreCase).Take(5).ToList();
+        if (targets.Count > 0)
+        {
+            try
+            {
+                await using var conn = CreateConnection();
+                await conn.OpenAsync();
+                foreach (var target in targets)
+                {
+                    try
+                    {
+                        await using var cmd = conn.CreateCommand();
+                        cmd.CommandText = $"SELECT COUNT(*) FROM {target}";
+                        try { cmd.CommandTimeout = 5; } catch { }
+                        counts[target] = Convert.ToInt64(await cmd.ExecuteScalarAsync());
+                    }
+                    catch { /* the count is a courtesy — the statement may target a temp table, CTE… */ }
+                }
+            }
+            catch { /* can't connect now: the run itself will report it */ }
+        }
+
+        const int shown = 4;
+        var lines = new List<string> { L("Safety_Intro"), "" };
+        foreach (var f in found.Take(shown))
+        {
+            lines.Add("• " + f.Kind switch
+            {
+                DangerKind.DeleteWithoutWhere => L("Safety_DeleteAll"),
+                DangerKind.UpdateWithoutWhere => L("Safety_UpdateAll"),
+                DangerKind.Truncate           => L("Safety_Truncate"),
+                _                             => L("Safety_Drop"),
+            });
+            lines.Add("   " + f.Statement);
+            if (f.Target != null && counts.TryGetValue(f.Target, out var n))
+                lines.Add("   " + string.Format(L("Safety_Rows"), n, f.Target));
+        }
+        if (found.Count > shown) lines.Add(string.Format(L("Safety_More"), found.Count - shown));
+
+        return Dialogs.ConfirmDanger(L("Safety_Title"), string.Join("\n", lines), L("Safety_Run"));
     }
 
     private static DataGrid BuildGrid(DataView view)
