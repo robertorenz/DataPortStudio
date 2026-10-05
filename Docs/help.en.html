@@ -55,6 +55,7 @@
     <a href="#designer">Table designer</a>
     <div class="group">Moving data</div>
     <a href="#copy">Copy &amp; paste tables</a>
+    <a href="#data-compare">Data compare &amp; sync</a>
     <a href="#tps-sql">Clarion → SQL mapping</a>
     <a href="#insert-import-export">Generate / Import / Export</a>
     <a href="#backup">Backup, restore &amp; scripts</a>
@@ -261,6 +262,35 @@
       <p>You can paste into the same connection, a different connection of the same engine, or even a
       <strong>different relational engine</strong> (e.g. SQLite → SQL Server). DataPortStudio maps each column to a compatible
       type, creates the table, and copies the rows. Large SQL Server copies use high-speed bulk streaming.</p>
+
+      <h2 id="data-compare">Data compare &amp; sync</h2>
+      <p>Compare the <em>rows</em> of two tables and make one match the other. Open it from the <strong>Data</strong>
+      button on the command bar, or right-click a table ▸ <strong>Compare data…</strong> to start with that table as
+      the source. Source and target can be on the same database, on two databases of one server, or on two different
+      engines (say a SQL Server table against its PostgreSQL copy).</p>
+      <ul>
+        <li><strong>Pick the source and target</strong> — connection, database, schema and table on each side. Picking a
+        source table selects the same-named target table when there is one; <strong>⇄</strong> swaps the two sides.</li>
+        <li><strong>Rows are matched on the primary key</strong> (the source's, or else the target's). Columns that exist
+        on only one side are listed and left out of the comparison.</li>
+        <li><strong>Values are compared by value</strong>, not by how each engine stores them: <code>1.5</code> equals
+        <code>1.50</code>, a <code>bit</code> equals a <code>boolean</code>, dates compare as dates. <em>Ignore trailing
+        spaces</em> (on by default) treats <code>'Acme  '</code> as <code>'Acme'</code>; <em>Ignore case in text</em> is
+        off by default.</li>
+        <li><strong>Results</strong> — four counters (only in source, different, only in target, identical) and a tab for
+        each. <em>Different</em> lists every changed cell with the target's current value next to the source's.
+        Grids show the first 5,000 lines; the counters and the sync always cover every row.</li>
+        <li><strong>Make the target match</strong> — tick <em>Insert missing rows</em>, <em>Update different rows</em>
+        and/or <em>Delete extra rows</em> (off by default), then either
+          <ul>
+            <li><strong>Generate script…</strong> — a reviewable <code>DELETE</code> / <code>UPDATE</code> /
+            <code>INSERT</code> script in the target's dialect, wrapped in a transaction, or</li>
+            <li><strong>Apply to target</strong> — after a confirmation, runs the changes in <strong>one
+            transaction</strong>: if any statement fails nothing is changed. The tables are then compared again.</li>
+          </ul></li>
+        <li><strong>SQL Server targets</strong>: identity columns are inserted with <code>IDENTITY_INSERT</code>;
+        computed and <code>rowversion</code> columns are never written.</li>
+      </ul>
 
       <h2 id="tps-sql">Clarion → SQL: review &amp; tweak the column types</h2>
       <p>When you copy a Clarion <strong>TPS</strong> or <strong>DAT</strong> file into a SQL database, DataPortStudio shows a

@@ -219,6 +219,15 @@ Both options are **self-contained** — no .NET runtime install required.
     `<database>_<timestamp>`. Backups run sequentially so the server isn't loaded, a failure on one
     database doesn't stop the rest, and the summary names what succeeded and what didn't. `tempdb`
     is excluded on SQL Server. Supported on SQL Server, PostgreSQL, MySQL/MariaDB and MongoDB.
+- **Data compare & sync** — the **Data** button on the command bar (or right-click a table ▸
+  **Compare data…**) compares the *rows* of two tables — same database, two databases, or two
+  different engines. Rows are matched on the primary key and values are compared by value (so
+  `1.5` = `1.50` and a `bit` = a `boolean` across engines), with optional *ignore trailing spaces*
+  and *ignore case*. Four counters and tabs show rows only in the source, rows that differ (cell by
+  cell, target value beside source value), rows only in the target, and identical rows. Then
+  **Generate script…** writes the `DELETE` / `UPDATE` / `INSERT` script in the target's dialect, or
+  **Apply to target** runs it in a single transaction (all or nothing). SQL Server targets get
+  `IDENTITY_INSERT` handled and skip computed / `rowversion` columns.
 - **Copy & paste a table** — right-click a table → **Copy** (or Ctrl+C in the tree), then **Paste**
   (Ctrl+V) onto a Tables folder / database. It asks whether to copy the **structure only** or
   **structure + data**, and auto-names the copy (`name_copy`, `name_copy2`, …) if the name is taken.
@@ -348,8 +357,6 @@ Themes/      Theme.xaml (palette + control styles)
 
 ## Roadmap ideas
 
-- **Data compare & sync** — compare the rows of two tables and generate the INSERT / UPDATE /
-  DELETE script that makes the target match the source
 - **Execution plans** — an *Explain* button in the query window, with the costly steps highlighted
 - **Manual transaction mode** — Commit / Rollback in the query window instead of auto-commit
 - **SSH tunnel & SSL** options on server connections

@@ -213,19 +213,19 @@ public static class TableCopyService
         return CopyRelationalCrossAsync(src, srcDb, srcSchema, srcName, tgt, tgtDb, tgtSchema, newName, includeData);
     }
 
-    private static string Q(DatabaseEngine e, string id) =>
+    internal static string Q(DatabaseEngine e, string id) =>
         e is DatabaseEngine.Firebird or DatabaseEngine.Oracle or DatabaseEngine.PostgreSql
             ? "\"" + id.Replace("\"", "\"\"") + "\""
             : e.IsMySql()
                 ? "`" + id.Replace("`", "``") + "`"
                 : "[" + id.Replace("]", "]]") + "]";
 
-    private static string Fq(DatabaseEngine e, string schema, string name) =>
+    internal static string Fq(DatabaseEngine e, string schema, string name) =>
         e is DatabaseEngine.SqlServer or DatabaseEngine.PostgreSql
             ? $"{Q(e, schema)}.{Q(e, name)}"
             : Q(e, name);
 
-    private static async Task<DbConnection> OpenAsync(ConnectionProfile p, string db)
+    internal static async Task<DbConnection> OpenAsync(ConnectionProfile p, string db)
     {
         DbConnection conn = p.Engine switch
         {
@@ -469,7 +469,7 @@ public static class TableCopyService
         return result;
     }
 
-    private static Task<List<string>> GetPrimaryKeyNamesAsync(
+    internal static Task<List<string>> GetPrimaryKeyNamesAsync(
         ConnectionProfile p, string db, string schema, string name)
     {
         var cs = p.BuildConnectionString();

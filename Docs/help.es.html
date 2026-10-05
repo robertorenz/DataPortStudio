@@ -55,6 +55,7 @@
     <a href="#designer">Diseñador de tablas</a>
     <div class="group">Mover datos</div>
     <a href="#copy">Copiar y pegar tablas</a>
+    <a href="#data-compare">Comparar y sincronizar datos</a>
     <a href="#tps-sql">Clarion → SQL: tipos</a>
     <a href="#insert-import-export">Generar / Importar / Exportar</a>
     <a href="#backup">Respaldo, restauración y scripts</a>
@@ -276,6 +277,38 @@
       <p>Puede pegar en la misma conexión, en otra conexión del mismo motor, o incluso en un <strong>motor relacional
       distinto</strong> (p. ej. SQLite → SQL Server). DataPortStudio asigna a cada columna un tipo compatible, crea la tabla y
       copia las filas. Las copias grandes a SQL Server usan transmisión masiva de alta velocidad.</p>
+
+      <h2 id="data-compare">Comparar y sincronizar datos</h2>
+      <p>Compare las <em>filas</em> de dos tablas y haga que una coincida con la otra. Ábralo con el botón
+      <strong>Datos</strong> de la barra de comandos, o haga clic derecho en una tabla ▸ <strong>Comparar datos…</strong>
+      para empezar con esa tabla como origen. Origen y destino pueden estar en la misma base de datos, en dos bases de un
+      mismo servidor o en dos motores distintos (por ejemplo, una tabla de SQL Server contra su copia en PostgreSQL).</p>
+      <ul>
+        <li><strong>Elija origen y destino</strong> — conexión, base de datos, esquema y tabla en cada lado. Al elegir la
+        tabla de origen se selecciona la tabla de destino con el mismo nombre, si existe; <strong>⇄</strong> intercambia
+        los dos lados.</li>
+        <li><strong>Las filas se emparejan por la clave primaria</strong> (la del origen o, si no, la del destino). Las
+        columnas que existen en un solo lado se indican y quedan fuera de la comparación.</li>
+        <li><strong>Los valores se comparan por su valor</strong>, no por cómo los guarda cada motor: <code>1.5</code> es
+        igual a <code>1.50</code>, un <code>bit</code> es igual a un <code>boolean</code> y las fechas se comparan como
+        fechas. <em>Ignorar espacios finales</em> (activado por defecto) trata <code>'Acme  '</code> como
+        <code>'Acme'</code>; <em>Ignorar mayúsculas en texto</em> está desactivado por defecto.</li>
+        <li><strong>Resultados</strong> — cuatro contadores (solo en origen, diferentes, solo en destino, idénticas) y una
+        pestaña para cada uno. <em>Diferentes</em> muestra cada celda modificada con el valor actual del destino junto al
+        del origen. Las cuadrículas muestran las primeras 5.000 líneas; los contadores y la sincronización siempre
+        abarcan todas las filas.</li>
+        <li><strong>Igualar el destino</strong> — marque <em>Insertar filas faltantes</em>, <em>Actualizar filas
+        diferentes</em> y/o <em>Eliminar filas sobrantes</em> (desactivado por defecto) y luego
+          <ul>
+            <li><strong>Generar script…</strong> — un script <code>DELETE</code> / <code>UPDATE</code> /
+            <code>INSERT</code> revisable, en el dialecto del destino y dentro de una transacción, o</li>
+            <li><strong>Aplicar al destino</strong> — tras una confirmación, ejecuta los cambios en <strong>una sola
+            transacción</strong>: si alguna sentencia falla, no se cambia nada. Después se vuelven a comparar las
+            tablas.</li>
+          </ul></li>
+        <li><strong>Destinos SQL Server</strong>: las columnas de identidad se insertan con <code>IDENTITY_INSERT</code>;
+        las columnas calculadas y <code>rowversion</code> nunca se escriben.</li>
+      </ul>
 
       <h2 id="tps-sql">Clarion → SQL: revisar y ajustar los tipos de columna</h2>
       <p>Al copiar un archivo Clarion <strong>TPS</strong> o <strong>DAT</strong> a una base de datos SQL, DataPortStudio muestra

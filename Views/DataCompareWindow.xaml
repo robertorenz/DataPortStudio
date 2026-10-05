@@ -1,0 +1,190 @@
+<Window x:Class="DataPortStudio.Views.DataCompareWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:DataPortStudio.Services"
+        Title="{loc:Tr DC_Title}" Height="740" Width="1180" MinHeight="560" MinWidth="960"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource B.Bg}">
+    <Window.Resources>
+        <Style x:Key="EndpointLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource B.TextMuted}"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+        </Style>
+        <Style x:Key="SummaryCard" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource B.Surface}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource B.Border}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="14,10"/>
+            <Setter Property="Margin" Value="0,0,12,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style x:Key="SummaryCount" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Text" Value="—"/>
+        </Style>
+        <Style x:Key="SummaryCaption" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource B.TextMuted}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Source → target endpoints -->
+        <Border Grid.Row="0" Background="{DynamicResource B.HeaderBar}"
+                BorderBrush="{DynamicResource B.Border}" BorderThickness="0,0,0,1" Padding="16,12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="56"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{loc:Tr DC_Source}" Style="{StaticResource EndpointLabel}"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.3*"/><ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="*"/><ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="0.8*"/><ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="1.2*"/>
+                        </Grid.ColumnDefinitions>
+                        <ComboBox x:Name="SrcConnCombo" DisplayMemberPath="Label" SelectionChanged="Conn_Changed"/>
+                        <ComboBox x:Name="SrcDbCombo" Grid.Column="2" SelectionChanged="Db_Changed"/>
+                        <ComboBox x:Name="SrcSchemaCombo" Grid.Column="4" SelectionChanged="Schema_Changed"/>
+                        <ComboBox x:Name="SrcTableCombo" Grid.Column="6" IsEditable="True" IsTextSearchEnabled="True"
+                                  SelectionChanged="Table_Changed"/>
+                    </Grid>
+                </StackPanel>
+
+                <Button Grid.Column="1" x:Name="SwapButton" Content="⇄" FontSize="16" Padding="8,2"
+                        VerticalAlignment="Bottom" HorizontalAlignment="Center"
+                        ToolTip="{loc:Tr DC_Swap}" Click="Swap_Click"/>
+
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="{loc:Tr DC_Target}" Style="{StaticResource EndpointLabel}"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.3*"/><ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="*"/><ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="0.8*"/><ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="1.2*"/>
+                        </Grid.ColumnDefinitions>
+                        <ComboBox x:Name="TgtConnCombo" DisplayMemberPath="Label" SelectionChanged="Conn_Changed"/>
+                        <ComboBox x:Name="TgtDbCombo" Grid.Column="2" SelectionChanged="Db_Changed"/>
+                        <ComboBox x:Name="TgtSchemaCombo" Grid.Column="4" SelectionChanged="Schema_Changed"/>
+                        <ComboBox x:Name="TgtTableCombo" Grid.Column="6" IsEditable="True" IsTextSearchEnabled="True"
+                                  SelectionChanged="Table_Changed"/>
+                    </Grid>
+                </StackPanel>
+
+                <Button Grid.Column="3" x:Name="CompareButton" Content="{loc:Tr DC_Compare}" MinWidth="100"
+                        Style="{StaticResource AccentButton}" Margin="18,0,0,0" VerticalAlignment="Bottom"
+                        IsEnabled="False" Click="Compare_Click"/>
+
+                <StackPanel Grid.Row="1" Grid.ColumnSpan="4" Orientation="Horizontal" Margin="0,12,0,0">
+                    <CheckBox x:Name="TrimCheck" Content="{loc:Tr DC_IgnoreTrailing}" IsChecked="True"
+                              VerticalAlignment="Center"/>
+                    <CheckBox x:Name="CaseCheck" Content="{loc:Tr DC_IgnoreCase}"
+                              VerticalAlignment="Center" Margin="18,0,0,0"/>
+                    <TextBlock x:Name="KeyText" Foreground="{DynamicResource B.TextMuted}" FontSize="11"
+                               VerticalAlignment="Center" Margin="22,0,0,0" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Summary -->
+        <Grid Grid.Row="1" Margin="16,14,4,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Border x:Name="InsertCard" Style="{StaticResource SummaryCard}" MouseLeftButtonUp="InsertCard_Click">
+                <StackPanel>
+                    <TextBlock x:Name="InsertCount" Style="{StaticResource SummaryCount}" Foreground="{DynamicResource B.Success}"/>
+                    <TextBlock Text="{loc:Tr DC_OnlySourceCaption}" Style="{StaticResource SummaryCaption}"/>
+                </StackPanel>
+            </Border>
+            <Border x:Name="UpdateCard" Grid.Column="1" Style="{StaticResource SummaryCard}" MouseLeftButtonUp="UpdateCard_Click">
+                <StackPanel>
+                    <TextBlock x:Name="UpdateCount" Style="{StaticResource SummaryCount}" Foreground="#FFE0912B"/>
+                    <TextBlock Text="{loc:Tr DC_DifferentCaption}" Style="{StaticResource SummaryCaption}"/>
+                </StackPanel>
+            </Border>
+            <Border x:Name="DeleteCard" Grid.Column="2" Style="{StaticResource SummaryCard}" MouseLeftButtonUp="DeleteCard_Click">
+                <StackPanel>
+                    <TextBlock x:Name="DeleteCount" Style="{StaticResource SummaryCount}" Foreground="{DynamicResource B.Danger}"/>
+                    <TextBlock Text="{loc:Tr DC_OnlyTargetCaption}" Style="{StaticResource SummaryCaption}"/>
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="3" Style="{StaticResource SummaryCard}" Cursor="Arrow">
+                <StackPanel>
+                    <TextBlock x:Name="SameCount" Style="{StaticResource SummaryCount}" Foreground="{DynamicResource B.TextMuted}"/>
+                    <TextBlock Text="{loc:Tr DC_IdenticalCaption}" Style="{StaticResource SummaryCaption}"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Row detail -->
+        <TabControl x:Name="DetailTabs" Grid.Row="2" Margin="16,0,16,12">
+            <TabItem x:Name="InsertTab" Header="{loc:Tr DC_TabOnlySource}">
+                <DataGrid x:Name="InsertGrid" IsReadOnly="True" AutoGenerateColumns="True"
+                          CanUserAddRows="False" BorderThickness="0" EnableRowVirtualization="True"/>
+            </TabItem>
+            <TabItem x:Name="UpdateTab" Header="{loc:Tr DC_TabDifferent}">
+                <DataGrid x:Name="UpdateGrid" IsReadOnly="True" AutoGenerateColumns="True"
+                          CanUserAddRows="False" BorderThickness="0" EnableRowVirtualization="True"/>
+            </TabItem>
+            <TabItem x:Name="DeleteTab" Header="{loc:Tr DC_TabOnlyTarget}">
+                <DataGrid x:Name="DeleteGrid" IsReadOnly="True" AutoGenerateColumns="True"
+                          CanUserAddRows="False" BorderThickness="0" EnableRowVirtualization="True"/>
+            </TabItem>
+        </TabControl>
+
+        <!-- Sync actions -->
+        <Border Grid.Row="3" BorderBrush="{DynamicResource B.Border}" BorderThickness="0,1,0,0"
+                Background="{DynamicResource B.HeaderBar}" Padding="16,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="{loc:Tr DC_SyncLabel}" Foreground="{DynamicResource B.TextMuted}"
+                               FontSize="11" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <CheckBox x:Name="DoInsertCheck" Content="{loc:Tr DC_DoInsert}" IsChecked="True"
+                              VerticalAlignment="Center" Click="SyncOption_Click"/>
+                    <CheckBox x:Name="DoUpdateCheck" Content="{loc:Tr DC_DoUpdate}" IsChecked="True"
+                              VerticalAlignment="Center" Margin="16,0,0,0" Click="SyncOption_Click"/>
+                    <CheckBox x:Name="DoDeleteCheck" Content="{loc:Tr DC_DoDelete}"
+                              VerticalAlignment="Center" Margin="16,0,0,0" Click="SyncOption_Click"/>
+                </StackPanel>
+                <Button Grid.Column="2" x:Name="ScriptButton" Content="{loc:Tr DC_GenerateScript}"
+                        Margin="0,0,8,0" Padding="14,6" IsEnabled="False" Click="Script_Click"/>
+                <Button Grid.Column="3" x:Name="ApplyButton" Content="{loc:Tr DC_Apply}"
+                        Style="{StaticResource AccentButton}" Padding="14,6" IsEnabled="False" Click="Apply_Click"/>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="4" Background="{DynamicResource B.Sidebar}" Padding="16,6">
+            <TextBlock x:Name="StatusText" Foreground="{DynamicResource B.SidebarText}" FontSize="12"
+                       Text="{loc:Tr DC_StatusReady}" TextTrimming="CharacterEllipsis"/>
+        </Border>
+    </Grid>
+</Window>

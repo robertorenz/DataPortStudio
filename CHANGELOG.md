@@ -7,6 +7,18 @@ All notable changes to DataPortStudio are documented here.
 ## Unreleased
 
 ### Added
+- **Data compare & sync.** A new **Data** button on the command bar — or right-click a table ▸
+  **Compare data…** — opens a window that compares the rows of two tables: two databases on one
+  server, two connections, or two different engines. Rows are matched on the primary key; values are
+  compared by value rather than by storage, so `1.5` and `1.50`, a SQL Server `bit` and a
+  PostgreSQL `boolean`, or a date and the same date stored as text all count as equal. *Ignore
+  trailing spaces* (on) and *Ignore case in text* (off) tune the match. Counters and tabs show what
+  is only in the source, what differs — cell by cell, the target's value beside the source's — what
+  is only in the target, and how much is identical. **Generate script…** produces the `DELETE` /
+  `UPDATE` / `INSERT` script in the target's dialect, wrapped in a transaction; **Apply to target**
+  runs the same changes with parameters in one transaction after a confirmation, rolls back if
+  anything fails, and compares again. Deleting extra rows is opt-in. SQL Server targets handle
+  `IDENTITY_INSERT` and leave computed and `rowversion` columns alone. **⇄** swaps source and target.
 - **Safety check before destructive SQL.** The query window now looks at a script before it runs
   it. An `UPDATE` or `DELETE` with no `WHERE`, a `TRUNCATE`, a `DROP`, or an `ALTER TABLE … DROP
   COLUMN` brings up a red popup listing each one, with the number of rows the table holds where it

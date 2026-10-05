@@ -363,6 +363,24 @@ public partial class MainViewModel : ObservableObject
         new Views.SchemaDiffWindow(relational, connection, node?.Database, AddConnectionProfile).Show();
     }
 
+    [RelayCommand]
+    private void OpenDataCompare(DbTreeNode? node)
+    {
+        node ??= SelectedNode;
+        var relational = Roots.Select(r => r.Connection)
+            .Where(DataCompareService.IsSupported)
+            .DistinctBy(c => c.Id)
+            .ToList();
+        if (relational.Count == 0)
+        {
+            Dialogs.ShowMessage("Not available", "Data compare needs at least one SQL database connection.");
+            return;
+        }
+        var connection = node?.Connection is { } c && DataCompareService.IsSupported(c) ? c : relational[0];
+        var table = node is { Type: NodeType.Table } && node.Connection.Id == connection.Id ? node.Name : null;
+        new Views.DataCompareWindow(relational, connection, node?.Database, node?.Schema, table).Show();
+    }
+
     private void OpenQueryEditor(ConnectionProfile connection, string? database, string? initialSql = null)
     {
         if (SettingsStore.Current.QueryOpenMode == QueryOpenMode.Window)

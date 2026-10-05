@@ -354,6 +354,8 @@ public partial class MainWindow : Window
         if (canRename)
             menu.Items.Add(Item("Ctx_Rename", () => Run(Vm.RenameTableCommand, node)));
         menu.Items.Add(Item("Ctx_GenerateScript", () => Run(Vm.GenerateObjectScriptCommand, node)));
+        if (node.Type == NodeType.Table && DataCompareService.IsSupported(node.Connection))
+            menu.Items.Add(Item("Ctx_CompareData", () => Run(Vm.OpenDataCompareCommand, node)));
 
         if (sqlServerExtras)
         {
