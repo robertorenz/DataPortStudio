@@ -4,7 +4,7 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
-## Unreleased
+## v1.0.35 — 2026-10-04
 
 ### Added
 - **Data compare & sync.** A new **Data** button on the command bar — or right-click a table ▸
