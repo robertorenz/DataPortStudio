@@ -4,7 +4,7 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
-## Unreleased
+## v1.0.36 — 2026-10-18
 
 ### Added
 - **In-app updates.** **Help ▸ Check for Updates…** asks GitHub for the latest release. If a newer
