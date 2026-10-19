@@ -249,6 +249,11 @@
       Se ignora el texto dentro de comentarios y cadenas, así como el cuerpo de los procedimientos, funciones y
       disparadores que esté creando. Desactívela en <strong>Configuración</strong> (<em>Preguntar antes de ejecutar
       UPDATE / DELETE sin WHERE…</em>).</p>
+      <p><strong>Plan de ejecución.</strong> <strong>Explain</strong> (Ctrl+L) pregunta a la base de datos cómo
+      ejecutaría el script — la consulta <em>no</em> se ejecuta — y muestra el plan como un árbol por sentencia, con
+      las filas estimadas y la parte del costo de cada paso; los pasos costosos se resaltan. En SQL Server también
+      obtiene sugerencias de índices faltantes, y <strong>Guardar plan…</strong> crea un archivo <code>.sqlplan</code>
+      para SQL Server Management Studio. Funciona con SQL Server, PostgreSQL, MySQL/MariaDB, SQLite, Oracle y Firebird.</p>
       <p><strong>Archivo ▸ Diseñador de consultas</strong> abre un diseñador visual: elija tablas, columnas, agregue
       uniones y condiciones, y DataPortStudio genera el SQL por usted. Funciona con SQL Server, SQLite, MySQL/MariaDB y Firebird.</p>
 
@@ -399,7 +404,8 @@
 
       <h2 id="settings">Configuración</h2>
       <p><strong>Archivo ▸ Configuración</strong> le permite elegir el <strong>idioma</strong> (inglés / español), el
-      <strong>límite de filas</strong> predeterminado al abrir tablas y opciones de apariencia. Los cambios se aplican de inmediato.</p>
+      <strong>límite de filas</strong> predeterminado al abrir tablas y opciones de apariencia. Los cambios se aplican de inmediato.
+      <em>Buscar actualizaciones al iniciar DataPortStudio</em> controla la búsqueda silenciosa de actualizaciones al iniciar.</p>
 
       <h2 id="shortcuts">Atajos de teclado</h2>
       <table>
@@ -459,9 +465,12 @@
       predeterminada <strong>"todas las columnas"</strong>, que es la más segura.</p>
 
       <h3>10. ¿Cómo actualizo DataPortStudio?</h3>
-      <p>Descargue el <code>DataPortStudio.exe</code> más reciente desde la página <strong>Ayuda ▸ Última versión</strong> y
-      reemplace su copia. Sus conexiones y configuración guardadas se conservan. Puede ver su versión actual en
-      <strong>Ayuda ▸ Acerca de</strong>.</p>
+      <p>Elija <strong>Ayuda ▸ Buscar actualizaciones…</strong>. Si hay una versión más nueva, una ventana muestra las
+      novedades; haga clic en <strong>Descargar e instalar</strong>. DataPortStudio descarga el instalador desde GitHub,
+      lo compara con la suma de verificación publicada, se cierra, instala la actualización (Windows pide permiso) y se
+      abre de nuevo. Sus conexiones y configuración guardadas se conservan. <strong>Omitir esta versión</strong> evita que
+      la búsqueda al iniciar vuelva a ofrecer esa versión. Si usa el <code>DataPortStudio.exe</code> portátil, también puede
+      descargar el más reciente desde <strong>Ayuda ▸ Última versión</strong> y reemplazar su copia.</p>
 
       <h2 id="credits">Créditos y licencias</h2>
       <p>Nuestro agradecimiento a los colaboradores de la comunidad que han mejorado DataPortStudio:
@@ -505,8 +514,8 @@
 
       <h2 id="help">Ayuda y Acerca de</h2>
       <p>El menú <strong>Ayuda</strong> abre esta guía, el repositorio de GitHub del proyecto, la última versión y el
-      cuadro <strong>Acerca de</strong> (que muestra la versión que está usando). Para actualizar, descargue el
-      <code>DataPortStudio.exe</code> más reciente desde la página de versiones.</p>
+      cuadro <strong>Acerca de</strong> (que muestra la versión que está usando). <strong>Buscar actualizaciones…</strong>
+      descarga e instala una versión más nueva por usted; DataPortStudio también busca en silencio unos segundos después de iniciar.</p>
 
     </div>
     <footer>DataPortStudio — Guía del usuario. Administración profesional de bases de datos para Windows.</footer>

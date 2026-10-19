@@ -324,6 +324,7 @@
                                       InputGestureText="F1"/>
                             <MenuItem Header="{loc:Tr Menu_GitHub}" Command="{Binding OpenGitHubCommand}"/>
                             <MenuItem Header="{loc:Tr Menu_LatestRelease}" Command="{Binding OpenReleasesCommand}"/>
+                            <MenuItem Header="{loc:Tr Menu_CheckUpdates}" Command="{Binding CheckForUpdatesCommand}"/>
                             <Separator/>
                             <MenuItem Header="{loc:Tr Menu_About}" Command="{Binding ShowAboutCommand}"/>
                         </MenuItem>

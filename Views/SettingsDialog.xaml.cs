@@ -21,6 +21,7 @@ public partial class SettingsDialog : Window
         DetailCheck.IsChecked = s.ShowCellDetailByDefault;
         ClarionCheck.IsChecked = s.ShowClarionTypesByDefault;
         ConfirmDangerousCheck.IsChecked = s.ConfirmDangerousStatements;
+        CheckUpdatesCheck.IsChecked = s.CheckForUpdatesOnStartup;
 
         SectionCombo.ItemsSource = Enum.GetValues(typeof(InspectorSection));
         SectionCombo.SelectedItem = s.DefaultStructureSection;
@@ -76,6 +77,7 @@ public partial class SettingsDialog : Window
         s.ShowCellDetailByDefault = DetailCheck.IsChecked == true;
         s.ShowClarionTypesByDefault = ClarionCheck.IsChecked == true;
         s.ConfirmDangerousStatements = ConfirmDangerousCheck.IsChecked == true;
+        s.CheckForUpdatesOnStartup = CheckUpdatesCheck.IsChecked == true;
         if (SectionCombo.SelectedItem is InspectorSection section)
             s.DefaultStructureSection = section;
         if (LanguageCombo.SelectedValue is string lang)

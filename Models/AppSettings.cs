@@ -30,6 +30,12 @@ public class AppSettings
     /// <summary>Confirm before the query window runs UPDATE/DELETE without WHERE, TRUNCATE or DROP.</summary>
     public bool ConfirmDangerousStatements { get; set; } = true;
 
+    /// <summary>Look for a newer release on GitHub when the app starts.</summary>
+    public bool CheckForUpdatesOnStartup { get; set; } = true;
+
+    /// <summary>A release the user chose to skip; the startup check stays quiet about it.</summary>
+    public string? SkippedUpdateVersion { get; set; }
+
     /// <summary>Last active database per connection (connectionId → databaseName).</summary>
     public Dictionary<string, string> LastDatabases { get; set; } = new();
 

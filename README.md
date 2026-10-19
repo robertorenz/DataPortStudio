@@ -26,6 +26,10 @@ Grab the latest release from the
 
 Both options are **self-contained** — no .NET runtime install required.
 
+**Updating.** Once installed, use **Help ▸ Check for Updates…** — DataPortStudio downloads the new
+installer from GitHub, verifies its checksum, installs it and restarts. It also checks quietly at
+startup (switch that off in **Settings**).
+
 ## Features
 
 - **Multiple database engines** — pick the engine when creating a connection. Each connection is
@@ -174,6 +178,10 @@ Both options are **self-contained** — no .NET runtime install required.
     `TRUNCATE`, `DROP` and `ALTER TABLE … DROP COLUMN`. If it finds any, a popup lists them with the
     row count each table holds, and nothing runs until you choose **Run anyway**. Comments, strings
     and routine bodies being created are ignored. Can be turned off in **Settings**.
+  - **Execution plan** — **Explain** (Ctrl+L) shows how the database would run the script, without
+    running it: a tree of steps with estimated rows and each step's share of the cost, costly steps
+    highlighted. SQL Server, PostgreSQL, MySQL/MariaDB, SQLite, Oracle and Firebird; SQL Server
+    plans include missing-index suggestions and can be saved as `.sqlplan`.
 - **Visual query designer** — compose SELECTs visually (tables, columns, joins with FK
   auto-detect, filters, sort) with live SQL. Works with SQL Server, SQLite, MySQL/MariaDB and
   Firebird; open it from the **Visual Designer** button on the command bar.
@@ -357,7 +365,6 @@ Themes/      Theme.xaml (palette + control styles)
 
 ## Roadmap ideas
 
-- **Execution plans** — an *Explain* button in the query window, with the costly steps highlighted
 - **Manual transaction mode** — Commit / Rollback in the query window instead of auto-commit
 - **SSH tunnel & SSL** options on server connections
 - **Colour-coded connections** (e.g. red for production) carried through to tabs and query windows

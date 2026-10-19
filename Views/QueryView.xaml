@@ -25,6 +25,13 @@
                             <TextBlock Text="Run  (F5 / Ctrl+E)"/>
                         </StackPanel>
                     </Button>
+                    <Button x:Name="ExplainButton" Margin="10,0,0,0" Click="Explain_Click"
+                            ToolTip="Show how the database would run this query — without running it">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource ToolIcon}" Text="&#xE9D9;"/>
+                            <TextBlock Text="Explain  (Ctrl+L)"/>
+                        </StackPanel>
+                    </Button>
                     <Button Content="Clear" Margin="10,0,0,0" Click="Clear_Click"/>
                     <Button Content="Format  (Ctrl+Shift+F)" Margin="10,0,0,0" Click="Format_Click" ToolTip="Beautify SQL"/>
                     <!-- History button + popup -->

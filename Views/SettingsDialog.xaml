@@ -58,7 +58,8 @@
                     <ComboBox x:Name="QueryOpenModeCombo" Grid.Column="1" Width="200"
                               HorizontalAlignment="Left" DisplayMemberPath="Name" SelectedValuePath="Value"/>
                 </Grid>
-                <CheckBox x:Name="ConfirmDangerousCheck" Content="{loc:Tr Settings_ConfirmDangerous}" Margin="0,0,0,16"/>
+                <CheckBox x:Name="ConfirmDangerousCheck" Content="{loc:Tr Settings_ConfirmDangerous}" Margin="0,0,0,8"/>
+                <CheckBox x:Name="CheckUpdatesCheck" Content="{loc:Tr Settings_CheckUpdates}" Margin="0,0,0,16"/>
 
                 <TextBlock Text="{loc:Tr Settings_WhenOpening}" FontWeight="SemiBold" FontSize="12"
                            Foreground="{DynamicResource B.TextMuted}" Margin="0,0,0,8"/>

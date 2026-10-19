@@ -255,6 +255,45 @@ public partial class MainViewModel : ObservableObject
         foreach (var profile in _store.Load())
             Roots.Add(DbTreeNode.Server(profile));
         _ = RestoreLastDatabasesAsync();
+        if (SettingsStore.Current.CheckForUpdatesOnStartup)
+            _ = CheckForUpdatesOnStartupAsync();
+    }
+
+    /// <summary>Quietly looks for a newer release a few seconds after startup; says nothing on failure.</summary>
+    private static async Task CheckForUpdatesOnStartupAsync()
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(4));
+            var update = await UpdateService.CheckAsync();
+            if (update is null || update.Version.ToString() == SettingsStore.Current.SkippedUpdateVersion) return;
+            UpdateDialog.Offer(update);
+        }
+        catch
+        {
+            // Offline, rate-limited or GitHub unavailable — try again next launch.
+        }
+    }
+
+    [RelayCommand]
+    private async Task CheckForUpdates()
+    {
+        static string T(string key) => LocalizationManager.Instance[key];
+        UpdateInfo? update;
+        try
+        {
+            update = await UpdateService.CheckAsync();
+        }
+        catch (Exception ex)
+        {
+            Dialogs.ShowError(T("Update_CheckFailedTitle"), string.Format(T("Update_CheckFailed"), ex.Message));
+            return;
+        }
+
+        if (update is null)
+            Dialogs.ShowSuccess(T("Update_UpToDateTitle"), string.Format(T("Update_UpToDate"), UpdateService.CurrentVersion));
+        else
+            UpdateDialog.Offer(update);
     }
 
     /// <summary>

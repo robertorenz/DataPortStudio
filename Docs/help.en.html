@@ -236,6 +236,11 @@
       number of rows each table holds, and nothing runs until you choose <strong>Run anyway</strong>. Text inside
       comments and strings is ignored, and so are the bodies of procedures, functions and triggers you are
       creating. Turn it off in <strong>Settings</strong> (<em>Ask before running UPDATE / DELETE without WHERE…</em>).</p>
+      <p><strong>Execution plan.</strong> <strong>Explain</strong> (Ctrl+L) asks the database how it would run the
+      script — the query is <em>not</em> run — and shows the plan as a tree for each statement, with the estimated
+      rows and each step's share of the cost; costly steps are highlighted. On SQL Server you also get missing-index
+      suggestions, and <strong>Save plan…</strong> writes a <code>.sqlplan</code> file for SQL Server Management Studio.
+      Works with SQL Server, PostgreSQL, MySQL/MariaDB, SQLite, Oracle and Firebird.</p>
       <p><strong>File ▸ Query Builder</strong> opens a visual designer: pick tables, choose columns, add joins and
       conditions, and DataPortStudio generates the SQL for you. It works with SQL Server, SQLite, MySQL/MariaDB and Firebird.</p>
 
@@ -378,7 +383,8 @@
 
       <h2 id="settings">Settings</h2>
       <p><strong>File ▸ Settings</strong> lets you choose the <strong>language</strong> (English / Spanish), the default
-      <strong>row limit</strong> for opening tables, and appearance options. Changes apply immediately.</p>
+      <strong>row limit</strong> for opening tables, and appearance options. Changes apply immediately.
+      <em>Check for updates when DataPortStudio starts</em> controls the quiet update check at startup.</p>
 
       <h2 id="shortcuts">Keyboard shortcuts</h2>
       <table>
@@ -437,9 +443,12 @@
       the safest option.</p>
 
       <h3>10. How do I update DataPortStudio?</h3>
-      <p>Download the newest <code>DataPortStudio.exe</code> from the <strong>Help ▸ Latest Release</strong> page and replace
-      your copy. Your saved connections and settings are kept. You can check your current version in
-      <strong>Help ▸ About</strong>.</p>
+      <p>Choose <strong>Help ▸ Check for Updates…</strong>. If a newer version is out, a popup shows what's new; click
+      <strong>Download and install</strong>. DataPortStudio downloads the installer from GitHub, checks it against the
+      published checksum, closes, installs the update (Windows asks for permission) and opens again. Your saved
+      connections and settings are kept. <strong>Skip this version</strong> stops the startup check from offering that
+      release again. If you use the portable <code>DataPortStudio.exe</code>, you can instead download the newest one
+      from <strong>Help ▸ Latest Release</strong> and replace your copy.</p>
 
       <h2 id="credits">Credits &amp; licenses</h2>
       <p>Warm thanks to the community contributors who have improved DataPortStudio:
@@ -482,8 +491,8 @@
 
       <h2 id="help">Help &amp; About</h2>
       <p>The <strong>Help</strong> menu opens this guide, the project's GitHub repository, the latest release, and the
-      <strong>About</strong> box (which shows the version you're running). To update, download the newest
-      <code>DataPortStudio.exe</code> from the releases page.</p>
+      <strong>About</strong> box (which shows the version you're running). <strong>Check for Updates…</strong> downloads
+      and installs a newer release for you; DataPortStudio also checks quietly a few seconds after it starts.</p>
 
     </div>
     <footer>DataPortStudio — User Guide. Professional database management for Windows.</footer>

@@ -53,7 +53,7 @@ public static class SqlSafetyAnalyzer
         if (string.IsNullOrWhiteSpace(sql)) return found;
 
         var masked = Mask(sql);
-        foreach (var (start, length) in SplitStatements(masked))
+        foreach (var (start, length) in SplitRanges(masked))
         {
             var m = masked.Substring(start, length);
             if (string.IsNullOrWhiteSpace(m)) continue;
@@ -113,6 +113,19 @@ public static class SqlSafetyAnalyzer
         return found;
     }
 
+    /// <summary>
+    /// The statements of a script, split on top-level semicolons (never inside comments, strings
+    /// or parentheses). Statements that are only comments are dropped.
+    /// </summary>
+    public static List<string> SplitStatements(string sql)
+    {
+        var masked = Mask(sql);
+        return SplitRanges(masked)
+            .Where(s => !string.IsNullOrWhiteSpace(masked.Substring(s.Start, s.Length)))
+            .Select(s => sql.Substring(s.Start, s.Length).Trim())
+            .ToList();
+    }
+
     /// <summary>Replaces comments and quoted literals with spaces, keeping offsets intact.</summary>
     internal static string Mask(string sql)
     {
@@ -168,7 +181,7 @@ public static class SqlSafetyAnalyzer
     }
 
     /// <summary>Splits on top-level semicolons and SQL Server <c>GO</c> lines.</summary>
-    private static IEnumerable<(int Start, int Length)> SplitStatements(string masked)
+    private static IEnumerable<(int Start, int Length)> SplitRanges(string masked)
     {
         int start = 0, depth = 0;
         for (int i = 0; i < masked.Length; i++)

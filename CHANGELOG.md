@@ -4,6 +4,27 @@ All notable changes to DataPortStudio are documented here.
 
 ---
 
+## Unreleased
+
+### Added
+- **In-app updates.** **Help ▸ Check for Updates…** asks GitHub for the latest release. If a newer
+  version exists, a popup shows its release notes with **Download and install**, **Later** and
+  **Skip this version**. Installing downloads the `Setup.exe` from the release with a progress bar,
+  checks it against the SHA-256 checksum GitHub publishes for it, closes DataPortStudio, runs the
+  installer silently, and reopens the new version. A per-user install stays per-user. The app also
+  checks quietly a few seconds after it starts and stays silent when offline or when you skipped that
+  version; switch this off in **Settings** (*Check for updates when DataPortStudio starts*).
+- **Execution plans.** An **Explain** button (Ctrl+L) in the query window asks the database how it
+  would run the script — without running it — and shows the plan as a tree, statement by statement,
+  with estimated rows, each step's share of the cost, and the costly steps highlighted. Works with
+  SQL Server (`SHOWPLAN_XML`, with missing-index suggestions and a *Save plan…* to `.sqlplan`),
+  PostgreSQL, MySQL/MariaDB, SQLite, Oracle and Firebird.
+
+### Changed
+- The installer accepts `/relaunch=1` to start DataPortStudio again after a silent install.
+
+---
+
 ## v1.0.35 — 2026-10-04
 
 ### Added

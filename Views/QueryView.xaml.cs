@@ -48,6 +48,7 @@ public partial class QueryView : UserControl
             var ctrlShift = (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) == (ModifierKeys.Control | ModifierKeys.Shift);
             if (e.Key == Key.F5)                          { e.Handled = true; await RunAsync(); }
             if (e.Key == Key.E && ctrl)                   { e.Handled = true; await RunAsync(); }
+            if (e.Key == Key.L && ctrl)                   { e.Handled = true; await ExplainAsync(); }
             if (e.Key == Key.O && ctrl)                   { e.Handled = true; Load_Click(this, new()); }
             if (e.Key == Key.S && ctrl)                   { e.Handled = true; Save_Click(this, new()); }
             if (e.Key == Key.H && ctrl)                   { e.Handled = true; OpenHistory(); }
@@ -155,6 +156,52 @@ public partial class QueryView : UserControl
     }
 
     private static string L(string key) => LocalizationManager.Instance[key];
+
+    // ── Explain ─────────────────────────────────────────────────────────────
+
+    private async void Explain_Click(object sender, RoutedEventArgs e) => await ExplainAsync();
+
+    /// <summary>Shows the estimated execution plan of the selection (or the whole script) in a Plan tab.</summary>
+    private async Task ExplainAsync()
+    {
+        var selLen = Editor.SelectionLength;
+        var sql = selLen > 0
+            ? Editor.Document.GetText(Editor.SelectionStart, selLen)
+            : Editor.Document.Text;
+        if (string.IsNullOrWhiteSpace(sql) || !ExplainButton.IsEnabled) return;
+
+        ExplainButton.IsEnabled = false;
+        RunButton.IsEnabled = false;
+        Messages.Text = L("PL_Explaining");
+        var sw = Stopwatch.StartNew();
+        try
+        {
+            ExecutionPlan plan;
+            await using (var conn = CreateConnection())
+                plan = await ExecutionPlanService.ExplainAsync(conn, _connection!.Engine, sql);
+            sw.Stop();
+
+            // One plan tab at a time, next to any results.
+            foreach (var old in ResultTabs.Items.OfType<TabItem>().Where(t => t.Content is ExecutionPlanView).ToList())
+                ResultTabs.Items.Remove(old);
+            var view = new ExecutionPlanView();
+            var tab = new TabItem { Header = L("PL_Tab"), Content = view };
+            ResultTabs.Items.Add(tab);
+            ResultTabs.SelectedItem = tab;
+            view.Show(plan, _database ?? _connection.Name);
+
+            Messages.Text = string.Format(L("PL_Done"), plan.Statements.Count, plan.WarningCount, sw.ElapsedMilliseconds);
+        }
+        catch (Exception ex)
+        {
+            Messages.Text = L("PL_Failed") + " " + ex.Message;
+        }
+        finally
+        {
+            ExplainButton.IsEnabled = true;
+            RunButton.IsEnabled = true;
+        }
+    }
 
     /// <summary>
     /// Lists any UPDATE/DELETE without WHERE, TRUNCATE or DROP in <paramref name="sql"/>, with the
